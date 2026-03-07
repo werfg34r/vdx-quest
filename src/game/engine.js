@@ -181,32 +181,37 @@ function generateMap() {
     drawPath(map, waypoints[i], waypoints[i + 1], rng)
   }
 
-  // Place zone buildings (3 wide x 3 tall with proper edges)
+  // Place zone buildings - stone castle structures (4 wide x 4 tall)
   for (const zone of ZONES) {
-    // Clear area around building
-    for (let dy = -2; dy <= 3; dy++) {
+    // Clear area around building with path
+    for (let dy = -3; dy <= 4; dy++) {
       for (let dx = -2; dx <= 4; dx++) {
         const nx = zone.x + dx, ny = zone.y + dy
         if (nx >= 0 && ny >= 0 && nx < COLS && ny < ROWS) map[ny][nx] = T.PATH
       }
     }
-    // Roof row (3 wide)
-    map[zone.y - 1][zone.x - 1] = T.ROOF_L
-    map[zone.y - 1][zone.x] = T.ROOF
-    map[zone.y - 1][zone.x + 1] = T.ROOF
-    map[zone.y - 1][zone.x + 2] = T.ROOF_R
-    // Wall row (3 wide)
+    // Row -2: Roof parapet
+    map[zone.y - 2][zone.x - 1] = T.ROOF_L
+    map[zone.y - 2][zone.x]     = T.ROOF
+    map[zone.y - 2][zone.x + 1] = T.ROOF
+    map[zone.y - 2][zone.x + 2] = T.ROOF_R
+    // Row -1: Upper wall (light stone)
+    map[zone.y - 1][zone.x - 1] = T.WALL_L
+    map[zone.y - 1][zone.x]     = T.WALL
+    map[zone.y - 1][zone.x + 1] = T.WALL
+    map[zone.y - 1][zone.x + 2] = T.WALL_R
+    // Row 0: Lower wall (light stone)
     map[zone.y][zone.x - 1] = T.WALL_L
-    map[zone.y][zone.x] = T.WALL
+    map[zone.y][zone.x]     = T.WALL
     map[zone.y][zone.x + 1] = T.WALL
     map[zone.y][zone.x + 2] = T.WALL_R
-    // Door row
-    map[zone.y + 1][zone.x - 1] = T.WALL_L
-    map[zone.y + 1][zone.x] = T.DOOR
-    map[zone.y + 1][zone.x + 1] = T.WALL
-    map[zone.y + 1][zone.x + 2] = T.WALL_R
+    // Row 1: Door row (dark stone base with entrance)
+    map[zone.y + 1][zone.x - 1] = T.DOOR
+    map[zone.y + 1][zone.x]     = T.DOOR
+    map[zone.y + 1][zone.x + 1] = T.DOOR
+    map[zone.y + 1][zone.x + 2] = T.DOOR
     // Sign next to building
-    if (zone.x + 3 < COLS) map[zone.y + 1][zone.x + 3] = T.SIGN
+    if (zone.x + 3 < COLS) map[zone.y + 2][zone.x + 3] = T.SIGN
   }
 
   // Add sand shores around water
@@ -420,8 +425,8 @@ function getCamera(charX, charY, viewW, viewH) {
 function getAdjacentZone(tileX, tileY) {
   for (const zone of ZONES) {
     const dx = Math.abs(tileX - zone.x)
-    const dy = Math.abs(tileY - (zone.y + 1))
-    if (dx <= 1 && dy <= 1) return zone
+    const dy = Math.abs(tileY - (zone.y + 2))
+    if (dx <= 2 && dy <= 1) return zone
   }
   return null
 }

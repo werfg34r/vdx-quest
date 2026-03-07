@@ -1,95 +1,86 @@
 // Sprite Atlas - Loads real PNG tilesets (ArMM1998 Zelda-like, CC0)
 // Overworld.png: 640x576, 16x16 tiles (40 cols x 36 rows)
-// character.png: 272x256, 16x16 frames, characters are 16x32 (2 rows)
+// character.png: 272x256, 16x16 frames, 8 distinct characters
 
 const S = 16 // source tile size
 
-// All coordinates verified as FULLY OPAQUE (0 transparent pixels)
-// or marked as needing a base tile underneath
+// Tile coordinates verified via pixel analysis
 const TILE_COORDS = {
-  // Grass (fully opaque greens)
   grass: [
-    { x: 0, y: 0 },   // rgb=(60,190,65) - standard green
-    { x: 0, y: 7 },   // rgb=(126,211,88) - lighter green
-    { x: 1, y: 7 },   // rgb=(130,214,90) - light green variant
-    { x: 5, y: 9 },   // rgb=(62,190,66) - medium green
+    { x: 0, y: 0 },
+    { x: 0, y: 7 },
+    { x: 1, y: 7 },
+    { x: 5, y: 9 },
   ],
-  // Dark grass (fully opaque, darker shades)
   darkGrass: [
-    { x: 4, y: 11 },  // rgb=(66,149,64) - dark green
-    { x: 5, y: 11 },  // rgb=(59,164,63) - dark green variant
-    { x: 6, y: 11 },  // rgb=(62,157,64) - dark green variant
+    { x: 4, y: 11 },
+    { x: 5, y: 11 },
+    { x: 6, y: 11 },
   ],
-  // Tall grass (green, fully opaque)
   tallGrass: [
-    { x: 0, y: 4 },   // rgb=(96,204,78) - bright textured green
-    { x: 2, y: 4 },   // rgb=(99,204,78) - variant
+    { x: 0, y: 4 },
+    { x: 2, y: 4 },
   ],
-  // Path (fully opaque brown/tan)
   path: [
-    { x: 7, y: 1 },   // rgb=(136,108,86) - brown path
-    { x: 9, y: 1 },   // rgb=(136,107,86) - variant
+    { x: 7, y: 1 },
+    { x: 9, y: 1 },
   ],
-  // Water (fully opaque blue)
   water: [
-    { x: 17, y: 0 },  // rgb=(32,126,186) - deep blue
-    { x: 18, y: 0 },  // rgb=(32,126,187) - variant
-    { x: 19, y: 0 },  // rgb=(32,126,187) - variant
-    { x: 17, y: 1 },  // rgb=(32,126,187) - variant
+    { x: 17, y: 0 },
+    { x: 18, y: 0 },
+    { x: 19, y: 0 },
+    { x: 17, y: 1 },
   ],
-  // Tree (has transparency - needs grass base)
   tree: { x: 1, y: 15, needsBase: 'grass' },
-  // Mountain / stone (fully opaque gray)
   mountain: [
-    { x: 22, y: 1 },  // rgb=(182,185,190) - light gray
-    { x: 24, y: 1 },  // rgb=(194,196,199) - lighter gray
+    { x: 22, y: 1 },
+    { x: 24, y: 1 },
   ],
-  // Flower (fully opaque bright green)
   flower: [
-    { x: 15, y: 6 },  // rgb=(182,236,118) - bright yellow-green
-    { x: 17, y: 6 },  // rgb=(185,237,117) - variant
-    { x: 1, y: 4 },   // rgb=(200,248,114) - very bright
+    { x: 15, y: 6 },
+    { x: 17, y: 6 },
+    { x: 1, y: 4 },
   ],
-  // Bridge (has transparency - needs water base)
   bridge: { x: 34, y: 2, needsBase: 'water' },
-  // Fence (has transparency - needs grass base)
   fence: { x: 6, y: 3, needsBase: 'grass' },
-  // Building roof (slight transparency - needs grass base)
-  roof: { x: 8, y: 0, needsBase: 'grass' },
-  roofL: { x: 7, y: 0, needsBase: 'grass' },
-  roofR: { x: 9, y: 0, needsBase: 'grass' },
-  // Building wall (fully opaque)
-  wall: { x: 8, y: 1 },
-  wallL: { x: 7, y: 1, needsBase: 'grass' },
-  wallR: { x: 9, y: 1, needsBase: 'grass' },
-  // Building door (fully opaque)
-  door: { x: 8, y: 2 },
-  // Sign (has transparency - needs path base)
+
+  // Stone castle building tiles (cols 26-28, rows 23-26)
+  stoneRoofL:  { x: 26, y: 23, needsBase: 'grass' },
+  stoneRoofC:  { x: 27, y: 23, needsBase: 'grass' },
+  stoneRoofR:  { x: 28, y: 23, needsBase: 'grass' },
+  stoneWallL:  { x: 26, y: 24 },
+  stoneWallC:  { x: 27, y: 24 },
+  stoneWallR:  { x: 28, y: 24 },
+  stoneWall2L: { x: 26, y: 25 },
+  stoneWall2C: { x: 27, y: 25 },
+  stoneWall2R: { x: 28, y: 25 },
+  stoneDoorL:  { x: 26, y: 26 },
+  stoneDoorC:  { x: 27, y: 26 },
+  stoneDoorR:  { x: 28, y: 26 },
+
   sign: { x: 30, y: 0, needsBase: 'path' },
-  // Sand (fully opaque)
   sand: [
-    { x: 28, y: 1 },  // rgb=(198,200,202) - light
-    { x: 29, y: 1 },  // rgb=(188,191,195)
+    { x: 28, y: 1 },
+    { x: 29, y: 1 },
   ],
 }
 
-// Character walking directions (rows in character.png, 16x32 sprites)
-const CHAR_LAYOUT = {
-  down:  { topRow: 0, frames: [0, 1, 2] },
-  right: { topRow: 2, frames: [0, 1, 2] },
-  up:    { topRow: 4, frames: [0, 1, 2] },
-  left:  { topRow: 6, frames: [0, 1, 2] },
+// 8 distinct characters in character.png for NPCs
+// Each character: 3 columns (walk frames) x 8 rows (4 directions x 2 rows)
+// Top block (rows 0-7): 5 characters at cols 0,3,6,9,12
+// Bottom block (rows 8-15): 3 characters at cols 0,3,6
+const NPC_CHARS = {
+  // Player uses cols 0-2, rows 0-7
+  mentor:   { startCol: 3,  baseRow: 0 },  // Different outfit
+  villager: { startCol: 0,  baseRow: 8 },  // Gray/blue outfit (bottom block)
+  warrior:  { startCol: 9,  baseRow: 0 },  // Distinct character
+  sage:     { startCol: 12, baseRow: 0 },  // Another character
+  old:      { startCol: 6,  baseRow: 8 },  // Brown outfit (bottom block)
+  trader:   { startCol: 3,  baseRow: 8 },  // Dark outfit (bottom block)
 }
 
-// NPC layout in npc.png (64x128 = 4 cols x 8 rows at 16x16)
-const NPC_LAYOUT = {
-  mentor:   { col: 0, topRow: 0 },
-  villager: { col: 1, topRow: 0 },
-  warrior:  { col: 2, topRow: 0 },
-  sage:     { col: 3, topRow: 0 },
-  old:      { col: 0, topRow: 2 },
-  trader:   { col: 1, topRow: 2 },
-}
+// Direction offsets within a character block (each direction = 2 rows)
+const DIR_ROWS = { down: 0, right: 2, up: 4, left: 6 }
 
 function loadImage(src) {
   return new Promise((resolve, reject) => {
@@ -101,26 +92,21 @@ function loadImage(src) {
 }
 
 export async function loadSpriteAtlas() {
-  const [overworld, character, npc] = await Promise.all([
+  const [overworld, character] = await Promise.all([
     loadImage('/assets/overworld.png'),
     loadImage('/assets/character.png'),
-    loadImage('/assets/npc.png'),
   ])
-
-  return { overworld, character, npc, S }
+  return { overworld, character, S }
 }
 
-// Deterministic hash for tile variation
 function tileHash(px, py) {
   return ((Math.floor(px) * 374761 + Math.floor(py) * 668265) % 997 + 997) % 997
 }
 
-// Draw a single 16x16 tile from the overworld spritesheet
 function blitTile(ctx, img, coord, px, py) {
   ctx.drawImage(img, coord.x * S, coord.y * S, S, S, Math.floor(px), Math.floor(py), S, S)
 }
 
-// Pick from array or return single coord
 function pickCoord(coords, px, py) {
   if (Array.isArray(coords)) {
     return coords[tileHash(px, py) % coords.length]
@@ -128,7 +114,6 @@ function pickCoord(coords, px, py) {
   return coords
 }
 
-// Draw base tile (for transparent overlays)
 function drawBase(ctx, img, baseType, px, py) {
   const baseCoords = {
     grass: TILE_COORDS.grass[0],
@@ -136,9 +121,7 @@ function drawBase(ctx, img, baseType, px, py) {
     path: TILE_COORDS.path[0],
   }
   const base = baseCoords[baseType]
-  if (base) {
-    blitTile(ctx, img, base, px, py)
-  }
+  if (base) blitTile(ctx, img, base, px, py)
 }
 
 export function drawSpriteTile(ctx, atlas, tileType, px, py, tick) {
@@ -158,13 +141,12 @@ export function drawSpriteTile(ctx, atlas, tileType, px, py, tick) {
     case 1: // PATH
       blitTile(ctx, img, pickCoord(tc.path, px, py), px, py)
       break
-    case 2: { // WATER (animated - cycle through variants)
-      const waterCoords = tc.water
-      const frame = Math.floor(tick / 15) % waterCoords.length
-      blitTile(ctx, img, waterCoords[frame], px, py)
+    case 2: { // WATER (animated)
+      const frame = Math.floor(tick / 15) % tc.water.length
+      blitTile(ctx, img, tc.water[frame], px, py)
       break
     }
-    case 3: // TREE (transparent - needs grass base)
+    case 3: // TREE
       drawBase(ctx, img, 'grass', px, py)
       blitTile(ctx, img, tc.tree, px, py)
       break
@@ -174,81 +156,88 @@ export function drawSpriteTile(ctx, atlas, tileType, px, py, tick) {
     case 6: // FLOWER
       blitTile(ctx, img, pickCoord(tc.flower, px, py), px, py)
       break
-    case 7: // BRIDGE (transparent - needs water base)
+    case 7: // BRIDGE
       drawBase(ctx, img, 'water', px, py)
       blitTile(ctx, img, tc.bridge, px, py)
       break
-    case 8: // FENCE (transparent - needs grass base)
+    case 8: // FENCE
       drawBase(ctx, img, 'grass', px, py)
       blitTile(ctx, img, tc.fence, px, py)
       break
-    case 11: // ROOF (slight transparency - needs grass base)
+
+    // Stone building tiles
+    case 11: // ROOF (center)
       drawBase(ctx, img, 'grass', px, py)
-      blitTile(ctx, img, tc.roof, px, py)
+      blitTile(ctx, img, tc.stoneRoofC, px, py)
       break
-    case 12: // WALL
-      blitTile(ctx, img, tc.wall, px, py)
+    case 20: // ROOF_L
+      drawBase(ctx, img, 'grass', px, py)
+      blitTile(ctx, img, tc.stoneRoofL, px, py)
       break
-    case 13: // DOOR
-      blitTile(ctx, img, tc.door, px, py)
+    case 21: // ROOF_R
+      drawBase(ctx, img, 'grass', px, py)
+      blitTile(ctx, img, tc.stoneRoofR, px, py)
       break
-    case 14: // SIGN (transparent - needs path base)
+    case 12: // WALL (center)
+      blitTile(ctx, img, tc.stoneWallC, px, py)
+      break
+    case 22: // WALL_L
+      blitTile(ctx, img, tc.stoneWallL, px, py)
+      break
+    case 23: // WALL_R
+      blitTile(ctx, img, tc.stoneWallR, px, py)
+      break
+    case 13: // DOOR (dark stone entrance)
+      blitTile(ctx, img, tc.stoneDoorC, px, py)
+      break
+
+    case 14: // SIGN
       drawBase(ctx, img, 'path', px, py)
       blitTile(ctx, img, tc.sign, px, py)
       break
     case 10: // SAND
       blitTile(ctx, img, pickCoord(tc.sand, px, py), px, py)
       break
-    case 20: // ROOF_L
-      drawBase(ctx, img, 'grass', px, py)
-      blitTile(ctx, img, tc.roofL, px, py)
-      break
-    case 21: // ROOF_R
-      drawBase(ctx, img, 'grass', px, py)
-      blitTile(ctx, img, tc.roofR, px, py)
-      break
-    case 22: // WALL_L
-      drawBase(ctx, img, 'grass', px, py)
-      blitTile(ctx, img, tc.wallL, px, py)
-      break
-    case 23: // WALL_R
-      drawBase(ctx, img, 'grass', px, py)
-      blitTile(ctx, img, tc.wallR, px, py)
-      break
     default:
       blitTile(ctx, img, tc.grass[0], px, py)
   }
 }
 
-// Draw player (16x32, 2 rows from spritesheet)
+// Draw player (16x32 character, cols 0-2 of character.png)
 export function drawPlayerSprite(ctx, atlas, direction, frame, px, py) {
-  const layout = CHAR_LAYOUT[direction] || CHAR_LAYOUT.down
-  const frameIdx = layout.frames[frame % layout.frames.length]
   const img = atlas.character
+  const frameIdx = frame % 3
+  const dirOffset = DIR_ROWS[direction] || 0
 
   const sx = frameIdx * S
-  const syTop = layout.topRow * S
-  const syBot = (layout.topRow + 1) * S
+  const syTop = dirOffset * S
+  const syBot = (dirOffset + 1) * S
 
-  // Draw 16x32 character (top half above, bottom half at tile position)
   ctx.drawImage(img, sx, syTop, S, S, Math.floor(px), Math.floor(py) - S, S, S)
   ctx.drawImage(img, sx, syBot, S, S, Math.floor(px), Math.floor(py), S, S)
 }
 
-// Draw NPC (16x32 from npc.png)
+// Draw NPC using character.png (different character slots)
 export function drawNPCSprite(ctx, atlas, spriteType, px, py, tick) {
-  const layout = NPC_LAYOUT[spriteType]
-  if (layout) {
-    const img = atlas.npc
-    const sx = layout.col * S
-    const syTop = layout.topRow * S
-    const syBot = (layout.topRow + 1) * S
-    ctx.drawImage(img, sx, syTop, S, S, Math.floor(px), Math.floor(py) - S, S, S)
-    ctx.drawImage(img, sx, syBot, S, S, Math.floor(px), Math.floor(py), S, S)
-  } else {
-    // Fallback to player sprite
+  const charDef = NPC_CHARS[spriteType]
+  if (!charDef) {
+    // Fallback: draw as player facing down
     drawPlayerSprite(ctx, atlas, 'down', 0, px, py)
+    return
   }
+
+  const img = atlas.character
+
+  // Idle animation: slight bob between frame 0 and 1
+  const frameIdx = Math.floor(tick / 30) % 2 === 0 ? 0 : 1
+
+  const sx = (charDef.startCol + frameIdx) * S
+  // NPCs face down by default
+  const syTop = charDef.baseRow * S
+  const syBot = (charDef.baseRow + 1) * S
+
+  ctx.drawImage(img, sx, syTop, S, S, Math.floor(px), Math.floor(py) - S, S, S)
+  ctx.drawImage(img, sx, syBot, S, S, Math.floor(px), Math.floor(py), S, S)
 }
 
 export { S }
