@@ -1,6 +1,6 @@
-// VDX Quest RPG Engine - Sprite atlas based rendering
+// VDX Quest RPG Engine - Real tileset based rendering
 
-const TILE = 32
+const TILE = 16
 const COLS = 50
 const ROWS = 40
 
@@ -14,7 +14,7 @@ const T = {
 
 const SOLID = new Set([T.WATER, T.TREE, T.MOUNTAIN, T.FENCE, T.WALL, T.ROOF, T.HOUSE_WALL, T.WATER_EDGE])
 
-// Zone definitions (12 weeks) with names and region themes
+// Zone definitions (12 weeks)
 const ZONES = [
   { id: 1, x: 8, y: 35, label: 'S1', name: 'Cabane de la Verite', region: 1 },
   { id: 2, x: 16, y: 33, label: 'S2', name: 'Tour du Choix', region: 1 },
@@ -39,9 +39,6 @@ const NPCS = [
       'Je suis Laurent, maitre de la methodologie Vendeur d\'Exception.',
       'Tu es ici pour une raison : transformer ton potentiel en realite.',
       'Devant toi s\'etend le Monde VDX. 3 regions, 12 epreuves, 90 jours.',
-      'Region 1 : la Plaine de la Clarte. Ici tu apprendras a sortir du flou.',
-      'Region 2 : la Cite du Courage. Tu affronteras le reel et les humains.',
-      'Region 3 : le Sommet de la Structure. Tu batiras ton systeme.',
       'Commence par la Cabane de la Verite, juste au nord.',
       'Appuie sur ESPACE devant chaque batiment pour entrer.',
       'Bonne route, entrepreneur.',
@@ -52,14 +49,14 @@ const NPCS = [
     dialog: [
       'Salut ! Ici c\'est la Plaine de la Clarte.',
       'Les 4 premiers batiments t\'aideront a sortir de ta tete.',
-      'Prends le temps de faire chaque quete. Pas de raccourci.',
+      'Prends le temps de faire chaque quete.',
     ]
   },
   {
     id: 'guide2', x: 37, y: 22, sprite: 'warrior', name: 'Marc',
     dialog: [
       'Tu es arrive a la Cite du Courage. Bien joue.',
-      'Ici, tu vas parler a de vrais humains, proposer ton offre, encaisser des refus.',
+      'Ici, tu vas parler a de vrais humains, proposer ton offre.',
       'C\'est la que la plupart abandonnent. Pas toi.',
     ]
   },
@@ -67,7 +64,6 @@ const NPCS = [
     id: 'guide3', x: 15, y: 12, sprite: 'sage', name: 'Sophie',
     dialog: [
       'Bienvenue au Sommet de la Structure.',
-      'Tu as des preuves maintenant. Tu as vecu le reel.',
       'Il reste a transformer tout ca en systeme repetable.',
       'Tu n\'es plus un reveur. Tu es un entrepreneur.',
     ]
@@ -82,13 +78,13 @@ const NPCS = [
   {
     id: 'trader', x: 30, y: 24, sprite: 'trader', name: 'Vendeur',
     dialog: [
-      'Tu veux un conseil gratuit ? Propose. Annonce ton prix. Laisse le silence.',
-      'Le marche ne repond pas aux idees. Il repond aux propositions.',
+      'Tu veux un conseil gratuit ? Propose. Annonce ton prix.',
+      'Le marche repond aux propositions, pas aux idees.',
     ]
   },
 ]
 
-// Seeded random for consistent map generation
+// Seeded random
 function seededRandom(seed) {
   let s = seed
   return () => {
@@ -97,19 +93,18 @@ function seededRandom(seed) {
   }
 }
 
-// Generate the map
 function generateMap() {
   const rng = seededRandom(42)
   const map = Array.from({ length: ROWS }, () => Array(COLS).fill(T.GRASS))
 
-  // Region 3 (top): darker grass
+  // Region 3: darker grass
   for (let y = 0; y < 16; y++) {
     for (let x = 0; x < COLS; x++) {
       map[y][x] = rng() > 0.7 ? T.DARK_GRASS : T.GRASS
     }
   }
 
-  // Scatter flowers in region 1
+  // Flowers in region 1
   for (let i = 0; i < 80; i++) {
     const x = Math.floor(rng() * COLS)
     const y = 26 + Math.floor(rng() * 14)
@@ -117,8 +112,7 @@ function generateMap() {
   }
 
   // Tall grass patches
-  const tallGrassAreas = [[5, 30], [30, 28], [42, 18], [8, 16], [38, 8]]
-  for (const [cx, cy] of tallGrassAreas) {
+  for (const [cx, cy] of [[5, 30], [30, 28], [42, 18], [8, 16], [38, 8]]) {
     for (let dy = -2; dy <= 2; dy++) {
       for (let dx = -3; dx <= 3; dx++) {
         const nx = cx + dx, ny = cy + dy
@@ -129,21 +123,17 @@ function generateMap() {
     }
   }
 
-  // Water features
+  // Water
   const lake = [[2, 30], [3, 30], [4, 30], [2, 31], [3, 31], [4, 31], [5, 31], [3, 32], [4, 32]]
   for (const [lx, ly] of lake) {
     if (ly < ROWS && lx < COLS) map[ly][lx] = T.WATER
   }
-
-  // River through region 2
   for (let x = 0; x < 12; x++) {
     map[26][x] = T.WATER
     map[27][x] = T.WATER
   }
   map[26][12] = T.BRIDGE
   map[27][12] = T.BRIDGE
-
-  // Pond region 3
   for (let dy = 0; dy < 3; dy++) {
     for (let dx = 0; dx < 4; dx++) {
       map[6 + dy][40 + dx] = T.WATER
@@ -151,8 +141,7 @@ function generateMap() {
   }
 
   // Mountains
-  const mtns = [[0, 0, 6, 3], [44, 0, 6, 5], [0, 0, 3, 8], [47, 0, 3, 10], [35, 2, 4, 3]]
-  for (const [mx, my, mw, mh] of mtns) {
+  for (const [mx, my, mw, mh] of [[0, 0, 6, 3], [44, 0, 6, 5], [0, 0, 3, 8], [47, 0, 3, 10], [35, 2, 4, 3]]) {
     for (let dy = 0; dy < mh; dy++) {
       for (let dx = 0; dx < mw; dx++) {
         const nx = mx + dx, ny = my + dy
@@ -161,7 +150,7 @@ function generateMap() {
     }
   }
 
-  // Trees - borders and forests
+  // Trees
   for (let x = 0; x < COLS; x++) {
     if (rng() > 0.2) map[ROWS - 1][x] = T.TREE
     if (rng() > 0.4 && map[0][x] !== T.MOUNTAIN) map[0][x] = T.TREE
@@ -170,9 +159,7 @@ function generateMap() {
     if (rng() > 0.2 && map[y][0] !== T.MOUNTAIN) map[y][0] = T.TREE
     if (rng() > 0.2 && map[y][COLS - 1] !== T.MOUNTAIN) map[y][COLS - 1] = T.TREE
   }
-
-  const forests = [[44, 30, 3], [1, 18, 3], [45, 15, 2], [38, 35, 3], [20, 28, 2]]
-  for (const [fx, fy, r] of forests) {
+  for (const [fx, fy, r] of [[44, 30, 3], [1, 18, 3], [45, 15, 2], [38, 35, 3], [20, 28, 2]]) {
     for (let dy = -r; dy <= r; dy++) {
       for (let dx = -r; dx <= r; dx++) {
         const nx = fx + dx, ny = fy + dy
@@ -187,23 +174,18 @@ function generateMap() {
   for (let x = 6; x <= 10; x++) { map[38][x] = T.FENCE }
   for (let y = 36; y <= 38; y++) { map[y][6] = T.FENCE; map[y][10] = T.FENCE }
 
-  // Draw paths between zones
-  const waypoints = [
-    { x: 8, y: 37 },
-    ...ZONES.map(z => ({ x: z.x, y: z.y })),
-  ]
+  // Paths between zones
+  const waypoints = [{ x: 8, y: 37 }, ...ZONES.map(z => ({ x: z.x, y: z.y }))]
   for (let i = 0; i < waypoints.length - 1; i++) {
     drawPath(map, waypoints[i], waypoints[i + 1], rng)
   }
 
-  // Place zones (clear area and build)
+  // Place zone buildings
   for (const zone of ZONES) {
     for (let dy = -1; dy <= 2; dy++) {
       for (let dx = -1; dx <= 2; dx++) {
         const nx = zone.x + dx, ny = zone.y + dy
-        if (nx >= 0 && ny >= 0 && nx < COLS && ny < ROWS) {
-          map[ny][nx] = T.PATH
-        }
+        if (nx >= 0 && ny >= 0 && nx < COLS && ny < ROWS) map[ny][nx] = T.PATH
       }
     }
     map[zone.y - 1][zone.x] = T.ROOF
@@ -215,7 +197,6 @@ function generateMap() {
     if (zone.x + 2 < COLS) map[zone.y + 1][zone.x + 2] = T.SIGN
   }
 
-  // Clear NPC positions
   for (const npc of NPCS) {
     if (map[npc.y][npc.x] !== T.PATH) map[npc.y][npc.x] = T.PATH
   }
@@ -242,184 +223,65 @@ function drawPath(map, from, to, rng) {
   }
 }
 
-// ============ ATLAS-BASED RENDERING ============
-
-// Tile variant lookup using deterministic hash
-function tileVariant(x, y, count) {
-  return ((x * 374761 + y * 668265) % count + count) % count
-}
-
-function drawTile(ctx, type, px, py, tick, atlas) {
-  if (!atlas) return
-
-  const tiles = atlas.tiles
-  let src
-
-  switch (type) {
-    case T.GRASS:
-      src = tiles.grass[tileVariant(px, py, tiles.grass.length)]
-      break
-    case T.DARK_GRASS:
-      src = tiles.darkGrass[tileVariant(px, py, tiles.darkGrass.length)]
-      break
-    case T.TALL_GRASS: {
-      const frame = Math.floor(tick / 10) % tiles.tallGrass.length
-      src = tiles.tallGrass[frame]
-      break
-    }
-    case T.PATH:
-      src = tiles.path[tileVariant(px, py, tiles.path.length)]
-      break
-    case T.WATER: {
-      const frame = Math.floor(tick / 8) % tiles.water.length
-      src = tiles.water[frame]
-      break
-    }
-    case T.TREE:
-      src = tiles.tree
-      break
-    case T.MOUNTAIN:
-      src = tiles.mountain
-      break
-    case T.FLOWER:
-      src = tiles.flower[tileVariant(px, py, tiles.flower.length)]
-      break
-    case T.BRIDGE:
-      src = tiles.bridge
-      break
-    case T.FENCE:
-      src = tiles.fence
-      break
-    case T.ROOF:
-      src = tiles.roof
-      break
-    case T.WALL:
-      src = tiles.wall
-      break
-    case T.DOOR:
-      src = tiles.door
-      break
-    case T.SIGN:
-      src = tiles.sign
-      break
-    case T.SAND:
-      src = tiles.sand ? tiles.sand[tileVariant(px, py, tiles.sand.length)] : null
-      break
-    default:
-      src = tiles.grass ? tiles.grass[0] : null
-  }
-
-  if (src) {
-    ctx.drawImage(src, Math.floor(px), Math.floor(py))
-  }
-}
-
-// ============ CHARACTER RENDERING (from atlas) ============
-
-function drawCharacter(ctx, atlas, key, px, py) {
-  const src = atlas.chars[key]
-  if (src) {
-    ctx.drawImage(src, Math.floor(px), Math.floor(py))
-  }
-}
-
-// Character frame lookup for player
-const CHAR_FRAMES = {
-  down: [
-    (ctx, px, py, atlas) => drawCharacter(ctx, atlas, 'player_down_0', px, py),
-    (ctx, px, py, atlas) => drawCharacter(ctx, atlas, 'player_down_1', px, py),
-    (ctx, px, py, atlas) => drawCharacter(ctx, atlas, 'player_down_2', px, py),
-  ],
-  up: [
-    (ctx, px, py, atlas) => drawCharacter(ctx, atlas, 'player_up_0', px, py),
-    (ctx, px, py, atlas) => drawCharacter(ctx, atlas, 'player_up_1', px, py),
-    (ctx, px, py, atlas) => drawCharacter(ctx, atlas, 'player_up_2', px, py),
-  ],
-  left: [
-    (ctx, px, py, atlas) => drawCharacter(ctx, atlas, 'player_left_0', px, py),
-    (ctx, px, py, atlas) => drawCharacter(ctx, atlas, 'player_left_1', px, py),
-    (ctx, px, py, atlas) => drawCharacter(ctx, atlas, 'player_left_2', px, py),
-  ],
-  right: [
-    (ctx, px, py, atlas) => drawCharacter(ctx, atlas, 'player_right_0', px, py),
-    (ctx, px, py, atlas) => drawCharacter(ctx, atlas, 'player_right_1', px, py),
-    (ctx, px, py, atlas) => drawCharacter(ctx, atlas, 'player_right_2', px, py),
-  ],
-}
-
-function drawNPC(ctx, npc, px, py, tick, atlas) {
-  // Draw NPC sprite from atlas
-  const src = atlas.npcChars[npc.sprite]
-  if (src) {
-    ctx.drawImage(src, Math.floor(px), Math.floor(py))
-  }
-
-  // Floating indicator
-  const bob = Math.sin(tick * 0.05) * 3
-  if (atlas.indicator) {
-    ctx.drawImage(atlas.indicator, Math.floor(px + TILE / 2 - 6), Math.floor(py - 18 + bob))
-  }
-
-  // Name tag
-  ctx.fillStyle = 'rgba(5,5,15,0.75)'
-  const nameW = npc.name.length * 6 + 10
-  const nameX = px + TILE / 2 - nameW / 2
-  const nameY = py - 28 + bob
-  ctx.beginPath()
-  ctx.roundRect(nameX, nameY, nameW, 14, 4)
-  ctx.fill()
-
-  ctx.fillStyle = '#c7b777'
-  ctx.font = '9px monospace'
-  ctx.textAlign = 'center'
-  ctx.fillText(npc.name, px + TILE / 2, nameY + 10)
-}
-
 // ============ ZONE LABELS ============
 
 function drawZoneLabel(ctx, zone, px, py, unlocked, completed) {
-  const bw = zone.name.length * 5.5 + 20
+  const bw = zone.name.length * 4.5 + 16
   const bx = px + TILE / 2 - bw / 2
-  const by = py - 28
+  const by = py - 22
 
-  // Background
   ctx.fillStyle = completed ? 'rgba(199,183,119,0.92)' : unlocked ? 'rgba(12,12,25,0.88)' : 'rgba(10,10,15,0.65)'
   ctx.beginPath()
-  ctx.roundRect(bx, by, bw, 22, 6)
+  ctx.roundRect(bx, by, bw, 16, 4)
   ctx.fill()
 
-  // Border
   ctx.strokeStyle = completed ? '#e0d9a8' : unlocked ? '#c7b777' : '#444'
-  ctx.lineWidth = 2
+  ctx.lineWidth = 1
   ctx.beginPath()
-  ctx.roundRect(bx, by, bw, 22, 6)
+  ctx.roundRect(bx, by, bw, 16, 4)
   ctx.stroke()
 
-  // Inner glow for unlocked
-  if (unlocked && !completed) {
-    ctx.strokeStyle = 'rgba(199,183,119,0.2)'
-    ctx.lineWidth = 1
-    ctx.beginPath()
-    ctx.roundRect(bx + 2, by + 2, bw - 4, 18, 4)
-    ctx.stroke()
-  }
-
-  // Text
   ctx.fillStyle = completed ? '#1a1a2a' : unlocked ? '#c7b777' : '#555'
-  ctx.font = 'bold 9px monospace'
+  ctx.font = 'bold 7px monospace'
   ctx.textAlign = 'center'
-  ctx.fillText(zone.name, px + TILE / 2, by + 15)
+  ctx.fillText(zone.name, px + TILE / 2, by + 11)
 
   if (!unlocked) {
     ctx.fillStyle = '#666'
-    ctx.font = '10px sans-serif'
-    ctx.fillText('\u{1F512}', px + TILE / 2, by - 4)
+    ctx.font = '8px sans-serif'
+    ctx.fillText('\u{1F512}', px + TILE / 2, by - 2)
   }
   if (completed) {
     ctx.fillStyle = '#2a6a1e'
-    ctx.font = 'bold 12px sans-serif'
-    ctx.fillText('\u2713', px + TILE / 2, by - 2)
+    ctx.font = 'bold 9px sans-serif'
+    ctx.fillText('\u2713', px + TILE / 2, by - 1)
   }
+}
+
+// ============ NPC LABEL ============
+
+function drawNPCLabel(ctx, npc, px, py, tick) {
+  const bob = Math.sin(tick * 0.05) * 2
+
+  // Exclamation mark
+  ctx.fillStyle = '#c7b777'
+  ctx.font = 'bold 10px sans-serif'
+  ctx.textAlign = 'center'
+  ctx.fillText('!', px + TILE / 2, py - TILE - 4 + bob)
+
+  // Name tag
+  const nameW = npc.name.length * 4.5 + 8
+  const nameX = px + TILE / 2 - nameW / 2
+  const nameY = py - TILE - 14 + bob
+
+  ctx.fillStyle = 'rgba(5,5,15,0.75)'
+  ctx.beginPath()
+  ctx.roundRect(nameX, nameY, nameW, 10, 3)
+  ctx.fill()
+
+  ctx.fillStyle = '#c7b777'
+  ctx.font = '6px monospace'
+  ctx.fillText(npc.name, px + TILE / 2, nameY + 7)
 }
 
 // ============ DIALOG BOX ============
@@ -430,7 +292,6 @@ function drawDialogBox(ctx, viewW, viewH, speaker, text, charIndex) {
   const boxX = 10
   const boxW = viewW - 20
 
-  // Box background with gradient
   const bgGrad = ctx.createLinearGradient(boxX, boxY, boxX, boxY + boxH)
   bgGrad.addColorStop(0, 'rgba(10,10,25,0.94)')
   bgGrad.addColorStop(1, 'rgba(5,5,15,0.96)')
@@ -439,40 +300,20 @@ function drawDialogBox(ctx, viewW, viewH, speaker, text, charIndex) {
   ctx.roundRect(boxX, boxY, boxW, boxH, 12)
   ctx.fill()
 
-  // Border
   ctx.strokeStyle = '#c7b777'
   ctx.lineWidth = 3
   ctx.beginPath()
   ctx.roundRect(boxX, boxY, boxW, boxH, 12)
   ctx.stroke()
 
-  // Inner border
   ctx.strokeStyle = 'rgba(199,183,119,0.2)'
   ctx.lineWidth = 1
   ctx.beginPath()
   ctx.roundRect(boxX + 5, boxY + 5, boxW - 10, boxH - 10, 8)
   ctx.stroke()
 
-  // Corner ornaments
-  const cd = 8
-  ctx.fillStyle = 'rgba(199,183,119,0.5)'
-  // Top-left
-  ctx.fillRect(boxX + 10, boxY + 10, cd, 1.5)
-  ctx.fillRect(boxX + 10, boxY + 10, 1.5, cd)
-  // Top-right
-  ctx.fillRect(boxX + boxW - 10 - cd, boxY + 10, cd, 1.5)
-  ctx.fillRect(boxX + boxW - 11.5, boxY + 10, 1.5, cd)
-  // Bottom-left
-  ctx.fillRect(boxX + 10, boxY + boxH - 11.5, cd, 1.5)
-  ctx.fillRect(boxX + 10, boxY + boxH - 10 - cd, 1.5, cd)
-  // Bottom-right
-  ctx.fillRect(boxX + boxW - 10 - cd, boxY + boxH - 11.5, cd, 1.5)
-  ctx.fillRect(boxX + boxW - 11.5, boxY + boxH - 10 - cd, 1.5, cd)
-
-  // Speaker name
   if (speaker) {
     const nameW = speaker.length * 8 + 16
-    // Name plate with gradient
     const nameGrad = ctx.createLinearGradient(boxX + 12, boxY - 14, boxX + 12, boxY + 8)
     nameGrad.addColorStop(0, '#d4c888')
     nameGrad.addColorStop(1, '#c7b777')
@@ -481,19 +322,12 @@ function drawDialogBox(ctx, viewW, viewH, speaker, text, charIndex) {
     ctx.roundRect(boxX + 12, boxY - 14, nameW, 22, 6)
     ctx.fill()
 
-    ctx.strokeStyle = '#a89858'
-    ctx.lineWidth = 1
-    ctx.beginPath()
-    ctx.roundRect(boxX + 12, boxY - 14, nameW, 22, 6)
-    ctx.stroke()
-
     ctx.fillStyle = '#0a0a0f'
     ctx.font = 'bold 12px monospace'
     ctx.textAlign = 'left'
     ctx.fillText(speaker, boxX + 20, boxY + 2)
   }
 
-  // Text with typewriter effect
   const visibleText = text.substring(0, charIndex)
   ctx.fillStyle = '#f0f0f0'
   ctx.font = '13px monospace'
@@ -515,7 +349,6 @@ function drawDialogBox(ctx, viewW, viewH, speaker, text, charIndex) {
   }
   ctx.fillText(line, boxX + 20, lineY)
 
-  // Continue indicator
   if (charIndex >= text.length) {
     const blink = Math.sin(Date.now() * 0.008) > 0
     if (blink) {
@@ -571,6 +404,6 @@ function canMove(map, x, y) {
 
 export {
   TILE, COLS, ROWS, T, ZONES, NPCS,
-  generateMap, drawTile, drawZoneLabel, drawNPC, drawDialogBox,
-  CHAR_FRAMES, getCamera, getAdjacentZone, getAdjacentNPC, canMove,
+  generateMap, drawZoneLabel, drawNPCLabel, drawDialogBox,
+  getCamera, getAdjacentZone, getAdjacentNPC, canMove,
 }
