@@ -4,11 +4,12 @@ import {
   generateMap, drawTile, drawZoneLabel, drawNPC, drawDialogBox,
   CHAR_FRAMES, getCamera, getAdjacentZone, getAdjacentNPC, canMove,
 } from '../game/engine'
+import { createSpriteAtlas } from '../game/sprites'
 import { useGameState } from '../hooks/useGameState'
 
-const MOVE_SPEED = 1.5 // pixels per frame
+const MOVE_SPEED = 2.5 // pixels per frame
 const TEXT_SPEED = 2 // chars per frame
-const SCALE = 4 // zoom level like Pokemon (16px tiles * 4 = 64px on screen)
+const SCALE = 3 // zoom level (32px tiles * 3 = 96px on screen)
 
 export default function RPGCanvas({ onOpenZone }) {
   const canvasRef = useRef(null)
@@ -23,13 +24,16 @@ export default function RPGCanvas({ onOpenZone }) {
     const canvas = canvasRef.current
     const ctx = canvas.getContext('2d')
 
+    // Create the sprite atlas once at startup
+    const atlas = createSpriteAtlas()
+
     const game = {
       // Character pixel position
-      px: 10 * TILE, py: 45 * TILE,
+      px: 8 * TILE, py: 38 * TILE,
       // Target tile position
-      targetTX: 10, targetTY: 45,
+      targetTX: 8, targetTY: 38,
       // Current tile
-      tileX: 10, tileY: 45,
+      tileX: 8, tileY: 38,
       direction: 'down',
       moving: false,
       animFrame: 0,
@@ -39,7 +43,7 @@ export default function RPGCanvas({ onOpenZone }) {
       // Input
       keys: {},
       // Dialog
-      dialog: null, // { speaker, lines, lineIndex, charIndex, done }
+      dialog: null,
       // Tick
       tick: 0,
       // Intro
@@ -54,6 +58,8 @@ export default function RPGCanvas({ onOpenZone }) {
         { speaker: '', text: 'Ton aventure commence maintenant.' },
       ],
       introCharIdx: 0,
+      // Atlas reference
+      atlas,
     }
     gameRef.current = game
 
@@ -67,7 +73,6 @@ export default function RPGCanvas({ onOpenZone }) {
     function onKeyDown(e) {
       game.keys[e.key] = true
 
-      // Space/Enter = interact or advance dialog
       if (e.key === ' ' || e.key === 'Enter') {
         e.preventDefault()
         handleInteract()
@@ -146,7 +151,6 @@ export default function RPGCanvas({ onOpenZone }) {
       // === UPDATE ===
       if (!game.intro && !game.dialog) {
         if (!game.moving) {
-          // Check input for new movement
           let dx = 0, dy = 0
           if (game.keys['ArrowUp'] || game.keys['z'] || game.keys['w']) { dy = -1; game.direction = 'up' }
           else if (game.keys['ArrowDown'] || game.keys['s']) { dy = 1; game.direction = 'down' }
@@ -182,7 +186,6 @@ export default function RPGCanvas({ onOpenZone }) {
             game.py += (ddy / dist) * MOVE_SPEED
           }
 
-          // Walk animation
           game.animTick++
           if (game.animTick % 8 === 0) {
             game.animFrame = (game.animFrame + 1) % 3
@@ -219,7 +222,6 @@ export default function RPGCanvas({ onOpenZone }) {
       }
 
       // === RENDER ===
-      // Scaled viewport dimensions (what the camera sees)
       const svw = vw / SCALE
       const svh = vh / SCALE
       const cam = getCamera(game.px + TILE / 2, game.py + TILE / 2, svw, svh)
@@ -228,7 +230,10 @@ export default function RPGCanvas({ onOpenZone }) {
       ctx.fillStyle = '#0a0a0f'
       ctx.fillRect(0, 0, vw, vh)
 
-      // Apply zoom scale for world rendering
+      // Disable image smoothing for crisp pixel art
+      ctx.imageSmoothingEnabled = false
+
+      // Apply zoom
       ctx.save()
       ctx.scale(SCALE, SCALE)
 
@@ -240,7 +245,7 @@ export default function RPGCanvas({ onOpenZone }) {
 
       for (let y = Math.max(0, sr); y < er; y++) {
         for (let x = Math.max(0, sc); x < ec; x++) {
-          drawTile(ctx, game.map[y][x], x * TILE - cam.x, y * TILE - cam.y, game.tick)
+          drawTile(ctx, game.map[y][x], x * TILE - cam.x, y * TILE - cam.y, game.tick, atlas)
         }
       }
 
@@ -249,7 +254,7 @@ export default function RPGCanvas({ onOpenZone }) {
         const npx = npc.x * TILE - cam.x
         const npy = npc.y * TILE - cam.y
         if (npx > -TILE && npx < svw + TILE && npy > -TILE && npy < svh + TILE) {
-          drawNPC(ctx, npc, npx, npy, game.tick)
+          drawNPC(ctx, npc, npx, npy, game.tick, atlas)
         }
       }
 
@@ -267,12 +272,15 @@ export default function RPGCanvas({ onOpenZone }) {
       const cpx = game.px - cam.x
       const cpy = game.py - cam.y
       const frames = CHAR_FRAMES[game.direction] || CHAR_FRAMES.down
-      frames[game.animFrame](ctx, cpx, cpy)
+      frames[game.animFrame](ctx, cpx, cpy, atlas)
 
-      // Restore scale for UI overlay (dialogs, prompts at native resolution)
+      // Restore scale for UI overlay
       ctx.restore()
 
-      // Draw prompt (native resolution)
+      // Re-enable smoothing for text/UI
+      ctx.imageSmoothingEnabled = true
+
+      // Draw prompt
       if (promptText && !game.dialog && !game.intro) {
         ctx.font = 'bold 13px monospace'
         const pw = ctx.measureText(promptText).width + 40
@@ -288,19 +296,17 @@ export default function RPGCanvas({ onOpenZone }) {
         ctx.fillText(promptText, vw / 2, vh - 32)
       }
 
-      // Draw dialog (native resolution)
+      // Draw dialog
       if (game.dialog) {
         const line = game.dialog.lines[game.dialog.lineIndex]
         drawDialogBox(ctx, vw, vh, game.dialog.speaker, line, Math.floor(game.dialog.charIndex))
       }
 
-      // Draw intro (native resolution)
+      // Draw intro
       if (game.intro && game.introStep < game.introTexts.length) {
-        // Dark overlay
         ctx.fillStyle = 'rgba(0,0,0,0.7)'
         ctx.fillRect(0, 0, vw, vh)
 
-        // Title
         ctx.fillStyle = '#c7b777'
         ctx.font = 'bold 28px monospace'
         ctx.textAlign = 'center'
@@ -310,7 +316,6 @@ export default function RPGCanvas({ onOpenZone }) {
         ctx.fillStyle = '#a89a5e'
         ctx.fillText('Vendeur d\'Exception - Niveau 0', vw / 2, vh / 3 + 30)
 
-        // Intro text
         const it = game.introTexts[game.introStep]
         drawDialogBox(ctx, vw, vh, it.speaker || 'VDX', it.text, Math.floor(game.introCharIdx))
       }
@@ -334,7 +339,6 @@ export default function RPGCanvas({ onOpenZone }) {
   }, [])
 
   const mobileInteract = useCallback(() => {
-    // Simulate space press
     if (gameRef.current) {
       const e = new KeyboardEvent('keydown', { key: ' ' })
       window.dispatchEvent(e)
