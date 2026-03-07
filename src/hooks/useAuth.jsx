@@ -27,7 +27,12 @@ export function AuthProvider({ children }) {
 
   const signUp = async (email, password) => {
     if (!supabase) return { error: { message: 'Supabase non configure' } }
-    const { error } = await supabase.auth.signUp({ email, password })
+    const redirectTo = window.location.origin
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: redirectTo },
+    })
     return { error }
   }
 
