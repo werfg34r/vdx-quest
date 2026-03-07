@@ -8,6 +8,7 @@ import { useGameState } from '../hooks/useGameState'
 
 const MOVE_SPEED = 2.5 // pixels per frame
 const TEXT_SPEED = 2 // chars per frame
+const SCALE = 3 // zoom level like Pokemon
 
 export default function RPGCanvas({ onOpenZone }) {
   const canvasRef = useRef(null)
@@ -218,17 +219,24 @@ export default function RPGCanvas({ onOpenZone }) {
       }
 
       // === RENDER ===
-      const cam = getCamera(game.px + TILE / 2, game.py + TILE / 2, vw, vh)
+      // Scaled viewport dimensions (what the camera sees)
+      const svw = vw / SCALE
+      const svh = vh / SCALE
+      const cam = getCamera(game.px + TILE / 2, game.py + TILE / 2, svw, svh)
 
       // Black background
       ctx.fillStyle = '#0a0a0f'
       ctx.fillRect(0, 0, vw, vh)
 
+      // Apply zoom scale for world rendering
+      ctx.save()
+      ctx.scale(SCALE, SCALE)
+
       // Draw tiles
       const sc = Math.floor(cam.x / TILE)
       const sr = Math.floor(cam.y / TILE)
-      const ec = Math.min(sc + Math.ceil(vw / TILE) + 2, COLS)
-      const er = Math.min(sr + Math.ceil(vh / TILE) + 2, ROWS)
+      const ec = Math.min(sc + Math.ceil(svw / TILE) + 2, COLS)
+      const er = Math.min(sr + Math.ceil(svh / TILE) + 2, ROWS)
 
       for (let y = Math.max(0, sr); y < er; y++) {
         for (let x = Math.max(0, sc); x < ec; x++) {
@@ -240,7 +248,7 @@ export default function RPGCanvas({ onOpenZone }) {
       for (const npc of NPCS) {
         const npx = npc.x * TILE - cam.x
         const npy = npc.y * TILE - cam.y
-        if (npx > -TILE && npx < vw + TILE && npy > -TILE && npy < vh + TILE) {
+        if (npx > -TILE && npx < svw + TILE && npy > -TILE && npy < svh + TILE) {
           drawNPC(ctx, npc, npx, npy, game.tick)
         }
       }
@@ -250,7 +258,7 @@ export default function RPGCanvas({ onOpenZone }) {
       for (const zone of ZONES) {
         const zpx = zone.x * TILE - cam.x
         const zpy = zone.y * TILE - cam.y
-        if (zpx > -100 && zpx < vw + 100 && zpy > -40 && zpy < vh + 40) {
+        if (zpx > -100 && zpx < svw + 100 && zpy > -40 && zpy < svh + 40) {
           drawZoneLabel(ctx, zone, zpx, zpy, wp[zone.id]?.unlocked, wp[zone.id]?.completed)
         }
       }
@@ -258,12 +266,15 @@ export default function RPGCanvas({ onOpenZone }) {
       // Draw character
       const cpx = game.px - cam.x
       const cpy = game.py - cam.y
-      const dir = game.moving ? game.direction : game.direction
-      const frames = CHAR_FRAMES[dir] || CHAR_FRAMES.down
+      const frames = CHAR_FRAMES[game.direction] || CHAR_FRAMES.down
       frames[game.animFrame](ctx, cpx, cpy)
 
-      // Draw prompt
+      // Restore scale for UI overlay (dialogs, prompts at native resolution)
+      ctx.restore()
+
+      // Draw prompt (native resolution)
       if (promptText && !game.dialog && !game.intro) {
+        ctx.font = 'bold 13px monospace'
         const pw = ctx.measureText(promptText).width + 40
         ctx.fillStyle = 'rgba(5,5,15,0.85)'
         ctx.strokeStyle = '#c7b777'
@@ -273,18 +284,17 @@ export default function RPGCanvas({ onOpenZone }) {
         ctx.fill()
         ctx.stroke()
         ctx.fillStyle = '#c7b777'
-        ctx.font = 'bold 13px monospace'
         ctx.textAlign = 'center'
         ctx.fillText(promptText, vw / 2, vh - 32)
       }
 
-      // Draw dialog
+      // Draw dialog (native resolution)
       if (game.dialog) {
         const line = game.dialog.lines[game.dialog.lineIndex]
         drawDialogBox(ctx, vw, vh, game.dialog.speaker, line, Math.floor(game.dialog.charIndex))
       }
 
-      // Draw intro
+      // Draw intro (native resolution)
       if (game.intro && game.introStep < game.introTexts.length) {
         // Dark overlay
         ctx.fillStyle = 'rgba(0,0,0,0.7)'
