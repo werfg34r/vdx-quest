@@ -1,0 +1,244 @@
+[
+  {
+    "id": 1,
+    "month": 1,
+    "title": "Arreter la fuite mentale",
+    "subtitle": "Sortir de la tete, entrer dans le reel",
+    "description": "Poser une verite ecrite, inventorier tes competences, couper le bruit.",
+    "xpTotal": 300,
+    "statsReward": { "clarte": 15, "courage": 5, "terrain": 0, "structure": 5 },
+    "quests": [
+      { "id": "w1q1", "text": "Ecrire ton texte fondateur (2+ pages, phrase 'Je fais ca parce que...', 10 lignes 'plus jamais')", "xp": 100 },
+      { "id": "w1q2", "text": "Inventaire honnete : 4 listes de competences + 3 piliers de valeur + 10 preuves", "xp": 100 },
+      { "id": "w1q3", "text": "7 jours sans surconsommation (tracking coche + rituel quotidien fixe)", "xp": 100 }
+    ],
+    "reflections": [
+      { "id": "w1r1", "question": "Pourquoi entreprendre, dans ta verite a toi ? Quelle partie de toi veut reprendre le volant ?" },
+      { "id": "w1r2", "question": "Complete 10 phrases 'Plus jamais je...' - quelles situations tu bannis ?" },
+      { "id": "w1r3", "question": "Qu'est-ce que tu caches aux autres sur ton immobilite actuelle ?" }
+    ]
+  },
+  {
+    "id": 2,
+    "month": 1,
+    "title": "Choisir un probleme (pas une idee)",
+    "subtitle": "Du flou a la direction",
+    "description": "Identifier un probleme reel, definir qui le vit, formuler une phrase simple.",
+    "xpTotal": 400,
+    "statsReward": { "clarte": 15, "courage": 10, "terrain": 10, "structure": 5 },
+    "quests": [
+      { "id": "w2q1", "text": "Problem Dossier complet : Problem Statement + carte du probleme + scene du quotidien (6 lignes)", "xp": 100 },
+      { "id": "w2q2", "text": "Fiche ICP V0 complete (8 blocs) + liste de 50 personnes potentielles", "xp": 100 },
+      { "id": "w2q3", "text": "10 variantes de phrase ecrites, 1 phrase officielle choisie, 3 versions pretes", "xp": 100 },
+      { "id": "w2q4", "text": "10 conversations courtes realisees + table Top pains / wins / objections (V0)", "xp": 100 }
+    ],
+    "reflections": [
+      { "id": "w2r1", "question": "Quel probleme as-tu retenu et pourquoi celui-la specifiquement ?" },
+      { "id": "w2r2", "question": "Ecris ta phrase officielle S2 : 'J'aide [qui] a [resultat] grace a [mecanisme]'" },
+      { "id": "w2r3", "question": "Quelles phrases exactes as-tu entendues lors de tes 10 conversations ?" }
+    ]
+  },
+  {
+    "id": 3,
+    "month": 1,
+    "title": "Formuler une offre minimale",
+    "subtitle": "De la reflexion a la proposition",
+    "description": "Creer une offre simple, fixer un prix, ecrire la promesse.",
+    "xpTotal": 450,
+    "statsReward": { "clarte": 10, "courage": 15, "terrain": 5, "structure": 15 },
+    "quests": [
+      { "id": "w3q1", "text": "Fiche offre V0 (12 lignes) + phrase simple + pitch DM pret", "xp": 120 },
+      { "id": "w3q2", "text": "Prix choisi (un seul chiffre) + regle de paiement ecrite + phrase d'annonce stable", "xp": 110 },
+      { "id": "w3q3", "text": "Promesse en 3 phrases + 5 points 'ce que je fais' + 5 points 'ce que tu fais'", "xp": 110 },
+      { "id": "w3q4", "text": "Mini-page d'offre (1 ecran) avec titre, pour qui, livrables, prix, CTA", "xp": 110 }
+    ],
+    "reflections": [
+      { "id": "w3r1", "question": "Decris ton offre minimale en 3 lignes : pour qui, quel resultat, quel format ?" },
+      { "id": "w3r2", "question": "Quel prix as-tu choisi et pourquoi ce chiffre specifiquement ?" },
+      { "id": "w3r3", "question": "Quelle emotion ressens-tu quand tu imagines annoncer ton prix a quelqu'un ?" }
+    ]
+  },
+  {
+    "id": 4,
+    "month": 1,
+    "title": "Existence publique minimale",
+    "subtitle": "Devenir visible",
+    "description": "Choisir un canal, creer une presence claire, publier 3 fois.",
+    "xpTotal": 400,
+    "statsReward": { "clarte": 5, "courage": 20, "terrain": 10, "structure": 5 },
+    "quests": [
+      { "id": "w4q1", "text": "Canal unique choisi + engagement 30 jours ecrit + routine quotidienne definie", "xp": 100 },
+      { "id": "w4q2", "text": "Profil optimise : bio en 3 lignes + point d'entree unique + post epingle", "xp": 100 },
+      { "id": "w4q3", "text": "3 publications publiees (prise de conscience + erreur frequente + intention)", "xp": 100 },
+      { "id": "w4q4", "text": "Document 'verbatims' demarre avec premiers signaux terrain", "xp": 100 }
+    ],
+    "reflections": [
+      { "id": "w4r1", "question": "Quel canal as-tu choisi et pourquoi celui-la ?" },
+      { "id": "w4r2", "question": "Ecris ta bio en 3 lignes telle qu'elle apparait sur ton profil" },
+      { "id": "w4r3", "question": "Qu'as-tu ressenti en publiant pour la premiere fois ?" }
+    ]
+  },
+  {
+    "id": 5,
+    "month": 2,
+    "title": "Parler a des humains (vraiment)",
+    "subtitle": "Du profil aux conversations",
+    "description": "Lister 50 personnes, demarrer 20-30 conversations, noter les mots exacts.",
+    "xpTotal": 500,
+    "statsReward": { "clarte": 5, "courage": 15, "terrain": 20, "structure": 5 },
+    "quests": [
+      { "id": "w5q1", "text": "Liste 50 remplie et segmentee (prenom, profil, source, canal, date de contact)", "xp": 120 },
+      { "id": "w5q2", "text": "20-30 conversations realisees et documentees avec statut et prochaine action", "xp": 150 },
+      { "id": "w5q3", "text": "Document Voice of Customer rempli + tableau Top pains / wins / objections alimente", "xp": 120 },
+      { "id": "w5q4", "text": "5-10 citations 'or' pretes + 3 idees de posts issues du terrain", "xp": 110 }
+    ],
+    "reflections": [
+      { "id": "w5r1", "question": "Quelles sont les 3 douleurs qui reviennent le plus souvent dans tes conversations ?" },
+      { "id": "w5r2", "question": "Quelle phrase client t'a le plus surpris ou touche ?" },
+      { "id": "w5r3", "question": "Qu'as-tu appris sur ton offre que tu ne savais pas avant ces conversations ?" }
+    ]
+  },
+  {
+    "id": 6,
+    "month": 2,
+    "title": "Proposer sans se cacher",
+    "subtitle": "L'exposition reelle",
+    "description": "Selectionner 10 personnes chaudes, faire des propositions directes, dire le prix.",
+    "xpTotal": 550,
+    "statsReward": { "clarte": 5, "courage": 20, "terrain": 15, "structure": 5 },
+    "quests": [
+      { "id": "w6q1", "text": "10 personnes 'chaudes' selectionnees avec grille de scoring (douleur, urgence, capacite, connexion)", "xp": 100 },
+      { "id": "w6q2", "text": "10 propositions envoyees avec format : contexte + proposition + resultat + prix + decision", "xp": 150 },
+      { "id": "w6q3", "text": "Prix annonce a chaque proposition (une seule fois, sans justifier)", "xp": 150 },
+      { "id": "w6q4", "text": "Tableau de suivi rempli : reponses, verbatims, objections, prochaines actions datees", "xp": 150 }
+    ],
+    "reflections": [
+      { "id": "w6r1", "question": "Decris le moment ou tu as annonce ton prix pour la premiere fois. Qu'as-tu ressenti ?" },
+      { "id": "w6r2", "question": "Quelles sont les 3 objections principales que tu as recues ?" },
+      { "id": "w6r3", "question": "Comment ta posture a-t-elle change entre la 1ere et la 10e proposition ?" }
+    ]
+  },
+  {
+    "id": 7,
+    "month": 2,
+    "title": "Le test de realite",
+    "subtitle": "De l'interet a l'engagement",
+    "description": "Obtenir des engagements reels, livrer serieusement, demander du feedback.",
+    "xpTotal": 600,
+    "statsReward": { "clarte": 5, "courage": 15, "terrain": 15, "structure": 15 },
+    "quests": [
+      { "id": "w7q1", "text": "1 a 5 engagements reels obtenus (paiement, reservation, signature, date confirmee)", "xp": 200 },
+      { "id": "w7q2", "text": "Livraison structuree realisee (Delivery Pack + trame en 4 blocs + livrable remis)", "xp": 150 },
+      { "id": "w7q3", "text": "Feedback collecte avec 7 questions + au moins 2 retours exploitables", "xp": 130 },
+      { "id": "w7q4", "text": "Tableau 'declencheurs / freins / leviers de confiance' rempli", "xp": 120 }
+    ],
+    "reflections": [
+      { "id": "w7r1", "question": "Decris ton premier engagement reel : qui, quoi, comment ca s'est passe ?" },
+      { "id": "w7r2", "question": "Qu'as-tu appris en livrant que tu n'aurais jamais appris en reflechissant ?" },
+      { "id": "w7r3", "question": "Quel feedback t'a le plus aide a progresser ?" }
+    ]
+  },
+  {
+    "id": 8,
+    "month": 2,
+    "title": "Ajuster et devenir evident",
+    "subtitle": "Parler la langue du marche",
+    "description": "Construire ta base verbatims, reecrire ton offre en langage client, proposer a nouveau.",
+    "xpTotal": 500,
+    "statsReward": { "clarte": 15, "courage": 5, "terrain": 10, "structure": 15 },
+    "quests": [
+      { "id": "w8q1", "text": "Doc VERBATIMS_MASTER rempli (30+ phrases classees : symptomes, emotions, desirs, freins)", "xp": 100 },
+      { "id": "w8q2", "text": "Dictionnaire Client termine + promesse en 3 formats + offre 1 page 'evidence'", "xp": 100 },
+      { "id": "w8q3", "text": "3 scripts operationnels (clarification + proposition + stabilisation)", "xp": 100 },
+      { "id": "w8q4", "text": "2 contenus 'evidence' publies + 10 propositions avec nouveau langage envoyees", "xp": 100 },
+      { "id": "w8q5", "text": "Message Pack pret (bio + DM d'entree + mini pitch) + cadence quotidienne installee", "xp": 100 }
+    ],
+    "reflections": [
+      { "id": "w8r1", "question": "Quels mots tes clients utilisent-ils que tu n'aurais jamais utilises toi-meme ?" },
+      { "id": "w8r2", "question": "Compare ta promesse de la semaine 3 avec celle d'aujourd'hui : qu'est-ce qui a change ?" },
+      { "id": "w8r3", "question": "Quel contenu a genere le plus de reactions et pourquoi selon toi ?" }
+    ]
+  },
+  {
+    "id": 9,
+    "month": 3,
+    "title": "Poser une structure simple (et tenable)",
+    "subtitle": "De l'action isolee a la boucle",
+    "description": "Ecrire ton systeme en 1 page, choisir une facon d'attirer et de vendre, standardiser ta livraison.",
+    "xpTotal": 450,
+    "statsReward": { "clarte": 10, "courage": 5, "terrain": 5, "structure": 25 },
+    "quests": [
+      { "id": "w9q1", "text": "Document BOUCLE_MINIMALE ecrit (1 page : decouverte, conversation, proposition, livraison, reprise)", "xp": 100 },
+      { "id": "w9q2", "text": "Moteur d'acquisition choisi (contenu+DM ou commentaires+DM ou live+DM) + creneaux au calendrier", "xp": 90 },
+      { "id": "w9q3", "text": "Methode de vente unique choisie (DM / call / page+DM) + script ecrit + CTA final", "xp": 90 },
+      { "id": "w9q4", "text": "Template de livraison standardise (trame 4 blocs) + discipline debut/fin", "xp": 80 },
+      { "id": "w9q5", "text": "Pipeline cree (15+ contacts avec prochaine action datee) + semaine-type ecrite", "xp": 90 }
+    ],
+    "reflections": [
+      { "id": "w9r1", "question": "Decris ta boucle minimale en 4 phrases : comment on te trouve, on te parle, tu proposes, tu livres ?" },
+      { "id": "w9r2", "question": "Quel moteur d'acquisition as-tu choisi et pourquoi ?" },
+      { "id": "w9r3", "question": "A quoi ressemble ta semaine-type ideale ?" }
+    ]
+  },
+  {
+    "id": 10,
+    "month": 3,
+    "title": "Installer une routine d'action non negociable",
+    "subtitle": "De la motivation a la constance",
+    "description": "Definir ton minimum hebdo, bloquer des creneaux fixes, installer un suivi quotidien.",
+    "xpTotal": 450,
+    "statsReward": { "clarte": 5, "courage": 10, "terrain": 10, "structure": 20 },
+    "quests": [
+      { "id": "w10q1", "text": "Minimum hebdo chiffre defini (Visibilite / Conversations / Propositions / Livraison) + repartition 5 jours", "xp": 100 },
+      { "id": "w10q2", "text": "Calendrier semaine-type installe avec blocs recurrents (Acquisition / Conv-Prop / Livraison)", "xp": 90 },
+      { "id": "w10q3", "text": "Suivi quotidien active (4 chiffres + action maitresse) pendant 7 jours", "xp": 90 },
+      { "id": "w10q4", "text": "Pipeline operationnel (25+ contacts, statuts, prochaine action datee pour chaque ligne)", "xp": 80 },
+      { "id": "w10q5", "text": "Revue hebdomadaire effectuee (score, top 10 leads, 3 sujets contenu, creneaux semaine suivante)", "xp": 90 }
+    ],
+    "reflections": [
+      { "id": "w10r1", "question": "Quels sont tes 4 chiffres socle pour la semaine et pourquoi ces chiffres ?" },
+      { "id": "w10r2", "question": "Qu'est-ce qui te disperse le plus et comment tu comptes le gerer ?" },
+      { "id": "w10r3", "question": "Comment tu te sens quand tu suis ta routine vs quand tu improvises ?" }
+    ]
+  },
+  {
+    "id": 11,
+    "month": 3,
+    "title": "Assumer publiquement ta posture",
+    "subtitle": "Devenir referable",
+    "description": "Nettoyer ton profil, faire une prise de parole assumee, mettre un point d'entree clair.",
+    "xpTotal": 400,
+    "statsReward": { "clarte": 10, "courage": 20, "terrain": 10, "structure": 5 },
+    "quests": [
+      { "id": "w11q1", "text": "Profil identifiable en 5 secondes (bio 5 blocs + element epingle + 3 preuves visibles)", "xp": 100 },
+      { "id": "w11q2", "text": "Prise de parole 'je fais ca' publiee (7 blocs : depart, territoire, pour qui, outputs, maniere, preuve, entree)", "xp": 120 },
+      { "id": "w11q3", "text": "Point d'entree unique actif + sequence DM en 3 messages + pipeline alimente (20-40 contacts)", "xp": 100 },
+      { "id": "w11q4", "text": "Coherence totale tenue 7 jours (meme phrase, meme CTA, meme promesse)", "xp": 80 }
+    ],
+    "reflections": [
+      { "id": "w11r1", "question": "Ecris ta phrase unique memorable : 'Tu fais quoi ?' → ta reponse en 1 phrase" },
+      { "id": "w11r2", "question": "Qu'est-ce qui a change dans ta facon de te presenter depuis la semaine 1 ?" },
+      { "id": "w11r3", "question": "Comment reagissent les gens quand tu assumes publiquement ta posture ?" }
+    ]
+  },
+  {
+    "id": 12,
+    "month": 3,
+    "title": "Cloturer le Niveau 0 et verrouiller le passage",
+    "subtitle": "Integrer, prouver, continuer",
+    "description": "Bilan complet, preuves factuelles, simplification radicale, pacte de continuite.",
+    "xpTotal": 500,
+    "statsReward": { "clarte": 15, "courage": 10, "terrain": 10, "structure": 15 },
+    "quests": [
+      { "id": "w12q1", "text": "Bilan N0 ecrit (actions, 3 moments de bascule, effets, dispersions, decisions de continuite)", "xp": 120 },
+      { "id": "w12q2", "text": "Tableau de preuves factuelles rempli (S1-S12) + banque verbatims (15+ entrees) + cockpit hebdo", "xp": 120 },
+      { "id": "w12q3", "text": "Core Stack ecrit (canal + offre + vente + livraison) + pack operationnel (scripts + template + pipeline)", "xp": 130 },
+      { "id": "w12q4", "text": "Pacte de continuite signe et date (3 actions hebdo + revue hebdo planifiee + 1er acte public lance)", "xp": 130 }
+    ],
+    "reflections": [
+      { "id": "w12r1", "question": "Quel a ete ton plus grand moment de bascule pendant ces 12 semaines ?" },
+      { "id": "w12r2", "question": "Qu'est-ce qui est devenu irreversible en toi ?" },
+      { "id": "w12r3", "question": "Ecris ton pacte : quelles 3 actions non negociables tu t'engages a repeter chaque semaine ?" }
+    ]
+  }
+]
