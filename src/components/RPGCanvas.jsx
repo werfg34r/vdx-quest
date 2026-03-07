@@ -6,9 +6,9 @@ import {
 } from '../game/engine'
 import { useGameState } from '../hooks/useGameState'
 
-const MOVE_SPEED = 2.5 // pixels per frame
+const MOVE_SPEED = 1.5 // pixels per frame
 const TEXT_SPEED = 2 // chars per frame
-const SCALE = 3 // zoom level like Pokemon
+const SCALE = 4 // zoom level like Pokemon (16px tiles * 4 = 64px on screen)
 
 export default function RPGCanvas({ onOpenZone }) {
   const canvasRef = useRef(null)
@@ -25,11 +25,11 @@ export default function RPGCanvas({ onOpenZone }) {
 
     const game = {
       // Character pixel position
-      px: 8 * TILE, py: 38 * TILE,
+      px: 10 * TILE, py: 45 * TILE,
       // Target tile position
-      targetTX: 8, targetTY: 38,
+      targetTX: 10, targetTY: 45,
       // Current tile
-      tileX: 8, tileY: 38,
+      tileX: 10, tileY: 45,
       direction: 'down',
       moving: false,
       animFrame: 0,
