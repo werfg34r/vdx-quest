@@ -10,9 +10,10 @@ const T = {
   FLOWER: 6, BRIDGE: 7, FENCE: 8, DARK_GRASS: 9, SAND: 10,
   ROOF: 11, WALL: 12, DOOR: 13, SIGN: 14, CHEST: 15,
   STONE_PATH: 16, TALL_GRASS: 17, WATER_EDGE: 18, HOUSE_WALL: 19,
+  ROOF_L: 20, ROOF_R: 21, WALL_L: 22, WALL_R: 23,
 }
 
-const SOLID = new Set([T.WATER, T.TREE, T.MOUNTAIN, T.FENCE, T.WALL, T.ROOF, T.HOUSE_WALL, T.WATER_EDGE])
+const SOLID = new Set([T.WATER, T.TREE, T.MOUNTAIN, T.FENCE, T.WALL, T.ROOF, T.HOUSE_WALL, T.WATER_EDGE, T.ROOF_L, T.ROOF_R, T.WALL_L, T.WALL_R])
 
 // Zone definitions (12 weeks)
 const ZONES = [
@@ -180,21 +181,63 @@ function generateMap() {
     drawPath(map, waypoints[i], waypoints[i + 1], rng)
   }
 
-  // Place zone buildings
+  // Place zone buildings (3 wide x 3 tall with proper edges)
   for (const zone of ZONES) {
-    for (let dy = -1; dy <= 2; dy++) {
-      for (let dx = -1; dx <= 2; dx++) {
+    // Clear area around building
+    for (let dy = -2; dy <= 3; dy++) {
+      for (let dx = -2; dx <= 4; dx++) {
         const nx = zone.x + dx, ny = zone.y + dy
         if (nx >= 0 && ny >= 0 && nx < COLS && ny < ROWS) map[ny][nx] = T.PATH
       }
     }
+    // Roof row (3 wide)
+    map[zone.y - 1][zone.x - 1] = T.ROOF_L
     map[zone.y - 1][zone.x] = T.ROOF
     map[zone.y - 1][zone.x + 1] = T.ROOF
+    map[zone.y - 1][zone.x + 2] = T.ROOF_R
+    // Wall row (3 wide)
+    map[zone.y][zone.x - 1] = T.WALL_L
     map[zone.y][zone.x] = T.WALL
     map[zone.y][zone.x + 1] = T.WALL
+    map[zone.y][zone.x + 2] = T.WALL_R
+    // Door row
+    map[zone.y + 1][zone.x - 1] = T.WALL_L
     map[zone.y + 1][zone.x] = T.DOOR
     map[zone.y + 1][zone.x + 1] = T.WALL
-    if (zone.x + 2 < COLS) map[zone.y + 1][zone.x + 2] = T.SIGN
+    map[zone.y + 1][zone.x + 2] = T.WALL_R
+    // Sign next to building
+    if (zone.x + 3 < COLS) map[zone.y + 1][zone.x + 3] = T.SIGN
+  }
+
+  // Add sand shores around water
+  for (let y = 1; y < ROWS - 1; y++) {
+    for (let x = 1; x < COLS - 1; x++) {
+      if (map[y][x] !== T.WATER) continue
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          if (dx === 0 && dy === 0) continue
+          const nx = x + dx, ny = y + dy
+          if (nx >= 0 && ny >= 0 && nx < COLS && ny < ROWS) {
+            const t = map[ny][nx]
+            if (t === T.GRASS || t === T.DARK_GRASS || t === T.FLOWER || t === T.TALL_GRASS) {
+              map[ny][nx] = T.SAND
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Add extra flower clusters for beauty
+  for (const [cx, cy, r] of [[12, 36], [22, 33], [40, 30], [18, 15], [28, 8], [36, 6]]) {
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -2; dx <= 2; dx++) {
+        const nx = (cx || 0) + dx, ny = (cy || 0) + dy
+        if (nx > 0 && ny > 0 && nx < COLS - 1 && ny < ROWS - 1 && rng() > 0.4) {
+          if (map[ny][nx] === T.GRASS || map[ny][nx] === T.DARK_GRASS) map[ny][nx] = T.FLOWER
+        }
+      }
+    }
   }
 
   for (const npc of NPCS) {

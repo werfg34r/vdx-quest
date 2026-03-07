@@ -56,8 +56,12 @@ const TILE_COORDS = {
   fence: { x: 6, y: 3, needsBase: 'grass' },
   // Building roof (slight transparency - needs grass base)
   roof: { x: 8, y: 0, needsBase: 'grass' },
+  roofL: { x: 7, y: 0, needsBase: 'grass' },
+  roofR: { x: 9, y: 0, needsBase: 'grass' },
   // Building wall (fully opaque)
   wall: { x: 8, y: 1 },
+  wallL: { x: 7, y: 1, needsBase: 'grass' },
+  wallR: { x: 9, y: 1, needsBase: 'grass' },
   // Building door (fully opaque)
   door: { x: 8, y: 2 },
   // Sign (has transparency - needs path base)
@@ -194,6 +198,22 @@ export function drawSpriteTile(ctx, atlas, tileType, px, py, tick) {
       break
     case 10: // SAND
       blitTile(ctx, img, pickCoord(tc.sand, px, py), px, py)
+      break
+    case 20: // ROOF_L
+      drawBase(ctx, img, 'grass', px, py)
+      blitTile(ctx, img, tc.roofL, px, py)
+      break
+    case 21: // ROOF_R
+      drawBase(ctx, img, 'grass', px, py)
+      blitTile(ctx, img, tc.roofR, px, py)
+      break
+    case 22: // WALL_L
+      drawBase(ctx, img, 'grass', px, py)
+      blitTile(ctx, img, tc.wallL, px, py)
+      break
+    case 23: // WALL_R
+      drawBase(ctx, img, 'grass', px, py)
+      blitTile(ctx, img, tc.wallR, px, py)
       break
     default:
       blitTile(ctx, img, tc.grass[0], px, py)
