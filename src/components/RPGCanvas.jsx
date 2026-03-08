@@ -1,4 +1,6 @@
-// VDX Quest — Main Game Canvas (Complete Rewrite)
+// ============================================================
+// VDX Quest — Main Game Canvas (Written from scratch)
+// ============================================================
 import { useEffect, useRef, useState, useCallback } from 'react'
 import {
   TILE, COLS, ROWS, ZONES, NPCS,
@@ -6,9 +8,10 @@ import {
   getAdjacentZone, getAdjacentNPC, getAdjacentInteriorNPC, canMove, updateNPCs,
 } from '../game/engine'
 import {
-  loadSpriteAtlas, drawSpriteTile, drawPlayerSprite, drawNPCSprite,
+  loadSpriteAtlas, drawTile, drawTree, drawTreeShadow,
+  drawHouse, drawHouseShadow, drawWindowGlow,
+  drawPlayer, drawNPC, drawShadow,
   drawInteriorTile, generateInterior, canMoveInterior, IT,
-  drawCharacterShadow, drawTreeShadow, drawHouseShadow, drawHouseSprite, drawWindowGlow,
 } from '../game/sprites'
 import {
   ParticleSystem, DayNightCycle, Minimap, MINIMAP_TILE_COLORS, renderVignette,
@@ -19,9 +22,9 @@ const SCALE = 3
 const MOVE_FRAMES = 8
 const ANIM_SPEED = 8
 const TEXT_SPEED = 0.6
-const TRANSITION_FRAMES = 30
+const FADE_FRAMES = 30
 
-const INTRO_TEXTS = [
+const INTRO = [
   { speaker: '', text: '...' },
   { speaker: '', text: 'Tu ouvres les yeux.' },
   { speaker: '', text: 'Devant toi, un monde s\'etend. Le Monde VDX.' },
@@ -43,42 +46,38 @@ export default function RPGCanvas({ onOpenZone }) {
   const [loading, setLoading] = useState(true)
   const [showDialog, setShowDialog] = useState(false)
   const [showIntro, setShowIntro] = useState(true)
-  const dialogTextRef = useRef(null)
-  const dialogSpeakerRef = useRef(null)
-  const introTextRef = useRef(null)
+  const dlgTextRef = useRef(null)
+  const dlgNameRef = useRef(null)
+  const introRef = useRef(null)
 
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')
-    let cancelled = false
-    let animId
+    let dead = false, raf
 
     ctx.imageSmoothingEnabled = false
-
     const map = generateMap()
     let atlas = null
 
-    // Systems
     const particles = new ParticleSystem()
     const dayNight = new DayNightCycle()
     const minimap = new Minimap(COLS, ROWS)
     particles.setWeather('leaves')
 
-    // Game state
-    const game = {
-      px: 19, py: 24, tx: 19, ty: 24,
+    // ==================== GAME STATE ====================
+    const g = {
+      px: 18, py: 16, tx: 18, ty: 16,
       ox: 0, oy: 0, moveFrame: 0, moving: false,
-      direction: 'down', walkFrame: 0, walkTick: 0, lastFootstep: 0,
+      dir: 'down', wf: 0, wt: 0, lastFoot: 0,
       keys: {}, tick: 0, camX: 0, camY: 0,
       scene: 'overworld',
-      transitionDir: 'in', transitionFrame: 0, transitionCallback: null,
-      interior: null, interiorZone: null, savedPos: null,
-      guardianActive: false, guardianDismissed: false,
-      dialog: null,
-      intro: true, introStep: 0, introCharIdx: 0,
+      fadeDir: 'in', fadeFrame: 0, fadeCb: null,
+      interior: null, iZone: null, saved: null,
+      guardOn: false, guardDone: false,
+      dlg: null, intro: true, introIdx: 0, introChar: 0,
     }
-    gameRef.current = game
+    gameRef.current = g
 
     loadSpriteAtlas().then(a => {
       atlas = a
@@ -86,614 +85,412 @@ export default function RPGCanvas({ onOpenZone }) {
       setLoading(false)
     })
 
-    // ==================== RESIZE ====================
     function resize() {
-      const parent = canvas.parentElement
-      canvas.width = parent.clientWidth
-      canvas.height = parent.clientHeight
+      const p = canvas.parentElement
+      canvas.width = p.clientWidth; canvas.height = p.clientHeight
       ctx.imageSmoothingEnabled = false
     }
     resize()
     window.addEventListener('resize', resize)
 
     // ==================== INPUT ====================
-    function onKeyDown(e) {
-      game.keys[e.key] = true
-      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); handleInteract() }
-      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) e.preventDefault()
+    function kd(e) {
+      g.keys[e.key] = true
+      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); interact() }
+      if (e.key.startsWith('Arrow')) e.preventDefault()
     }
-    function onKeyUp(e) { game.keys[e.key] = false }
-    window.addEventListener('keydown', onKeyDown)
-    window.addEventListener('keyup', onKeyUp)
+    function ku(e) { g.keys[e.key] = false }
+    window.addEventListener('keydown', kd)
+    window.addEventListener('keyup', ku)
 
-    // ==================== TRANSITIONS ====================
-    function startTransition(dir, callback) {
-      game.scene = 'transition'
-      game.transitionDir = dir
-      game.transitionFrame = 0
-      game.transitionCallback = callback
-    }
+    // ==================== SCENE TRANSITIONS ====================
+    function fade(dir, cb) { g.scene = 'transition'; g.fadeDir = dir; g.fadeFrame = 0; g.fadeCb = cb }
 
-    function enterBuilding(zone) {
-      if (zone.requiredQuest) {
-        const qp = qpRef.current
-        if (!qp[zone.requiredQuest]) {
-          const reqZone = ZONES.find(z => z.questId === zone.requiredQuest)
-          const reqName = reqZone ? reqZone.name : 'la maison precedente'
-          game.dialog = {
-            speaker: '', lineIdx: 0, charIdx: 0,
-            lines: ['Cette maison est encore verrouillee.', `Tu dois d'abord completer la mission de "${reqName}".`, 'Termine l\'epreuve precedente, puis reviens ici.'],
-          }
-          setShowDialog(true)
-          return
-        }
+    function enterHouse(zone) {
+      if (zone.requiredQuest && !qpRef.current[zone.requiredQuest]) {
+        const req = ZONES.find(z => z.questId === zone.requiredQuest)
+        g.dlg = { speaker: '', lines: ['Cette maison est encore verrouillee.', `Complete d'abord "${req?.name || 'la maison precedente'}".`], li: 0, ci: 0 }
+        setShowDialog(true); return
       }
-      startTransition('in', () => {
-        game.savedPos = { px: game.px, py: game.py, direction: game.direction }
-        const interior = generateInterior(zone)
-        game.interior = interior
-        game.interiorZone = zone
-        game.px = interior.spawnX; game.py = interior.spawnY
-        game.direction = 'up'; game.moving = false; game.ox = 0; game.oy = 0
-        game.guardianActive = false; game.guardianDismissed = false
-        game.scene = 'transition'; game.transitionDir = 'out'; game.transitionFrame = 0
-        game.transitionCallback = () => { game.scene = 'interior' }
+      fade('in', () => {
+        g.saved = { px: g.px, py: g.py, dir: g.dir }
+        const int = generateInterior(zone)
+        g.interior = int; g.iZone = zone
+        g.px = int.spawnX; g.py = int.spawnY; g.dir = 'up'
+        g.moving = false; g.ox = 0; g.oy = 0
+        g.guardOn = false; g.guardDone = false
+        g.scene = 'transition'; g.fadeDir = 'out'; g.fadeFrame = 0
+        g.fadeCb = () => { g.scene = 'interior' }
       })
     }
 
-    function exitBuilding() {
-      startTransition('in', () => {
-        const saved = game.savedPos
-        game.px = saved.px; game.py = saved.py; game.direction = saved.direction
-        game.interior = null; game.interiorZone = null
-        game.moving = false; game.ox = 0; game.oy = 0
-        game.scene = 'transition'; game.transitionDir = 'out'; game.transitionFrame = 0
-        game.transitionCallback = () => { game.scene = 'overworld' }
+    function exitHouse() {
+      fade('in', () => {
+        g.px = g.saved.px; g.py = g.saved.py; g.dir = g.saved.dir
+        g.interior = null; g.iZone = null; g.moving = false; g.ox = 0; g.oy = 0
+        g.scene = 'transition'; g.fadeDir = 'out'; g.fadeFrame = 0
+        g.fadeCb = () => { g.scene = 'overworld' }
       })
     }
 
     // ==================== INTERACTION ====================
-    function handleInteract() {
-      if (game.scene === 'transition') return
+    function interact() {
+      if (g.scene === 'transition') return
 
-      // Intro
-      if (game.intro) {
-        if (game.introCharIdx < INTRO_TEXTS[game.introStep].text.length) {
-          game.introCharIdx = INTRO_TEXTS[game.introStep].text.length
-        } else {
-          game.introStep++; game.introCharIdx = 0
-          if (game.introStep >= INTRO_TEXTS.length) { game.intro = false; setShowIntro(false) }
-        }
+      if (g.intro) {
+        if (g.introChar < INTRO[g.introIdx].text.length) g.introChar = INTRO[g.introIdx].text.length
+        else { g.introIdx++; g.introChar = 0; if (g.introIdx >= INTRO.length) { g.intro = false; setShowIntro(false) } }
+        return
+      }
+      if (g.dlg) {
+        const line = g.dlg.lines[g.dlg.li]
+        if (g.dlg.ci < line.length) g.dlg.ci = line.length
+        else { g.dlg.li++; g.dlg.ci = 0; if (g.dlg.li >= g.dlg.lines.length) { g.dlg = null; setShowDialog(false) } }
         return
       }
 
-      // Dialog
-      if (game.dialog) {
-        const line = game.dialog.lines[game.dialog.lineIdx]
-        if (game.dialog.charIdx < line.length) {
-          game.dialog.charIdx = line.length
-        } else {
-          game.dialog.lineIdx++; game.dialog.charIdx = 0
-          if (game.dialog.lineIdx >= game.dialog.lines.length) { game.dialog = null; setShowDialog(false) }
-        }
-        return
-      }
+      if (g.scene === 'interior') {
+        const im = g.interior.map, zone = g.iZone
+        const intNpc = getAdjacentInteriorNPC(g.px, g.py, zone.interiorNpcs)
+        if (intNpc) { g.dlg = { speaker: intNpc.name, lines: intNpc.dialog, li: 0, ci: 0 }; setShowDialog(true); return }
 
-      // Interior interactions
-      if (game.scene === 'interior') {
-        const im = game.interior.map
-        const zone = game.interiorZone
-
-        // Interior NPC
-        const intNpc = getAdjacentInteriorNPC(game.px, game.py, zone.interiorNpcs)
-        if (intNpc) {
-          game.dialog = { speaker: intNpc.name, lines: intNpc.dialog, lineIdx: 0, charIdx: 0 }
-          setShowDialog(true)
-          return
-        }
-
-        // Altar
-        for (let dy = -1; dy <= 1; dy++) {
-          for (let dx = -1; dx <= 1; dx++) {
-            const cx = game.px + dx, cy = game.py + dy
-            if (cy >= 0 && cy < game.interior.height && cx >= 0 && cx < game.interior.width && im[cy][cx] === IT.ALTAR) {
-              const wp = wpRef.current
-              const wid = zone.weekId || zone.id
-              if (wp[wid]?.unlocked) {
-                onOpenZone(wid)
-                setTimeout(() => {
-                  const qp = qpRef.current
-                  if (zone.questId && qp[zone.questId] && !game.guardianDismissed) game.guardianActive = true
-                }, 500)
-              } else {
-                game.dialog = { speaker: '', lines: ['Cette epreuve est encore verrouillee.'], lineIdx: 0, charIdx: 0 }
-                setShowDialog(true)
-              }
-              return
-            }
-          }
-        }
-
-        // Door mat
-        if (im[game.py]?.[game.px] === IT.DOOR_MAT) {
-          if (game.guardianActive && !game.guardianDismissed && zone.guardian) {
-            game.dialog = { speaker: zone.guardian.name, lines: zone.guardian.dialog, lineIdx: 0, charIdx: 0 }
-            setShowDialog(true)
-            game.guardianDismissed = true
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+          const cx = g.px + dx, cy = g.py + dy
+          if (cy >= 0 && cy < g.interior.height && cx >= 0 && cx < g.interior.width && im[cy][cx] === IT.ALTAR) {
+            const wid = zone.weekId || zone.id
+            if (wpRef.current[wid]?.unlocked) {
+              onOpenZone(wid)
+              setTimeout(() => { if (zone.questId && qpRef.current[zone.questId] && !g.guardDone) g.guardOn = true }, 500)
+            } else { g.dlg = { speaker: '', lines: ['Cette epreuve est encore verrouillee.'], li: 0, ci: 0 }; setShowDialog(true) }
             return
           }
-          const qp = qpRef.current
-          if (zone.questId && qp[zone.questId] && !game.guardianDismissed && zone.guardian) {
-            game.guardianActive = true
-            game.dialog = { speaker: zone.guardian.name, lines: zone.guardian.dialog, lineIdx: 0, charIdx: 0 }
-            setShowDialog(true)
-            game.guardianDismissed = true
-            return
+        }
+
+        if (im[g.py]?.[g.px] === IT.DOOR_MAT) {
+          if ((g.guardOn || (zone.questId && qpRef.current[zone.questId])) && !g.guardDone && zone.guardian) {
+            g.guardOn = true
+            g.dlg = { speaker: zone.guardian.name, lines: zone.guardian.dialog, li: 0, ci: 0 }
+            setShowDialog(true); g.guardDone = true; return
           }
-          exitBuilding()
+          exitHouse()
         }
         return
       }
 
-      // Overworld interactions
-      const zone = getAdjacentZone(game.px, game.py)
-      if (zone) { enterBuilding(zone); return }
-      const npc = getAdjacentNPC(game.px, game.py)
-      if (npc) {
-        game.dialog = { speaker: npc.name, lines: npc.dialog, lineIdx: 0, charIdx: 0 }
-        setShowDialog(true)
-      }
+      const zone = getAdjacentZone(g.px, g.py)
+      if (zone) { enterHouse(zone); return }
+      const npc = getAdjacentNPC(g.px, g.py)
+      if (npc) { g.dlg = { speaker: npc.name, lines: npc.dialog, li: 0, ci: 0 }; setShowDialog(true) }
     }
 
     // ==================== GAME LOOP ====================
-    function update() {
-      if (cancelled) return
-      animId = requestAnimationFrame(update)
+    function loop() {
+      if (dead) return
+      raf = requestAnimationFrame(loop)
       if (!atlas) return
 
-      game.tick++
-      const viewW = canvas.width
-      const viewH = canvas.height
+      g.tick++
+      const vw = canvas.width, vh = canvas.height
 
       // Transition
-      if (game.scene === 'transition') {
-        game.transitionFrame++
-        if (game.transitionFrame >= TRANSITION_FRAMES) {
-          const cb = game.transitionCallback
-          game.transitionCallback = null
-          if (cb) cb()
-        }
+      if (g.scene === 'transition') {
+        g.fadeFrame++
+        if (g.fadeFrame >= FADE_FRAMES) { const cb = g.fadeCb; g.fadeCb = null; if (cb) cb() }
       }
 
       // Movement
-      const isPlayable = (game.scene === 'overworld' || game.scene === 'interior') && !game.intro && !game.dialog
-      if (isPlayable) {
-        if (game.moving) {
-          game.moveFrame++
-          const progress = game.moveFrame / MOVE_FRAMES
-          game.ox = (game.tx - game.px) * TILE * SCALE * progress
-          game.oy = (game.ty - game.py) * TILE * SCALE * progress
-          game.walkTick++
-          if (game.walkTick % ANIM_SPEED === 0) game.walkFrame = (game.walkFrame + 1) % 3
-
-          if (game.moveFrame >= MOVE_FRAMES) {
-            game.px = game.tx; game.py = game.ty
-            game.ox = 0; game.oy = 0; game.moving = false; game.moveFrame = 0
-            if (game.scene === 'overworld' && game.tick - game.lastFootstep > 4) {
-              if (map[game.py]?.[game.px] === 1) particles.spawnFootstepDust(game.px * TILE + 8, game.py * TILE + 12, game.direction)
-              game.lastFootstep = game.tick
+      const play = (g.scene === 'overworld' || g.scene === 'interior') && !g.intro && !g.dlg
+      if (play) {
+        if (g.moving) {
+          g.moveFrame++
+          const p = g.moveFrame / MOVE_FRAMES
+          g.ox = (g.tx - g.px) * TILE * SCALE * p
+          g.oy = (g.ty - g.py) * TILE * SCALE * p
+          g.wt++
+          if (g.wt % ANIM_SPEED === 0) g.wf = (g.wf + 1) % 3
+          if (g.moveFrame >= MOVE_FRAMES) {
+            g.px = g.tx; g.py = g.ty; g.ox = 0; g.oy = 0; g.moving = false; g.moveFrame = 0
+            if (g.scene === 'overworld' && g.tick - g.lastFoot > 4 && map[g.py]?.[g.px] === 1) {
+              particles.spawnFootstepDust(g.px * TILE + 8, g.py * TILE + 12, g.dir); g.lastFoot = g.tick
             }
           }
         }
-
-        if (!game.moving) {
+        if (!g.moving) {
           let dx = 0, dy = 0
-          if (game.keys['ArrowUp'] || game.keys['z'] || game.keys['w']) { dy = -1; game.direction = 'up' }
-          else if (game.keys['ArrowDown'] || game.keys['s']) { dy = 1; game.direction = 'down' }
-          else if (game.keys['ArrowLeft'] || game.keys['q'] || game.keys['a']) { dx = -1; game.direction = 'left' }
-          else if (game.keys['ArrowRight'] || game.keys['d']) { dx = 1; game.direction = 'right' }
-
+          if (g.keys.ArrowUp || g.keys.z || g.keys.w) { dy = -1; g.dir = 'up' }
+          else if (g.keys.ArrowDown || g.keys.s) { dy = 1; g.dir = 'down' }
+          else if (g.keys.ArrowLeft || g.keys.q || g.keys.a) { dx = -1; g.dir = 'left' }
+          else if (g.keys.ArrowRight || g.keys.d) { dx = 1; g.dir = 'right' }
           if (dx || dy) {
-            const ntx = game.px + dx, nty = game.py + dy
-            let ok
-            if (game.scene === 'interior') {
-              ok = canMoveInterior(game.interior.map, ntx, nty, game.interiorZone?.interiorNpcs)
-              if (ok && game.guardianActive && !game.guardianDismissed && game.interiorZone?.guardian) {
-                if (ntx === game.interior.spawnX && nty === game.interior.height - 2) ok = false
-              }
-            } else {
-              ok = canMove(map, ntx, nty)
+            const nx = g.px + dx, ny = g.py + dy
+            let ok = g.scene === 'interior'
+              ? canMoveInterior(g.interior.map, nx, ny, g.iZone?.interiorNpcs)
+              : canMove(map, nx, ny)
+            if (ok && g.scene === 'interior' && g.guardOn && !g.guardDone && g.iZone?.guardian) {
+              if (nx === g.interior.spawnX && ny === g.interior.height - 2) ok = false
             }
-            if (ok) { game.tx = ntx; game.ty = nty; game.moving = true; game.moveFrame = 0 }
-          } else {
-            game.walkFrame = 0
-          }
+            if (ok) { g.tx = nx; g.ty = ny; g.moving = true; g.moveFrame = 0 }
+          } else g.wf = 0
         }
-
-        // Proximity prompts
-        if (game.scene === 'overworld') {
-          const zone = getAdjacentZone(game.px, game.py)
-          const npc = getAdjacentNPC(game.px, game.py)
-          if (zone) {
-            const qpNow = qpRef.current
-            setPromptText(zone.requiredQuest && !qpNow[zone.requiredQuest] ? '[ ESPACE ] Verrouillee' : '[ ESPACE ] Entrer')
-          } else if (npc) {
-            setPromptText('[ ESPACE ] Parler')
-          } else {
-            setPromptText(null)
+        // Prompts
+        if (g.scene === 'overworld') {
+          const z = getAdjacentZone(g.px, g.py), n = getAdjacentNPC(g.px, g.py)
+          if (z) setPromptText(z.requiredQuest && !qpRef.current[z.requiredQuest] ? '[ ESPACE ] Verrouillee' : '[ ESPACE ] Entrer')
+          else if (n) setPromptText('[ ESPACE ] Parler')
+          else setPromptText(null)
+        } else if (g.scene === 'interior') {
+          const im = g.interior.map
+          const n2 = getAdjacentInteriorNPC(g.px, g.py, g.iZone?.interiorNpcs)
+          let altar = false
+          for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+            const cx = g.px + dx, cy = g.py + dy
+            if (cy >= 0 && cy < g.interior.height && cx >= 0 && cx < g.interior.width && im[cy][cx] === IT.ALTAR) altar = true
           }
-        } else if (game.scene === 'interior') {
-          const im = game.interior.map
-          const intNpc = getAdjacentInteriorNPC(game.px, game.py, game.interiorZone?.interiorNpcs)
-          let nearAltar = false
-          for (let dy = -1; dy <= 1; dy++) {
-            for (let dx = -1; dx <= 1; dx++) {
-              const cx = game.px + dx, cy = game.py + dy
-              if (cy >= 0 && cy < game.interior.height && cx >= 0 && cx < game.interior.width && im[cy][cx] === IT.ALTAR) nearAltar = true
-            }
-          }
-          if (im[game.py]?.[game.px] === IT.DOOR_MAT) {
-            setPromptText(game.guardianActive && !game.guardianDismissed && game.interiorZone?.guardian ? '[ ESPACE ] Parler au Gardien' : '[ ESPACE ] Sortir')
-          } else if (intNpc) {
-            setPromptText('[ ESPACE ] Parler')
-          } else if (nearAltar) {
-            setPromptText('[ ESPACE ] Valider la mission')
-          } else {
-            setPromptText(null)
-          }
+          if (im[g.py]?.[g.px] === IT.DOOR_MAT) setPromptText(g.guardOn && !g.guardDone ? '[ ESPACE ] Parler au Gardien' : '[ ESPACE ] Sortir')
+          else if (n2) setPromptText('[ ESPACE ] Parler')
+          else if (altar) setPromptText('[ ESPACE ] Valider la mission')
+          else setPromptText(null)
         }
       }
 
-      // Guardian activation check
-      if (game.scene === 'interior' && game.interiorZone && !game.guardianActive && !game.guardianDismissed) {
-        const qp = qpRef.current
-        const zone = game.interiorZone
-        if (zone.questId && qp[zone.questId] && zone.guardian) game.guardianActive = true
+      // Guardian check
+      if (g.scene === 'interior' && g.iZone && !g.guardOn && !g.guardDone) {
+        if (g.iZone.questId && qpRef.current[g.iZone.questId] && g.iZone.guardian) g.guardOn = true
       }
 
-      // Dialog text animation
-      if (game.dialog) {
-        const line = game.dialog.lines[game.dialog.lineIdx]
-        if (game.dialog.charIdx < line.length) game.dialog.charIdx = Math.min(game.dialog.charIdx + TEXT_SPEED, line.length)
-        if (dialogTextRef.current) dialogTextRef.current.textContent = line.substring(0, Math.floor(game.dialog.charIdx))
-        if (dialogSpeakerRef.current) dialogSpeakerRef.current.textContent = game.dialog.speaker || 'VDX'
+      // Dialog text
+      if (g.dlg) {
+        const line = g.dlg.lines[g.dlg.li]
+        if (g.dlg.ci < line.length) g.dlg.ci = Math.min(g.dlg.ci + TEXT_SPEED, line.length)
+        if (dlgTextRef.current) dlgTextRef.current.textContent = line.substring(0, Math.floor(g.dlg.ci))
+        if (dlgNameRef.current) dlgNameRef.current.textContent = g.dlg.speaker || 'VDX'
+      }
+      if (g.intro && g.introIdx < INTRO.length) {
+        const t = INTRO[g.introIdx].text
+        if (g.introChar < t.length) g.introChar = Math.min(g.introChar + TEXT_SPEED, t.length)
+        if (introRef.current) introRef.current.textContent = t.substring(0, Math.floor(g.introChar))
       }
 
-      // Intro text animation
-      if (game.intro && game.introStep < INTRO_TEXTS.length) {
-        const text = INTRO_TEXTS[game.introStep].text
-        if (game.introCharIdx < text.length) game.introCharIdx = Math.min(game.introCharIdx + TEXT_SPEED, text.length)
-        if (introTextRef.current) introTextRef.current.textContent = text.substring(0, Math.floor(game.introCharIdx))
-      }
-
-      // ==================== UPDATE SYSTEMS ====================
-      if (game.scene === 'overworld' && !game.dialog && !game.intro) updateNPCs(map, game.px, game.py)
+      // ==================== SYSTEMS UPDATE ====================
+      if (g.scene === 'overworld' && !g.dlg && !g.intro) updateNPCs(map, g.px, g.py)
       particles.update()
       dayNight.update()
 
-      // Spawn particles
-      if ((game.scene === 'overworld' || game.scene === 'interior') && game.tick % 3 === 0) {
-        if (game.scene === 'overworld') {
-          const timePeriod = dayNight.getTimePeriod()
-          particles.spawnAmbient(game.camX / SCALE, game.camY / SCALE, viewW / SCALE, viewH / SCALE, timePeriod)
-          if (game.tick % 8 === 0) {
-            for (const zone of ZONES) particles.spawnChimneySmoke(zone.houseX * TILE, zone.houseY * TILE, TILE)
-          }
-          if (game.tick % 12 === 0) {
-            for (let dy = -5; dy <= 5; dy++) {
-              for (let dx = -5; dx <= 5; dx++) {
-                const wx = game.px + dx, wy = game.py + dy
-                if (wx >= 0 && wy >= 0 && wx < COLS && wy < ROWS && map[wy][wx] === 2) {
-                  if (Math.random() > 0.7) particles.spawnWaterRipple(wx * TILE, wy * TILE, TILE)
-                  if (Math.random() > 0.85) particles.spawnWaterShimmer(wx * TILE, wy * TILE, TILE, dayNight.getLightLevel())
-                }
-              }
+      // Particles
+      if ((g.scene === 'overworld' || g.scene === 'interior') && g.tick % 3 === 0) {
+        if (g.scene === 'overworld') {
+          particles.spawnAmbient(g.camX / SCALE, g.camY / SCALE, vw / SCALE, vh / SCALE, dayNight.getTimePeriod())
+          if (g.tick % 8 === 0) for (const z of ZONES) particles.spawnChimneySmoke(z.houseX * TILE, z.houseY * TILE, TILE)
+          if (g.tick % 12 === 0) for (let dy = -5; dy <= 5; dy++) for (let dx = -5; dx <= 5; dx++) {
+            const wx = g.px + dx, wy = g.py + dy
+            if (wx >= 0 && wy >= 0 && wx < COLS && wy < ROWS && map[wy][wx] === 2) {
+              if (Math.random() > 0.7) particles.spawnWaterRipple(wx * TILE, wy * TILE, TILE)
+              if (Math.random() > 0.85) particles.spawnWaterShimmer(wx * TILE, wy * TILE, TILE, dayNight.getLightLevel())
             }
           }
         }
-        if (game.scene === 'interior' && game.interior) {
-          const im = game.interior.map
-          for (let y = 0; y < game.interior.height; y++) {
-            for (let x = 0; x < game.interior.width; x++) {
-              if (im[y][x] === IT.TORCH) particles.spawnTorchFlame(x * TILE, y * TILE, TILE)
-              if (im[y][x] === IT.ALTAR) {
-                const wp = wpRef.current
-                const wid = game.interiorZone?.weekId || game.interiorZone?.id
-                particles.spawnAltarGlow(x * TILE, y * TILE, TILE, wp[wid]?.unlocked)
-              }
-            }
+        if (g.scene === 'interior' && g.interior) {
+          const im = g.interior.map
+          for (let y = 0; y < g.interior.height; y++) for (let x = 0; x < g.interior.width; x++) {
+            if (im[y][x] === IT.TORCH) particles.spawnTorchFlame(x * TILE, y * TILE, TILE)
+            if (im[y][x] === IT.ALTAR) particles.spawnAltarGlow(x * TILE, y * TILE, TILE, wpRef.current[g.iZone?.weekId || g.iZone?.id]?.unlocked)
           }
         }
       }
-      if (game.scene === 'overworld') particles.spawnWeather(viewW, viewH)
+      if (g.scene === 'overworld') particles.spawnWeather(vw, vh)
 
       // ==================== RENDER ====================
       const shake = particles.getScreenShake()
-      ctx.fillStyle = '#0a0a0f'
-      ctx.fillRect(0, 0, viewW, viewH)
+      ctx.fillStyle = '#0a0a0f'; ctx.fillRect(0, 0, vw, vh)
+      ctx.save(); ctx.translate(shake.x, shake.y)
 
-      ctx.save()
-      ctx.translate(shake.x, shake.y)
-
-      if (game.scene === 'overworld' || (game.scene === 'transition' && !game.interior && game.transitionDir === 'in') ||
-          (game.scene === 'transition' && game.interior && game.transitionDir === 'out' && game.savedPos)) {
-        if (game.scene !== 'transition' || !game.interior) renderOverworld(ctx, viewW, viewH, game, atlas, map)
+      if (g.scene === 'overworld' || (g.scene === 'transition' && !g.interior && g.fadeDir === 'in') ||
+          (g.scene === 'transition' && g.interior && g.fadeDir === 'out' && g.saved)) {
+        if (g.scene !== 'transition' || !g.interior) renderWorld(ctx, vw, vh)
       }
-
-      if (game.scene === 'interior' || (game.scene === 'transition' && game.interior)) {
-        if (game.interior) renderInterior(ctx, viewW, viewH, game, atlas)
-      }
+      if ((g.scene === 'interior' || (g.scene === 'transition' && g.interior)) && g.interior) renderInside(ctx, vw, vh)
 
       ctx.restore()
 
-      // Day/night overlay
-      if (game.scene === 'overworld' || (game.scene === 'transition' && !game.interior)) dayNight.render(ctx, viewW, viewH)
+      if (g.scene === 'overworld' || (g.scene === 'transition' && !g.interior)) dayNight.render(ctx, vw, vh)
+      if (g.scene === 'overworld' || g.scene === 'interior') renderVignette(ctx, vw, vh, g.scene === 'interior' ? 0.5 : 0.3)
+      if (g.scene === 'overworld') particles.renderWeather(ctx, vw, vh)
+      particles.renderScreenEffects(ctx, vw, vh)
 
-      // Vignette
-      if (game.scene === 'overworld' || game.scene === 'interior') {
-        renderVignette(ctx, viewW, viewH, game.scene === 'interior' ? 0.5 : 0.3)
+      if (g.scene === 'transition') {
+        const pr = Math.min(g.fadeFrame / FADE_FRAMES, 1)
+        const t = g.fadeDir === 'in' ? pr : (1 - pr)
+        const maxR = Math.sqrt(vw * vw + vh * vh) / 2
+        ctx.save(); ctx.fillStyle = '#000'; ctx.beginPath()
+        ctx.rect(0, 0, vw, vh); ctx.arc(vw / 2, vh / 2, Math.max(0, maxR * (1 - t)), 0, Math.PI * 2, true)
+        ctx.fill(); ctx.restore()
       }
 
-      // Weather overlay
-      if (game.scene === 'overworld') particles.renderWeather(ctx, viewW, viewH)
-
-      // Screen effects
-      particles.renderScreenEffects(ctx, viewW, viewH)
-
-      // Transition iris wipe
-      if (game.scene === 'transition') {
-        const progress = Math.min(game.transitionFrame / TRANSITION_FRAMES, 1)
-        const t = game.transitionDir === 'in' ? progress : (1 - progress)
-        const maxRadius = Math.sqrt(viewW * viewW + viewH * viewH) / 2
-        const radius = maxRadius * (1 - t)
-        ctx.save()
-        ctx.fillStyle = '#000'
-        ctx.beginPath()
-        ctx.rect(0, 0, viewW, viewH)
-        ctx.arc(viewW / 2, viewH / 2, Math.max(0, radius), 0, Math.PI * 2, true)
-        ctx.fill()
-        ctx.restore()
-      }
-
-      // Minimap
-      if (game.scene === 'overworld' && !game.intro && !game.dialog) {
-        minimap.render(ctx, game.px, game.py, NPCS, viewW - 140, 50)
-      }
+      if (g.scene === 'overworld' && !g.intro && !g.dlg) minimap.render(ctx, g.px, g.py, NPCS, vw - 140, 50)
     }
 
-    // ==================== RENDER OVERWORLD ====================
-    function renderOverworld(ctx, viewW, viewH, game, atlas, map) {
-      const playerPixelX = game.px * TILE * SCALE + game.ox
-      const playerPixelY = game.py * TILE * SCALE + game.oy
-      const targetCamX = playerPixelX + TILE * SCALE / 2 - viewW / 2
-      const targetCamY = playerPixelY + TILE * SCALE / 2 - viewH / 2
-      const mapPixelW = COLS * TILE * SCALE
-      const mapPixelH = ROWS * TILE * SCALE
-      game.camX += (Math.max(0, Math.min(targetCamX, mapPixelW - viewW)) - game.camX) * 0.15
-      game.camY += (Math.max(0, Math.min(targetCamY, mapPixelH - viewH)) - game.camY) * 0.15
+    // ==================== OVERWORLD RENDER ====================
+    function renderWorld(ctx, vw, vh) {
+      const ppx = g.px * TILE * SCALE + g.ox, ppy = g.py * TILE * SCALE + g.oy
+      const tcx = ppx + TILE * SCALE / 2 - vw / 2, tcy = ppy + TILE * SCALE / 2 - vh / 2
+      const mw = COLS * TILE * SCALE, mh = ROWS * TILE * SCALE
+      g.camX += (Math.max(0, Math.min(tcx, mw - vw)) - g.camX) * 0.15
+      g.camY += (Math.max(0, Math.min(tcy, mh - vh)) - g.camY) * 0.15
+      const cx = Math.round(g.camX), cy = Math.round(g.camY)
+      const sc = Math.max(0, Math.floor(cx / (TILE * SCALE)) - 1)
+      const ec = Math.min(COLS, Math.ceil((cx + vw) / (TILE * SCALE)) + 1)
+      const sr = Math.max(0, Math.floor(cy / (TILE * SCALE)) - 1)
+      const er = Math.min(ROWS, Math.ceil((cy + vh) / (TILE * SCALE)) + 1)
 
-      const camX = Math.round(game.camX)
-      const camY = Math.round(game.camY)
-      const startCol = Math.max(0, Math.floor(camX / (TILE * SCALE)) - 1)
-      const endCol = Math.min(COLS, Math.ceil((camX + viewW) / (TILE * SCALE)) + 1)
-      const startRow = Math.max(0, Math.floor(camY / (TILE * SCALE)) - 1)
-      const endRow = Math.min(ROWS, Math.ceil((camY + viewH) / (TILE * SCALE)) + 1)
+      ctx.save(); ctx.translate(-cx, -cy)
+      ctx.save(); ctx.scale(SCALE, SCALE)
 
-      ctx.save()
-      ctx.translate(-camX, -camY)
-      ctx.save()
-      ctx.scale(SCALE, SCALE)
+      // Ground tiles
+      for (let r = sr; r < er; r++) for (let c = sc; c < ec; c++) drawTile(ctx, atlas, map[r][c], c * TILE, r * TILE, g.tick)
 
-      // Tiles
-      for (let row = startRow; row < endRow; row++) {
-        for (let col = startCol; col < endCol; col++) {
-          drawSpriteTile(ctx, atlas, map[row][col], col * TILE, row * TILE, game.tick)
+      // Tree shadows, then trees (as 32x32 sprites)
+      for (let r = sr; r < er; r++) for (let c = sc; c < ec; c++) {
+        if (map[r][c] === 3) drawTreeShadow(ctx, c, r)
+      }
+
+      // House shadows + sprites
+      for (const z of ZONES) {
+        if (z.houseX >= sc - 3 && z.houseX <= ec + 3 && z.houseY >= sr - 3 && z.houseY <= er + 3) {
+          drawHouseShadow(ctx, z.houseX, z.houseY)
+          drawHouse(ctx, atlas, z.id, z.houseX, z.houseY)
         }
       }
 
-      // Tree shadows
-      for (let row = startRow; row < endRow; row++) {
-        for (let col = startCol; col < endCol; col++) {
-          if (map[row][col] === 3) drawTreeShadow(ctx, col * TILE, row * TILE)
-        }
+      // Night glow
+      const ni = dayNight.getTimePeriod() === 'Nuit' ? 1 : dayNight.getTimePeriod() === 'Crepuscule' ? 0.5 : 0
+      if (ni > 0) for (const z of ZONES) {
+        drawWindowGlow(ctx, (z.houseX + 1) * TILE, (z.houseY + 2) * TILE, ni)
+        drawWindowGlow(ctx, (z.houseX + 1) * TILE, (z.houseY + 3) * TILE, ni * 0.4)
       }
 
-      // Houses (shadows + sprites)
-      for (const zone of ZONES) {
-        if (zone.houseX >= startCol - 3 && zone.houseX <= endCol + 3 && zone.houseY >= startRow - 3 && zone.houseY <= endRow + 3) {
-          drawHouseShadow(ctx, zone.houseX, zone.houseY)
-          drawHouseSprite(ctx, atlas, zone.id, zone.houseX, zone.houseY)
-        }
+      // Trees (drawn AFTER houses so forest overlaps correctly)
+      for (let r = sr; r < er; r++) for (let c = sc; c < ec; c++) {
+        if (map[r][c] === 3) drawTree(ctx, atlas, c, r)
       }
 
-      // Night window glow
-      const nightIntensity = dayNight.getTimePeriod() === 'Nuit' ? 1 : dayNight.getTimePeriod() === 'Crepuscule' ? 0.5 : 0
-      if (nightIntensity > 0) {
-        for (const zone of ZONES) {
-          if (zone.houseX >= startCol - 3 && zone.houseX <= endCol + 3) {
-            drawWindowGlow(ctx, (zone.houseX + 1) * TILE, (zone.houseY + 2) * TILE, nightIntensity)
-            drawWindowGlow(ctx, (zone.houseX + 1) * TILE, (zone.houseY + 3) * TILE, nightIntensity * 0.4)
+      // NPCs
+      for (const n of NPCS) {
+        if (n.x >= sc - 2 && n.x <= ec + 2 && n.y >= sr - 2 && n.y <= er + 2) {
+          const nx = n.x * TILE + (n.ox || 0), ny = n.y * TILE + (n.oy || 0)
+          drawShadow(ctx, nx, ny, 10, 0.2)
+          let d = n.direction || 'down'
+          if (!n.moving) {
+            const ddx = g.px - n.x, ddy = g.py - n.y
+            if (Math.abs(ddx) + Math.abs(ddy) <= 3) d = Math.abs(ddx) > Math.abs(ddy) ? (ddx > 0 ? 'right' : 'left') : (ddy > 0 ? 'down' : 'up')
           }
+          drawNPC(ctx, atlas, n.sprite, d, n.walkFrame || 0, nx, ny)
         }
       }
 
-      // NPCs (shadow + sprite with wander animation)
-      for (const npc of NPCS) {
-        if (npc.x >= startCol - 2 && npc.x <= endCol + 2 && npc.y >= startRow - 2 && npc.y <= endRow + 2) {
-          const nx = npc.x * TILE + (npc.ox || 0)
-          const ny = npc.y * TILE + (npc.oy || 0)
-          drawCharacterShadow(ctx, nx, ny, 10, 0.2)
-          let dir = npc.direction || 'down'
-          if (!npc.moving) {
-            const dx = game.px - npc.x, dy = game.py - npc.y
-            if (Math.abs(dx) + Math.abs(dy) <= 3) {
-              dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up')
-            }
-          }
-          drawNPCSprite(ctx, atlas, npc.sprite, nx, ny, game.tick, dir, npc.walkFrame || 0)
-        }
-      }
-
-      // Particles (tile-space)
+      // Particles
       particles.render(ctx, true)
-
-      // Player (shadow + sprite)
-      const pDrawX = game.px * TILE + game.ox / SCALE
-      const pDrawY = game.py * TILE + game.oy / SCALE
-      drawCharacterShadow(ctx, pDrawX, pDrawY, 12, 0.25)
-      drawPlayerSprite(ctx, atlas, game.direction, game.walkFrame, pDrawX, pDrawY)
-
-      ctx.restore() // undo scale
-
-      // Labels
-      const wp = wpRef.current
-      const qp = qpRef.current
-      for (const zone of ZONES) {
-        if (zone.houseX >= startCol - 3 && zone.houseX <= endCol + 3 && zone.houseY >= startRow - 3 && zone.houseY <= endRow + 3) {
-          const wid = zone.weekId || zone.id
-          const weekUnlocked = wp[wid]?.unlocked
-          const questUnlocked = !zone.requiredQuest || qp[zone.requiredQuest]
-          drawZoneLabel(ctx, zone, zone.houseX * TILE * SCALE, zone.houseY * TILE * SCALE, weekUnlocked && questUnlocked, zone.questId ? qp[zone.questId] : wp[wid]?.completed)
-        }
-      }
-      for (const npc of NPCS) {
-        if (npc.x >= startCol - 1 && npc.x <= endCol + 1 && npc.y >= startRow - 1 && npc.y <= endRow + 1) {
-          drawNPCLabel(ctx, npc, (npc.x * TILE + (npc.ox || 0)) * SCALE, (npc.y * TILE + (npc.oy || 0)) * SCALE, game.tick)
-        }
-      }
-
-      // Time display
-      ctx.fillStyle = 'rgba(5,5,15,0.7)'
-      ctx.beginPath(); ctx.roundRect(viewW - 146, 30, 38, 16, 3); ctx.fill()
-      ctx.fillStyle = '#c7b777'
-      ctx.font = '8px monospace'
-      ctx.textAlign = 'center'
-      ctx.fillText(dayNight.getTimeLabel(), viewW - 127, 41)
-
-      ctx.restore() // undo camera
-    }
-
-    // ==================== RENDER INTERIOR ====================
-    function renderInterior(ctx, viewW, viewH, game, atlas) {
-      const interior = game.interior
-      const iw = interior.width * TILE * SCALE
-      const ih = interior.height * TILE * SCALE
-      const zone = game.interiorZone
-      const offX = Math.round((viewW - iw) / 2)
-      const offY = Math.round((viewH - ih) / 2)
-
-      ctx.save()
-      ctx.translate(offX, offY)
-      ctx.save()
-      ctx.scale(SCALE, SCALE)
-
-      // Interior tiles
-      for (let row = 0; row < interior.height; row++) {
-        for (let col = 0; col < interior.width; col++) {
-          drawInteriorTile(ctx, atlas, interior.map[row][col], col * TILE, row * TILE, game.tick)
-        }
-      }
-
-      // Interior particles
-      particles.render(ctx, true)
-
-      // Interior NPCs
-      if (zone.interiorNpcs) {
-        for (const npc of zone.interiorNpcs) {
-          drawCharacterShadow(ctx, npc.x * TILE, npc.y * TILE, 10, 0.2)
-          let dir = 'down'
-          const dx = game.px - npc.x, dy = game.py - npc.y
-          if (Math.abs(dx) + Math.abs(dy) <= 3) {
-            dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up')
-          }
-          drawNPCSprite(ctx, atlas, npc.sprite, npc.x * TILE, npc.y * TILE, game.tick, dir)
-        }
-      }
-
-      // Guardian NPC
-      if (game.guardianActive && !game.guardianDismissed && zone.guardian) {
-        const gx = interior.spawnX, gy = interior.height - 2
-        drawCharacterShadow(ctx, gx * TILE, gy * TILE, 10, 0.2)
-        drawNPCSprite(ctx, atlas, zone.guardian.sprite, gx * TILE, gy * TILE, game.tick, 'up')
-      }
 
       // Player
-      const pDrawX = game.px * TILE + game.ox / SCALE
-      const pDrawY = game.py * TILE + game.oy / SCALE
-      drawCharacterShadow(ctx, pDrawX, pDrawY, 12, 0.25)
-      drawPlayerSprite(ctx, atlas, game.direction, game.walkFrame, pDrawX, pDrawY)
+      const pdx = g.px * TILE + g.ox / SCALE, pdy = g.py * TILE + g.oy / SCALE
+      drawShadow(ctx, pdx, pdy, 12, 0.25)
+      drawPlayer(ctx, atlas, g.dir, g.wf, pdx, pdy)
 
-      ctx.restore() // undo scale
+      ctx.restore() // scale
 
-      // Interior NPC labels
-      if (zone.interiorNpcs) {
-        for (const npc of zone.interiorNpcs) {
-          const npx = npc.x * TILE * SCALE
-          const npy = npc.y * TILE * SCALE
-          const bob = Math.sin(game.tick * 0.05 + npc.x) * 2
-
-          ctx.fillStyle = '#c7b777'
-          ctx.font = 'bold 10px sans-serif'
-          ctx.textAlign = 'center'
-          ctx.fillText('!', npx + TILE * SCALE / 2, npy - 4 + bob)
-
-          const nameW = npc.name.length * 5 + 10
-          const nameX = npx + TILE * SCALE / 2 - nameW / 2
-          const nameY = npy - 16 + bob
-          ctx.fillStyle = 'rgba(5,5,15,0.8)'
-          ctx.beginPath(); ctx.roundRect(nameX, nameY, nameW, 12, 3); ctx.fill()
-          ctx.fillStyle = '#c7b777'
-          ctx.font = '8px monospace'
-          ctx.fillText(npc.name, npx + TILE * SCALE / 2, nameY + 9)
+      // Labels
+      const wp = wpRef.current, qp = qpRef.current
+      for (const z of ZONES) {
+        if (z.houseX >= sc - 3 && z.houseX <= ec + 3 && z.houseY >= sr - 3 && z.houseY <= er + 3) {
+          const wid = z.weekId || z.id
+          const unlk = wp[wid]?.unlocked && (!z.requiredQuest || qp[z.requiredQuest])
+          drawZoneLabel(ctx, z, z.houseX * TILE * SCALE, z.houseY * TILE * SCALE, unlk, z.questId ? qp[z.questId] : wp[wid]?.completed)
+        }
+      }
+      for (const n of NPCS) {
+        if (n.x >= sc - 1 && n.x <= ec + 1 && n.y >= sr - 1 && n.y <= er + 1) {
+          drawNPCLabel(ctx, n, (n.x * TILE + (n.ox || 0)) * SCALE, (n.y * TILE + (n.oy || 0)) * SCALE, g.tick)
         }
       }
 
-      // Guardian label
-      if (game.guardianActive && !game.guardianDismissed && zone.guardian) {
-        const gx = interior.spawnX * TILE * SCALE
-        const gy = (interior.height - 2) * TILE * SCALE
-        const bob = Math.sin(game.tick * 0.06) * 2
-        ctx.fillStyle = '#FFD700'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center'
-        ctx.fillText('!', gx + TILE * SCALE / 2, gy - 6 + bob)
-        const gname = zone.guardian.name
-        const gnameW = gname.length * 5 + 12
-        const gnameX = gx + TILE * SCALE / 2 - gnameW / 2
-        const gnameY = gy - 20 + bob
-        ctx.fillStyle = 'rgba(5,5,15,0.85)'
-        ctx.beginPath(); ctx.roundRect(gnameX, gnameY, gnameW, 12, 3); ctx.fill()
-        ctx.fillStyle = '#FFD700'; ctx.font = 'bold 8px monospace'
-        ctx.fillText(gname, gx + TILE * SCALE / 2, gnameY + 9)
+      // Time
+      ctx.fillStyle = 'rgba(5,5,15,0.7)'; ctx.beginPath(); ctx.roundRect(vw - 146, 30, 38, 16, 3); ctx.fill()
+      ctx.fillStyle = '#c7b777'; ctx.font = '8px monospace'; ctx.textAlign = 'center'
+      ctx.fillText(dayNight.getTimeLabel(), vw - 127, 41)
+
+      ctx.restore() // camera
+    }
+
+    // ==================== INTERIOR RENDER ====================
+    function renderInside(ctx, vw, vh) {
+      const int = g.interior, zone = g.iZone
+      const iw = int.width * TILE * SCALE, ih = int.height * TILE * SCALE
+      const ox = Math.round((vw - iw) / 2), oy = Math.round((vh - ih) / 2)
+
+      ctx.save(); ctx.translate(ox, oy)
+      ctx.save(); ctx.scale(SCALE, SCALE)
+
+      for (let r = 0; r < int.height; r++) for (let c = 0; c < int.width; c++) drawInteriorTile(ctx, atlas, int.map[r][c], c * TILE, r * TILE, g.tick)
+
+      particles.render(ctx, true)
+
+      if (zone.interiorNpcs) for (const n of zone.interiorNpcs) {
+        drawShadow(ctx, n.x * TILE, n.y * TILE, 10, 0.2)
+        let d = 'down'
+        const ddx = g.px - n.x, ddy = g.py - n.y
+        if (Math.abs(ddx) + Math.abs(ddy) <= 3) d = Math.abs(ddx) > Math.abs(ddy) ? (ddx > 0 ? 'right' : 'left') : (ddy > 0 ? 'down' : 'up')
+        drawNPC(ctx, atlas, n.sprite, d, 0, n.x * TILE, n.y * TILE)
       }
 
-      // Zone name header
-      ctx.fillStyle = 'rgba(10,10,25,0.85)'
-      ctx.beginPath(); ctx.roundRect(iw / 2 - 100, -30, 200, 24, 6); ctx.fill()
-      ctx.strokeStyle = '#c7b777'; ctx.lineWidth = 1
-      ctx.beginPath(); ctx.roundRect(iw / 2 - 100, -30, 200, 24, 6); ctx.stroke()
+      if (g.guardOn && !g.guardDone && zone.guardian) {
+        const gx = int.spawnX, gy = int.height - 2
+        drawShadow(ctx, gx * TILE, gy * TILE, 10, 0.2)
+        drawNPC(ctx, atlas, zone.guardian.sprite, 'up', 0, gx * TILE, gy * TILE)
+      }
+
+      const pdx = g.px * TILE + g.ox / SCALE, pdy = g.py * TILE + g.oy / SCALE
+      drawShadow(ctx, pdx, pdy, 12, 0.25)
+      drawPlayer(ctx, atlas, g.dir, g.wf, pdx, pdy)
+
+      ctx.restore() // scale
+
+      // Interior NPC labels
+      if (zone.interiorNpcs) for (const n of zone.interiorNpcs) {
+        const npx = n.x * TILE * SCALE, npy = n.y * TILE * SCALE
+        const bob = Math.sin(g.tick * 0.05 + n.x) * 2
+        ctx.fillStyle = '#c7b777'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center'
+        ctx.fillText('!', npx + TILE * SCALE / 2, npy - 4 + bob)
+        const nw = n.name.length * 5 + 10, nx = npx + TILE * SCALE / 2 - nw / 2, ny = npy - 16 + bob
+        ctx.fillStyle = 'rgba(5,5,15,0.8)'; ctx.beginPath(); ctx.roundRect(nx, ny, nw, 12, 3); ctx.fill()
+        ctx.fillStyle = '#c7b777'; ctx.font = '8px monospace'
+        ctx.fillText(n.name, npx + TILE * SCALE / 2, ny + 9)
+      }
+
+      if (g.guardOn && !g.guardDone && zone.guardian) {
+        const gx = int.spawnX * TILE * SCALE, gy = (int.height - 2) * TILE * SCALE
+        const bob = Math.sin(g.tick * 0.06) * 2
+        ctx.fillStyle = '#FFD700'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center'
+        ctx.fillText('!', gx + TILE * SCALE / 2, gy - 6 + bob)
+        const gn = zone.guardian.name, gnw = gn.length * 5 + 12
+        const gnx = gx + TILE * SCALE / 2 - gnw / 2, gny = gy - 20 + bob
+        ctx.fillStyle = 'rgba(5,5,15,0.85)'; ctx.beginPath(); ctx.roundRect(gnx, gny, gnw, 12, 3); ctx.fill()
+        ctx.fillStyle = '#FFD700'; ctx.font = 'bold 8px monospace'
+        ctx.fillText(gn, gx + TILE * SCALE / 2, gny + 9)
+      }
+
+      ctx.fillStyle = 'rgba(10,10,25,0.85)'; ctx.beginPath(); ctx.roundRect(iw / 2 - 100, -30, 200, 24, 6); ctx.fill()
+      ctx.strokeStyle = '#c7b777'; ctx.lineWidth = 1; ctx.beginPath(); ctx.roundRect(iw / 2 - 100, -30, 200, 24, 6); ctx.stroke()
       ctx.fillStyle = '#c7b777'; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center'
       ctx.fillText(zone.name, iw / 2, -14)
 
-      ctx.restore() // undo translate
+      ctx.restore() // translate
     }
 
-    animId = requestAnimationFrame(update)
-
-    return () => {
-      cancelled = true
-      if (animId) cancelAnimationFrame(animId)
-      window.removeEventListener('keydown', onKeyDown)
-      window.removeEventListener('keyup', onKeyUp)
-      window.removeEventListener('resize', resize)
-    }
+    raf = requestAnimationFrame(loop)
+    return () => { dead = true; cancelAnimationFrame(raf); window.removeEventListener('keydown', kd); window.removeEventListener('keyup', ku); window.removeEventListener('resize', resize) }
   }, [onOpenZone])
 
-  const pressKey = useCallback((key, down) => {
-    if (gameRef.current) gameRef.current.keys[key] = down
-  }, [])
-
-  const mobileInteract = useCallback(() => {
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: ' ' }))
-  }, [])
+  const pressKey = useCallback((k, v) => { if (gameRef.current) gameRef.current.keys[k] = v }, [])
+  const mobileAct = useCallback(() => { window.dispatchEvent(new KeyboardEvent('keydown', { key: ' ' })) }, [])
 
   return (
     <div className="w-full h-full relative bg-black">
@@ -705,66 +502,57 @@ export default function RPGCanvas({ onOpenZone }) {
         </div>
       )}
 
-      {/* HUD */}
       <div className="absolute top-3 left-3 z-10">
         <div className="bg-gradient-to-b from-[#1a1a2e]/95 to-[#0a0a1a]/95 border border-[#c7b777]/60 rounded-lg px-4 py-2.5 shadow-lg shadow-black/50 backdrop-blur-sm">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#c7b777] to-[#a89a5e] flex items-center justify-center text-[#0a0a0f] text-xs font-bold shadow-inner">V</div>
-            <div>
-              <div className="text-[#c7b777] font-mono text-sm font-bold tracking-wide">VDX Quest
-                <span className="text-[#c7b777]/50 text-xs ml-1.5 font-normal">Niv.0</span>
-              </div>
-            </div>
+            <div className="text-[#c7b777] font-mono text-sm font-bold tracking-wide">VDX Quest <span className="text-[#c7b777]/50 text-xs ml-1.5 font-normal">Niv.0</span></div>
           </div>
           <div className="flex items-center gap-2 mt-1.5">
             <span className="text-[#c7b777]/60 text-xs font-mono">XP</span>
             <div className="w-24 h-2.5 bg-black/60 rounded-full border border-[#c7b777]/20 overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-[#c7b777] to-[#e0d9a8] rounded-full transition-all duration-500 shadow-sm shadow-[#c7b777]/30" style={{ width: '30%' }} />
+              <div className="h-full bg-gradient-to-r from-[#c7b777] to-[#e0d9a8] rounded-full transition-all duration-500" style={{ width: '30%' }} />
             </div>
             <span className="text-[#c7b777]/50 text-xs font-mono">300</span>
           </div>
         </div>
       </div>
 
-      {/* Prompt */}
       {promptText && !showDialog && !showIntro && (
         <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-20 animate-bounce">
-          <div className="bg-gradient-to-b from-[#1a1a2e]/95 to-[#0a0a1a]/95 border border-[#c7b777]/70 rounded-lg px-5 py-2 shadow-lg shadow-[#c7b777]/10 backdrop-blur-sm">
+          <div className="bg-gradient-to-b from-[#1a1a2e]/95 to-[#0a0a1a]/95 border border-[#c7b777]/70 rounded-lg px-5 py-2 shadow-lg backdrop-blur-sm">
             <span className="text-[#c7b777] font-mono font-bold text-sm">{promptText}</span>
           </div>
         </div>
       )}
 
-      {/* Dialog */}
       {showDialog && (
         <div className="absolute bottom-4 left-4 right-4 max-w-2xl mx-auto z-30">
-          <div className="bg-gradient-to-b from-[#12122a]/97 to-[#0a0a1a]/97 border-2 border-[#c7b777]/80 rounded-xl p-5 backdrop-blur-sm shadow-2xl shadow-black/60">
-            <div className="bg-gradient-to-r from-[#c7b777] to-[#d4c888] text-[#0a0a0f] font-mono font-bold px-3 py-1 rounded-md inline-block -mt-9 mb-3 text-sm shadow-md shadow-[#c7b777]/30">
-              <span ref={dialogSpeakerRef}>...</span>
+          <div className="bg-gradient-to-b from-[#12122a]/97 to-[#0a0a1a]/97 border-2 border-[#c7b777]/80 rounded-xl p-5 backdrop-blur-sm shadow-2xl">
+            <div className="bg-gradient-to-r from-[#c7b777] to-[#d4c888] text-[#0a0a0f] font-mono font-bold px-3 py-1 rounded-md inline-block -mt-9 mb-3 text-sm">
+              <span ref={dlgNameRef}>...</span>
             </div>
-            <p ref={dialogTextRef} className="text-white/90 font-mono text-sm leading-relaxed min-h-[3em]" />
+            <p ref={dlgTextRef} className="text-white/90 font-mono text-sm leading-relaxed min-h-[3em]" />
             <div className="text-[#c7b777]/40 text-xs mt-2 text-right font-mono animate-pulse">ESPACE ...</div>
           </div>
         </div>
       )}
 
-      {/* Intro */}
       {showIntro && (
         <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-[#0a0a1a]/85 to-black/80 flex flex-col items-center justify-center z-40">
           <div className="mb-1 text-[#c7b777]/30 font-mono text-xs tracking-[0.3em] uppercase">Bienvenue dans</div>
           <h1 className="text-[#c7b777] font-mono text-5xl font-bold mb-1 tracking-wider drop-shadow-[0_0_20px_rgba(199,183,119,0.3)]">VDX QUEST</h1>
           <div className="w-32 h-px bg-gradient-to-r from-transparent via-[#c7b777]/60 to-transparent mb-2" />
           <p className="text-[#a89a5e]/80 font-mono text-sm mb-10 tracking-wide">Vendeur d'Exception - Niveau 0</p>
-          <div className="bg-gradient-to-b from-[#12122a]/97 to-[#0a0a1a]/97 border-2 border-[#c7b777]/80 rounded-xl p-5 max-w-lg w-full mx-4 backdrop-blur-sm shadow-2xl shadow-black/60">
-            <div className="bg-gradient-to-r from-[#c7b777] to-[#d4c888] text-[#0a0a0f] font-mono font-bold px-3 py-1 rounded-md inline-block -mt-9 mb-3 text-sm shadow-md shadow-[#c7b777]/30">VDX</div>
-            <p ref={introTextRef} className="text-white/90 font-mono text-sm leading-relaxed min-h-[2em]" />
+          <div className="bg-gradient-to-b from-[#12122a]/97 to-[#0a0a1a]/97 border-2 border-[#c7b777]/80 rounded-xl p-5 max-w-lg w-full mx-4 backdrop-blur-sm shadow-2xl">
+            <div className="bg-gradient-to-r from-[#c7b777] to-[#d4c888] text-[#0a0a0f] font-mono font-bold px-3 py-1 rounded-md inline-block -mt-9 mb-3 text-sm">VDX</div>
+            <p ref={introRef} className="text-white/90 font-mono text-sm leading-relaxed min-h-[2em]" />
             <div className="text-[#c7b777]/40 text-xs mt-3 text-right font-mono animate-pulse">ESPACE ...</div>
           </div>
         </div>
       )}
 
-      {/* Mobile Controls */}
-      <MobileControls pressKey={pressKey} onAction={mobileInteract} />
+      <MobileControls pressKey={pressKey} onAction={mobileAct} />
     </div>
   )
 }
@@ -772,7 +560,7 @@ export default function RPGCanvas({ onOpenZone }) {
 function MobileControls({ pressKey, onAction }) {
   const btn = (key, label) => (
     <button
-      className="w-14 h-14 bg-gradient-to-b from-[#1a1a2e]/90 to-[#0a0a1a]/90 border border-[#c7b777]/40 rounded-xl text-[#c7b777]/80 text-xl font-bold active:bg-[#c7b777]/20 active:border-[#c7b777]/70 select-none touch-none shadow-md shadow-black/30 transition-colors"
+      className="w-14 h-14 bg-gradient-to-b from-[#1a1a2e]/90 to-[#0a0a1a]/90 border border-[#c7b777]/40 rounded-xl text-[#c7b777]/80 text-xl font-bold active:bg-[#c7b777]/20 select-none touch-none shadow-md"
       onTouchStart={e => { e.preventDefault(); pressKey(key, true) }}
       onTouchEnd={e => { e.preventDefault(); pressKey(key, false) }}
       onMouseDown={() => pressKey(key, true)}
@@ -780,26 +568,16 @@ function MobileControls({ pressKey, onAction }) {
       onMouseLeave={() => pressKey(key, false)}
     >{label}</button>
   )
-
   return (
     <div className="absolute bottom-4 left-0 right-0 flex justify-between px-4 lg:hidden pointer-events-none z-30">
       <div className="grid grid-cols-3 gap-1 pointer-events-auto">
-        <div />
-        {btn('ArrowUp', '\u25B2')}
-        <div />
-        {btn('ArrowLeft', '\u25C0')}
-        <div className="w-14 h-14" />
-        {btn('ArrowRight', '\u25B6')}
-        <div />
-        {btn('ArrowDown', '\u25BC')}
-        <div />
+        <div />{btn('ArrowUp', '\u25B2')}<div />
+        {btn('ArrowLeft', '\u25C0')}<div className="w-14 h-14" />{btn('ArrowRight', '\u25B6')}
+        <div />{btn('ArrowDown', '\u25BC')}<div />
       </div>
       <div className="flex items-center pointer-events-auto">
-        <button
-          className="w-16 h-16 bg-gradient-to-b from-[#c7b777] to-[#a89a5e] border-2 border-[#e0d9a8] rounded-full text-[#0a0a0f] text-sm font-bold active:from-[#e0d9a8] active:to-[#c7b777] select-none touch-none shadow-lg shadow-[#c7b777]/40 transition-all"
-          onTouchStart={e => { e.preventDefault(); onAction() }}
-          onClick={onAction}
-        >A</button>
+        <button className="w-16 h-16 bg-gradient-to-b from-[#c7b777] to-[#a89a5e] border-2 border-[#e0d9a8] rounded-full text-[#0a0a0f] text-sm font-bold select-none touch-none shadow-lg"
+          onTouchStart={e => { e.preventDefault(); onAction() }} onClick={onAction}>A</button>
       </div>
     </div>
   )

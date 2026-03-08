@@ -625,17 +625,18 @@ export const MINIMAP_TILE_COLORS = {
   1: '#aa9966',   // PATH
   2: '#4488aa',   // WATER
   3: '#2d5a27',   // TREE
-  5: '#888888',   // MOUNTAIN
-  6: '#88bb55',   // FLOWER
-  7: '#8a7a5a',   // BRIDGE
-  8: '#6a5a3a',   // FENCE
-  9: '#3a7a35',   // DARK_GRASS
-  10: '#ccbb88',  // SAND
-  17: '#4a8a40',  // TALL_GRASS
+  4: '#88bb55',   // FLOWER
+  5: '#6a5a3a',   // FENCE
+  6: '#8a7a5a',   // BRIDGE
+  7: '#ccbb88',   // SAND
+  8: '#3a7a35',   // DARK_GRASS
+  9: '#2d6a27',   // BUSH
+  10: '#888888',  // MOUNTAIN
+  11: '#4a8a40',  // TALL_GRASS
   14: '#6a5a3a',  // SIGN
-  // House tiles
-  30: '#8B4513', 31: '#8B4513', 32: '#8B4513',
-  33: '#8B4513', 34: '#8B4513', 35: '#8B4513',
-  36: '#D2B48C', 37: '#D2B48C', 38: '#D2B48C',
-  39: '#D2B48C', 40: '#5B3E1E', 41: '#D2B48C',
+  // House tiles (new numbering)
+  20: '#8B4513', 21: '#8B4513', 22: '#8B4513',
+  23: '#8B4513', 24: '#8B4513', 25: '#8B4513',
+  26: '#D2B48C', 27: '#D2B48C', 28: '#D2B48C',
+  29: '#D2B48C', 30: '#5B3E1E', 31: '#D2B48C',
 }
