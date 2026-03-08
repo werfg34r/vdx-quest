@@ -1,227 +1,164 @@
 // ═══════════════════════════════════════════════════════
-// SUNNYSIDE WORLD - Game Constants & Definitions
+// VDX QUEST - Constants & Definitions - Village 1
 // ═══════════════════════════════════════════════════════
 
-// ── Tile & Rendering ──
 export const TILE = 16;
-export const SCALE = 2;
-export const RS = TILE * SCALE;
+export const SCALE = 3;
+export const RS = TILE * SCALE; // 48px rendered
 
-// Room dimensions from GameMaker Room1
-export const ROOM_W = 1366;
-export const ROOM_H = 768;
-export const MAP_W = 86;
-export const MAP_H = 48;
+// Village 1 map: 32x24 tiles
+export const MAP_COLS = 32;
+export const MAP_ROWS = 24;
 
-// ── Game modes ──
 export const MODE = {
   WORLD: 0,
-  INTERIOR: 1,
-  DEAD: 2,
-  SHOP: 3,
+  DIALOGUE: 1,
+  BUILDING: 2,
 };
 
-// ── Player stats ──
-export const PLAYER_SPEED = 1.8;
-export const PLAYER_MAX_HP = 100;
-export const PLAYER_MAX_STAMINA = 100;
-export const PLAYER_START_GOLD = 50;
-export const PLAYER_START_X = 35;
-export const PLAYER_START_Y = 30;
-export const PLAYER_INVULN_FRAMES = 45;
+// Player
+export const PLAYER_SPEED = 1.6;
+export const PLAYER_START_X = 15;
+export const PLAYER_START_Y = 17;
 
-// ── Tools ──
+// Tool definitions
 export const TOOLS = {
-  sword:   { name: 'Epee',       icon: 'sword',    action: 'spr_attack',   frames: 20, staminaCost: 5,  damage: 25 },
-  axe:     { name: 'Hache',      icon: 'axe',      action: 'spr_axe',      frames: 25, staminaCost: 8,  damage: 0 },
-  pickaxe: { name: 'Pioche',     icon: 'pickaxe',  action: 'spr_mining',   frames: 25, staminaCost: 8,  damage: 0 },
-  shovel:  { name: 'Pelle',      icon: 'shovel',   action: 'spr_dig',      frames: 25, staminaCost: 5,  damage: 0 },
-  water:   { name: 'Arrosoir',   icon: 'water',    action: 'spr_watering', frames: 20, staminaCost: 3,  damage: 0 },
-  rod:     { name: 'Canne',      icon: 'rod',      action: 'spr_casting',  frames: 40, staminaCost: 4,  damage: 0 },
+  axe: { name: 'Hache', icon: 'axe', action: 'spr_axe', frames: 25, staminaCost: 0 },
 };
 
-export const STARTER_TOOLS = ['sword', 'axe'];
-
-// ── Items ──
+// Items
 export const ITEM_TYPES = {
-  wood:       { name: 'Bois',        icon: 'wood',          stackable: true,  sellPrice: 5 },
-  rock:       { name: 'Pierre',      icon: 'rock',          stackable: true,  sellPrice: 3 },
-  fish:       { name: 'Poisson',     icon: 'fish',          stackable: true,  sellPrice: 15 },
-  egg:        { name: 'Oeuf',        icon: 'egg',           stackable: true,  sellPrice: 8 },
-  milk:       { name: 'Lait',        icon: 'milk',          stackable: true,  sellPrice: 10 },
-  wheat:      { name: 'Ble',         icon: 'wheat_05',      stackable: true,  sellPrice: 12 },
-  beetroot:   { name: 'Betterave',   icon: 'beetroot_05',   stackable: true,  sellPrice: 18 },
-  carrot:     { name: 'Carotte',     icon: 'carrot_05',     stackable: true,  sellPrice: 14 },
-  pumpkin:    { name: 'Citrouille',  icon: 'pumpkin_05',    stackable: true,  sellPrice: 25 },
-  cabbage:    { name: 'Chou',        icon: 'cabbage_05',    stackable: true,  sellPrice: 16 },
-  sunflower:  { name: 'Tournesol',   icon: 'sunflower_05',  stackable: true,  sellPrice: 20 },
-  potato:     { name: 'Pomme de t.', icon: 'potato_05',     stackable: true,  sellPrice: 12 },
-  seed_wheat:     { name: 'Gr. Ble',       icon: 'seeds_generic', stackable: true, sellPrice: 2 },
-  seed_beetroot:  { name: 'Gr. Betterave', icon: 'seeds_generic', stackable: true, sellPrice: 2 },
-  seed_carrot:    { name: 'Gr. Carotte',   icon: 'seeds_generic', stackable: true, sellPrice: 2 },
-  seed_pumpkin:   { name: 'Gr. Citrouille',icon: 'seeds_generic', stackable: true, sellPrice: 2 },
+  wood: { name: 'Bois', icon: 'wood', stackable: true },
+  rock: { name: 'Pierre', icon: 'rock', stackable: true },
 };
 
-// ── Crops ──
-export const CROP_TYPES = {
-  wheat:    { stages: 6, sprite: 'wheat',    growMinutes: 60,  harvest: 'wheat',    count: 2 },
-  beetroot: { stages: 6, sprite: 'beetroot', growMinutes: 90,  harvest: 'beetroot', count: 1 },
-  carrot:   { stages: 6, sprite: 'carrot',   growMinutes: 60,  harvest: 'carrot',   count: 2 },
-  pumpkin:  { stages: 6, sprite: 'pumpkin',  growMinutes: 120, harvest: 'pumpkin',  count: 1 },
+// House building stages
+export const HOUSE_STAGES = [
+  { name: 'Terrain vide',   woodCost: 0,  rockCost: 0 },
+  { name: 'Fondations',     woodCost: 5,  rockCost: 0 },
+  { name: 'Murs',           woodCost: 10, rockCost: 0 },
+  { name: 'Toit',           woodCost: 5,  rockCost: 3 },
+  { name: 'Maison terminee!', woodCost: 0, rockCost: 0 },
+];
+
+// Tileset tile IDs (from original Sunnyside World tileset)
+export const TILES = {
+  GRASS: 193,
+  GRASS_ALT: 69,
+  WATER: [1291, 1292, 1293, 1294, 1355, 1356, 1357, 1358, 1163, 1164, 1165, 1166, 1227, 1228, 1229, 1230],
+  PATH: 460,
+  PATH_ALT: 449,
+  DIRT: 135,
 };
 
-// ── Shop ──
-export const SHOP_ITEMS = [
-  { type: 'tool',  id: 'pickaxe', name: 'Pioche',          price: 80,  icon: 'pickaxe' },
-  { type: 'tool',  id: 'shovel',  name: 'Pelle',           price: 60,  icon: 'shovel' },
-  { type: 'tool',  id: 'water',   name: 'Arrosoir',        price: 50,  icon: 'water' },
-  { type: 'tool',  id: 'rod',     name: 'Canne a peche',   price: 100, icon: 'rod' },
-  { type: 'item',  id: 'seed_wheat',    name: 'Gr. Ble x5',       price: 15, icon: 'seeds_generic', count: 5 },
-  { type: 'item',  id: 'seed_beetroot', name: 'Gr. Betterave x5', price: 20, icon: 'seeds_generic', count: 5 },
-  { type: 'item',  id: 'seed_carrot',   name: 'Gr. Carotte x5',   price: 15, icon: 'seeds_generic', count: 5 },
-  { type: 'item',  id: 'seed_pumpkin',  name: 'Gr. Citrouille x3',price: 25, icon: 'seeds_generic', count: 3 },
+// Village 1 Map Layout
+// 0=water, 1=grass, 2=path, 3=forest(walkable+trees), 4=dense forest(blocked),
+// 5=building plot, 6=rocks area, 7=Laurent spawn, 8=player spawn
+export const VILLAGE1_MAP = generateVillage1();
+
+function generateVillage1() {
+  const m = [];
+  for (let r = 0; r < MAP_ROWS; r++) {
+    const row = [];
+    for (let c = 0; c < MAP_COLS; c++) {
+      // Water border (2 tiles)
+      if (r < 2 || r >= MAP_ROWS - 2 || c < 2 || c >= MAP_COLS - 2) {
+        row.push(0);
+        continue;
+      }
+      // Water edge (1 more tile for gentle shore)
+      if (r === 2 || r === MAP_ROWS - 3 || c === 2 || c === MAP_COLS - 3) {
+        row.push(0);
+        continue;
+      }
+
+      // Dense forest border (north, northeast)
+      if (r >= 3 && r <= 5 && c >= 3 && c <= MAP_COLS - 4) {
+        row.push(4); // blocked forest
+        continue;
+      }
+
+      // Walkable forest zone (rows 6-10, cols 3-14)
+      if (r >= 6 && r <= 10 && c >= 3 && c <= 14) {
+        row.push(3); // forest with trees
+        continue;
+      }
+
+      // Dense forest left wall
+      if (c === 3 && r >= 6 && r <= 14) {
+        row.push(4);
+        continue;
+      }
+
+      // Rock area (west side, rows 12-15)
+      if (r >= 12 && r <= 14 && c >= 4 && c <= 7) {
+        row.push(6);
+        continue;
+      }
+
+      // Building plot (east side)
+      if (r >= 13 && r <= 16 && c >= 22 && c <= 25) {
+        row.push(5);
+        continue;
+      }
+
+      // Central path (north-south)
+      if (c >= 14 && c <= 16 && r >= 6 && r <= 19) {
+        row.push(2);
+        continue;
+      }
+      // Path branch to building plot
+      if (r >= 14 && r <= 15 && c >= 16 && c <= 22) {
+        row.push(2);
+        continue;
+      }
+      // Path branch to rocks
+      if (r >= 13 && r <= 14 && c >= 7 && c <= 14) {
+        row.push(2);
+        continue;
+      }
+
+      // Laurent spawn point
+      if (r === 16 && c === 15) {
+        row.push(7);
+        continue;
+      }
+
+      // Player spawn
+      if (r === 18 && c === 15) {
+        row.push(8);
+        continue;
+      }
+
+      // Default: grass
+      row.push(1);
+    }
+    m.push(row);
+  }
+  return m;
+}
+
+// Tree positions in the forest zone
+export const FOREST_TREES = [];
+for (let r = 6; r <= 10; r++) {
+  for (let c = 4; c <= 13; c++) {
+    if ((r + c) % 2 === 0) {
+      FOREST_TREES.push({ x: c, y: r });
+    }
+  }
+}
+
+// Rock positions
+export const ROCK_POSITIONS = [
+  { x: 4, y: 12 }, { x: 5, y: 13 }, { x: 6, y: 12 },
+  { x: 7, y: 14 }, { x: 5, y: 14 }, { x: 4, y: 14 },
 ];
 
-// ── Houses ──
-export const HOUSES = [
-  {
-    id: 'maison_savoir', name: 'Maison du Savoir', style: 'red',
-    doorX: 53, doorY: 16, spawnX: 53 * 16, spawnY: 16.5 * 16,
-  },
-  {
-    id: 'maison_courage', name: 'Maison du Courage', style: 'green',
-    doorX: 40, doorY: 20, spawnX: 40 * 16, spawnY: 20.5 * 16,
-  },
-  {
-    id: 'maison_esprit', name: "Maison de l'Esprit", style: 'blue',
-    doorX: 34, doorY: 24, spawnX: 34 * 16, spawnY: 24.5 * 16,
-  },
-];
-
-export const INT_W = 10;
-export const INT_H = 8;
-
-// ── Day/Night ──
-export const TIME_SPEED = 5;          // game minutes per real second
-export const DAWN_START = 5;
-export const DAY_START = 7;
-export const DUSK_START = 18;
-export const NIGHT_START = 20;
-export const MAX_SKELETONS = 5;
-
-// ── Skeleton Enemy ──
-export const SKELETON = {
-  hp: 60,
-  speed: 0.7,
-  damage: 15,
-  attackRange: 1.2 * TILE,
-  chaseRange: 5 * TILE,
-  attackCooldown: 60,
-  loot: [
-    { item: 'rock', count: 2, chance: 0.5 },
-    { item: 'wood', count: 1, chance: 0.3 },
-  ],
+// Laurent NPC
+export const LAURENT = {
+  id: 'laurent',
+  name: 'Laurent',
+  hair: 'shorthair',
+  x: 15 * TILE,
+  y: 16 * TILE,
 };
-
-export const SKELETON_SPAWNS = [
-  { x: 15, y: 15 }, { x: 75, y: 15 }, { x: 15, y: 40 },
-  { x: 75, y: 40 }, { x: 50, y: 40 }, { x: 70, y: 20 },
-  { x: 20, y: 38 }, { x: 60, y: 38 },
-];
-
-// ── World Objects ──
-export const WORLD_TREES = [
-  { x: 22, y: 25 }, { x: 30, y: 33 }, { x: 60, y: 30 }, { x: 25, y: 35 },
-  { x: 65, y: 25 }, { x: 35, y: 22 }, { x: 50, y: 35 }, { x: 70, y: 28 },
-  { x: 28, y: 18 }, { x: 55, y: 32 }, { x: 18, y: 30 }, { x: 45, y: 33 },
-];
-
-export const WORLD_ROCKS = [
-  { x: 65, y: 28 }, { x: 18, y: 35 }, { x: 40, y: 32 },
-  { x: 58, y: 18 }, { x: 75, y: 30 }, { x: 32, y: 38 },
-  { x: 48, y: 36 }, { x: 26, y: 22 },
-];
-
-export const FISHING_SPOTS = [
-  { x: 10, y: 25 }, { x: 78, y: 30 }, { x: 45, y: 8 },
-  { x: 12, y: 38 }, { x: 80, y: 22 },
-];
-
-// Farm plots 4x3 grid near Pierre
-export const FARM_ORIGIN = { x: 25, y: 32 };
-export const FARM_COLS = 4;
-export const FARM_ROWS = 3;
-
-// ── NPCs ──
-export const NPCS = [
-  {
-    id: 'fermier', name: 'Pierre le Fermier', hair: 'shorthair',
-    x: 25 * TILE, y: 28 * TILE,
-    patrolPath: [
-      { x: 25 * TILE, y: 28 * TILE }, { x: 28 * TILE, y: 28 * TILE },
-      { x: 28 * TILE, y: 31 * TILE }, { x: 25 * TILE, y: 31 * TILE },
-    ],
-    dialogue: [
-      "Bienvenue ! PELLE pour labourer, GRAINES pour planter, ARROSOIR pour arroser.",
-      "Les recoltes poussent avec le temps. Reviens plus tard !",
-      "Vends tes recoltes chez Sophie la Marchande.",
-    ],
-    expression: 'expression_chat',
-  },
-  {
-    id: 'forgeronne', name: 'Marie la Forgeron', hair: 'longhair',
-    x: 55 * TILE, y: 22 * TILE,
-    patrolPath: [{ x: 55 * TILE, y: 22 * TILE }, { x: 58 * TILE, y: 22 * TILE }],
-    dialogue: [
-      "Salut ! Mon enclume est prete.", "Les squelettes rodent la nuit... garde ton epee !",
-    ],
-    expression: 'expression_working',
-  },
-  {
-    id: 'pecheur', name: 'Luc le Pecheur', hair: 'bowlhair',
-    x: 72 * TILE, y: 35 * TILE,
-    patrolPath: [{ x: 72 * TILE, y: 35 * TILE }, { x: 72 * TILE, y: 38 * TILE }],
-    dialogue: [
-      "Achete une CANNE chez Sophie, puis va au bord de l'eau !",
-      "Appuie ESPACE pres de l'eau avec ta canne equipee.",
-    ],
-    expression: 'expression_love',
-  },
-  {
-    id: 'marchande', name: 'Sophie la Marchande', hair: 'curlyhair',
-    isShop: true,
-    x: 42 * TILE, y: 24 * TILE,
-    patrolPath: [
-      { x: 42 * TILE, y: 24 * TILE }, { x: 45 * TILE, y: 24 * TILE },
-      { x: 45 * TILE, y: 26 * TILE }, { x: 42 * TILE, y: 26 * TILE },
-    ],
-    dialogue: ["Bienvenue dans ma boutique !"],
-    expression: 'expression_chat',
-  },
-  {
-    id: 'garde', name: 'Hugo le Garde', hair: 'spikeyhair',
-    x: 48 * TILE, y: 15 * TILE,
-    patrolPath: [
-      { x: 48 * TILE, y: 15 * TILE }, { x: 48 * TILE, y: 18 * TILE },
-      { x: 52 * TILE, y: 18 * TILE }, { x: 52 * TILE, y: 15 * TILE },
-    ],
-    dialogue: [
-      "Les squelettes rodent la nuit, attention !",
-      "Selectionne ton epee (1-6) et attaque avec ESPACE.",
-    ],
-    expression: 'expression_alerted',
-  },
-  {
-    id: 'herboriste', name: "Elise l'Herboriste", hair: 'mophair',
-    x: 20 * TILE, y: 20 * TILE,
-    patrolPath: [
-      { x: 20 * TILE, y: 20 * TILE }, { x: 23 * TILE, y: 20 * TILE },
-      { x: 23 * TILE, y: 22 * TILE }, { x: 20 * TILE, y: 22 * TILE },
-    ],
-    dialogue: [
-      "Dors dans une maison (ESPACE sur un lit) pour regenerer ta vie !",
-      "Les champignons de la foret sont magiques !",
-    ],
-    expression: 'expression_love',
-  },
-];
