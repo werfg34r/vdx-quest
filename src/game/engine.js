@@ -475,8 +475,11 @@ function generateMap() {
 // ============ ZONE/NPC LABELS ============
 
 function drawZoneLabel(ctx, zone, px, py, unlocked, completed) {
+  // px/py in screen-space. House is 3 tiles wide = 3*48 = 144px
+  const tileScreen = TILE * 3
+  const cx = px + tileScreen * 1.5  // center of 3-tile-wide house
   const bw = zone.name.length * 4.5 + 16
-  const bx = px + TILE * 1.5 - bw / 2
+  const bx = cx - bw / 2
   const by = py - 12
 
   ctx.fillStyle = completed ? 'rgba(199,183,119,0.92)' : unlocked ? 'rgba(12,12,25,0.88)' : 'rgba(10,10,15,0.65)'
@@ -493,31 +496,35 @@ function drawZoneLabel(ctx, zone, px, py, unlocked, completed) {
   ctx.fillStyle = completed ? '#1a1a2a' : unlocked ? '#c7b777' : '#555'
   ctx.font = 'bold 7px monospace'
   ctx.textAlign = 'center'
-  ctx.fillText(zone.name, px + TILE * 1.5, by + 11)
+  ctx.fillText(zone.name, cx, by + 11)
 
   if (!unlocked) {
     ctx.fillStyle = '#666'
     ctx.font = '8px sans-serif'
-    ctx.fillText('\u{1F512}', px + TILE * 1.5, by - 2)
+    ctx.fillText('\u{1F512}', cx, by - 2)
   }
   if (completed) {
     ctx.fillStyle = '#2a6a1e'
     ctx.font = 'bold 9px sans-serif'
-    ctx.fillText('\u2713', px + TILE * 1.5, by - 1)
+    ctx.fillText('\u2713', cx, by - 1)
   }
 }
 
 function drawNPCLabel(ctx, npc, px, py, tick) {
+  // px/py are in screen-space (npc.x * TILE * SCALE)
+  // Characters are 16x16 single-tile sprites (SCALE=3 → 48x48 on screen)
+  const tileScreen = TILE * 3  // 48px
+  const cx = px + tileScreen / 2
   const bob = Math.sin(tick * 0.05) * 2
 
   ctx.fillStyle = '#c7b777'
   ctx.font = 'bold 10px sans-serif'
   ctx.textAlign = 'center'
-  ctx.fillText('!', px + TILE / 2, py - TILE - 4 + bob)
+  ctx.fillText('!', cx, py - 6 + bob)
 
   const nameW = npc.name.length * 4.5 + 8
-  const nameX = px + TILE / 2 - nameW / 2
-  const nameY = py - TILE - 14 + bob
+  const nameX = cx - nameW / 2
+  const nameY = py - 16 + bob
 
   ctx.fillStyle = 'rgba(5,5,15,0.75)'
   ctx.beginPath()
@@ -526,17 +533,17 @@ function drawNPCLabel(ctx, npc, px, py, tick) {
 
   ctx.fillStyle = '#c7b777'
   ctx.font = '6px monospace'
-  ctx.fillText(npc.name, px + TILE / 2, nameY + 7)
+  ctx.fillText(npc.name, cx, nameY + 7)
 }
 
 // ============ CAMERA & COLLISION ============
 
 function getAdjacentZone(tileX, tileY) {
   for (const zone of ZONES) {
-    // Check if player is near the door (doorX, doorY) or one tile below
+    // Check if player is near the door — generous detection zone
     const dx = Math.abs(tileX - zone.doorX)
     const dy = tileY - zone.doorY
-    if (dx <= 1 && dy >= 0 && dy <= 1) return zone
+    if (dx <= 1 && dy >= 0 && dy <= 2) return zone
   }
   return null
 }

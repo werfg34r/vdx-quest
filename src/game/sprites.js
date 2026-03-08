@@ -69,22 +69,25 @@ const TILE_COORDS = {
   ],
 }
 
-// 8 distinct characters in character.png for NPCs
-// Each character: 3 columns (walk frames) x 8 rows (4 directions x 2 rows)
-// Top block (rows 0-7): 5 characters at cols 0,3,6,9,12
-// Bottom block (rows 8-15): 3 characters at cols 0,3,6
+// character.png: 272x256 = 17 cols x 16 rows of 16x16 chibi sprites
+// Each character: 3 columns (walk frames) x 4 rows (1 per direction)
+// Layout: 5 characters per row-group, 4 row-groups total
+//   Group 0 (rows 0-3): chars at cols 0,3,6,9,12
+//   Group 1 (rows 4-7): chars at cols 0,3,6,9,12
+//   Group 2 (rows 8-11): chars at cols 0,3,6,9,12
+//   Group 3 (rows 12-15): chars at cols 0,3,6,9,12
 const NPC_CHARS = {
-  // Player uses cols 0-2, rows 0-7
-  mentor:   { startCol: 3,  baseRow: 0 },  // Different outfit
-  villager: { startCol: 0,  baseRow: 8 },  // Gray/blue outfit (bottom block)
-  warrior:  { startCol: 9,  baseRow: 0 },  // Distinct character
-  sage:     { startCol: 12, baseRow: 0 },  // Another character
-  old:      { startCol: 6,  baseRow: 8 },  // Brown outfit (bottom block)
-  trader:   { startCol: 3,  baseRow: 8 },  // Dark outfit (bottom block)
+  // Player uses cols 0-2, rows 0-3 (group 0, char 1)
+  mentor:   { startCol: 3,  baseRow: 0 },  // group 0, char 2
+  villager: { startCol: 0,  baseRow: 8 },  // group 2, char 1
+  warrior:  { startCol: 9,  baseRow: 0 },  // group 0, char 4
+  sage:     { startCol: 12, baseRow: 0 },  // group 0, char 5
+  old:      { startCol: 6,  baseRow: 8 },  // group 2, char 3
+  trader:   { startCol: 3,  baseRow: 8 },  // group 2, char 2
 }
 
-// Direction offsets within a character block (each direction = 2 rows)
-const DIR_ROWS = { down: 0, right: 2, up: 4, left: 6 }
+// Direction offsets: each direction = 1 row (16x16 complete sprites)
+const DIR_ROWS = { down: 0, left: 1, right: 2, up: 3 }
 
 function loadImage(src) {
   return new Promise((resolve, reject) => {
@@ -96,11 +99,13 @@ function loadImage(src) {
 }
 
 export async function loadSpriteAtlas() {
-  const [overworld, character] = await Promise.all([
+  const [overworld, character, npc, objects] = await Promise.all([
     loadImage('/assets/overworld.png'),
     loadImage('/assets/character.png'),
+    loadImage('/assets/npc.png'),
+    loadImage('/assets/objects.png'),
   ])
-  return { overworld, character, S }
+  return { overworld, character, npc, objects, S }
 }
 
 function tileHash(px, py) {
@@ -126,130 +131,6 @@ function drawBase(ctx, img, baseType, px, py) {
   }
   const base = baseCoords[baseType]
   if (base) blitTile(ctx, img, base, px, py)
-}
-
-// Hand-drawn pixel art house tiles (16x16 each)
-function drawHouseTile(ctx, type, px, py) {
-  const x = px, y = py
-
-  switch (type) {
-    case 30: // ROOF_TL - left roof peak with grass base
-      ctx.fillStyle = '#5BB55F'; ctx.fillRect(x, y, 16, 16) // grass
-      ctx.fillStyle = '#8B4513'; ctx.fillRect(x + 4, y + 8, 12, 8) // brown roof
-      ctx.fillStyle = '#A0522D'; ctx.fillRect(x + 6, y + 10, 10, 6) // lighter
-      ctx.fillStyle = '#6B3410'; ctx.fillRect(x + 4, y + 8, 12, 1) // edge
-      break
-    case 31: // ROOF_TC - center roof peak
-      ctx.fillStyle = '#5BB55F'; ctx.fillRect(x, y, 16, 16) // grass
-      ctx.fillStyle = '#8B4513'; ctx.fillRect(x, y + 4, 16, 12) // roof
-      ctx.fillStyle = '#A0522D'; ctx.fillRect(x, y + 6, 16, 8) // lighter
-      // Ridge line
-      ctx.fillStyle = '#6B3410'; ctx.fillRect(x, y + 4, 16, 2)
-      // Chimney
-      ctx.fillStyle = '#777'; ctx.fillRect(x + 10, y, 4, 6)
-      ctx.fillStyle = '#666'; ctx.fillRect(x + 10, y, 4, 1)
-      break
-    case 32: // ROOF_TR - right roof peak
-      ctx.fillStyle = '#5BB55F'; ctx.fillRect(x, y, 16, 16)
-      ctx.fillStyle = '#8B4513'; ctx.fillRect(x, y + 8, 12, 8)
-      ctx.fillStyle = '#A0522D'; ctx.fillRect(x, y + 10, 10, 6)
-      ctx.fillStyle = '#6B3410'; ctx.fillRect(x, y + 8, 12, 1)
-      break
-    case 33: // ROOF_ML - left roof body
-      ctx.fillStyle = '#8B4513'; ctx.fillRect(x, y, 16, 16)
-      ctx.fillStyle = '#A0522D'; ctx.fillRect(x + 2, y, 14, 16)
-      ctx.fillStyle = '#7B3A10'; ctx.fillRect(x, y, 2, 16) // left edge shadow
-      // Horizontal wood lines
-      ctx.fillStyle = '#6B3410'
-      ctx.fillRect(x, y + 5, 16, 1)
-      ctx.fillRect(x, y + 11, 16, 1)
-      break
-    case 34: // ROOF_MC - center roof body
-      ctx.fillStyle = '#8B4513'; ctx.fillRect(x, y, 16, 16)
-      ctx.fillStyle = '#A0522D'; ctx.fillRect(x, y + 1, 16, 14)
-      ctx.fillStyle = '#6B3410'
-      ctx.fillRect(x, y + 5, 16, 1)
-      ctx.fillRect(x, y + 11, 16, 1)
-      break
-    case 35: // ROOF_MR - right roof body
-      ctx.fillStyle = '#8B4513'; ctx.fillRect(x, y, 16, 16)
-      ctx.fillStyle = '#A0522D'; ctx.fillRect(x, y, 14, 16)
-      ctx.fillStyle = '#7B3A10'; ctx.fillRect(x + 14, y, 2, 16) // right edge
-      ctx.fillStyle = '#6B3410'
-      ctx.fillRect(x, y + 5, 16, 1)
-      ctx.fillRect(x, y + 11, 16, 1)
-      break
-    case 36: // WALL_L - left wall
-      ctx.fillStyle = '#D2B48C'; ctx.fillRect(x, y, 16, 16) // tan wall
-      ctx.fillStyle = '#C4A67A'; ctx.fillRect(x + 2, y, 14, 16)
-      ctx.fillStyle = '#8B6E4E'; ctx.fillRect(x, y, 2, 16) // left edge
-      ctx.fillStyle = '#B8986A'; ctx.fillRect(x, y + 15, 16, 1) // bottom
-      break
-    case 37: // WALL_WIN - wall with window
-      ctx.fillStyle = '#D2B48C'; ctx.fillRect(x, y, 16, 16) // tan wall
-      ctx.fillStyle = '#C4A67A'; ctx.fillRect(x, y + 1, 16, 14)
-      // Window
-      ctx.fillStyle = '#6BA3D6'; ctx.fillRect(x + 3, y + 3, 10, 8) // glass
-      ctx.fillStyle = '#4488AA'; ctx.fillRect(x + 3, y + 3, 10, 1) // top
-      ctx.fillStyle = '#87CEEB'; ctx.fillRect(x + 5, y + 5, 3, 4) // reflection
-      // Window frame
-      ctx.fillStyle = '#8B6E4E'
-      ctx.fillRect(x + 2, y + 2, 12, 1) // top frame
-      ctx.fillRect(x + 2, y + 11, 12, 1) // bottom frame
-      ctx.fillRect(x + 2, y + 2, 1, 10) // left frame
-      ctx.fillRect(x + 13, y + 2, 1, 10) // right frame
-      ctx.fillRect(x + 7, y + 3, 1, 8) // cross vertical
-      ctx.fillRect(x + 3, y + 7, 10, 1) // cross horizontal
-      ctx.fillStyle = '#B8986A'; ctx.fillRect(x, y + 15, 16, 1)
-      break
-    case 38: // WALL_R - right wall
-      ctx.fillStyle = '#D2B48C'; ctx.fillRect(x, y, 16, 16)
-      ctx.fillStyle = '#C4A67A'; ctx.fillRect(x, y, 14, 16)
-      ctx.fillStyle = '#8B6E4E'; ctx.fillRect(x + 14, y, 2, 16)
-      ctx.fillStyle = '#B8986A'; ctx.fillRect(x, y + 15, 16, 1)
-      break
-    case 39: // WALL_DL - door row left wall
-      ctx.fillStyle = '#D2B48C'; ctx.fillRect(x, y, 16, 16)
-      ctx.fillStyle = '#C4A67A'; ctx.fillRect(x + 2, y, 14, 16)
-      ctx.fillStyle = '#8B6E4E'; ctx.fillRect(x, y, 2, 16) // left edge
-      // Stone foundation
-      ctx.fillStyle = '#999'; ctx.fillRect(x, y + 12, 16, 4)
-      ctx.fillStyle = '#888'; ctx.fillRect(x, y + 14, 16, 2)
-      ctx.fillStyle = '#777'
-      ctx.fillRect(x + 4, y + 12, 1, 4)
-      ctx.fillRect(x + 10, y + 12, 1, 4)
-      break
-    case 40: // DOOR - entrance
-      ctx.fillStyle = '#D2B48C'; ctx.fillRect(x, y, 16, 16)
-      ctx.fillStyle = '#C4A67A'; ctx.fillRect(x, y, 16, 4)
-      // Door frame
-      ctx.fillStyle = '#8B6E4E'; ctx.fillRect(x + 2, y + 2, 12, 14)
-      // Door
-      ctx.fillStyle = '#5B3E1E'; ctx.fillRect(x + 3, y + 3, 10, 13)
-      ctx.fillStyle = '#4A3015'; ctx.fillRect(x + 3, y + 3, 10, 1) // top
-      // Door panels
-      ctx.fillStyle = '#6B4E2E'
-      ctx.fillRect(x + 4, y + 4, 4, 5)
-      ctx.fillRect(x + 9, y + 4, 4, 5)
-      ctx.fillRect(x + 4, y + 10, 4, 5)
-      ctx.fillRect(x + 9, y + 10, 4, 5)
-      // Handle
-      ctx.fillStyle = '#DAA520'; ctx.fillRect(x + 10, y + 9, 2, 2)
-      // Stone foundation
-      ctx.fillStyle = '#999'; ctx.fillRect(x, y + 14, 16, 2)
-      break
-    case 41: // WALL_DR - door row right wall
-      ctx.fillStyle = '#D2B48C'; ctx.fillRect(x, y, 16, 16)
-      ctx.fillStyle = '#C4A67A'; ctx.fillRect(x, y, 14, 16)
-      ctx.fillStyle = '#8B6E4E'; ctx.fillRect(x + 14, y, 2, 16)
-      // Stone foundation
-      ctx.fillStyle = '#999'; ctx.fillRect(x, y + 12, 16, 4)
-      ctx.fillStyle = '#888'; ctx.fillRect(x, y + 14, 16, 2)
-      ctx.fillStyle = '#777'
-      ctx.fillRect(x + 5, y + 12, 1, 4)
-      ctx.fillRect(x + 11, y + 12, 1, 4)
-      break
-  }
 }
 
 export function drawSpriteTile(ctx, atlas, tileType, px, py, tick) {
@@ -309,10 +190,45 @@ export function drawSpriteTile(ctx, atlas, tileType, px, py, tick) {
       blitTile(ctx, img, tc.fence, px, py)
       break
 
-    // House tiles - drawn procedurally as pixel art
-    case 30: case 31: case 32: case 33: case 34: case 35:
-    case 36: case 37: case 38: case 39: case 40: case 41:
-      drawHouseTile(ctx, tileType, px, py)
+    // House tiles - from overworld.png tileset (cols 3-5, rows 0-3)
+    case 30: // ROOF_TL
+      drawBase(ctx, img, 'grass', px, py)
+      blitTile(ctx, img, tc.houseRoofTL, px, py)
+      break
+    case 31: // ROOF_TC
+      drawBase(ctx, img, 'grass', px, py)
+      blitTile(ctx, img, tc.houseRoofTC, px, py)
+      break
+    case 32: // ROOF_TR
+      drawBase(ctx, img, 'grass', px, py)
+      blitTile(ctx, img, tc.houseRoofTR, px, py)
+      break
+    case 33: // ROOF_ML
+      blitTile(ctx, img, tc.houseRoofML, px, py)
+      break
+    case 34: // ROOF_MC
+      blitTile(ctx, img, tc.houseRoofMC, px, py)
+      break
+    case 35: // ROOF_MR
+      blitTile(ctx, img, tc.houseRoofMR, px, py)
+      break
+    case 36: // WALL_L
+      blitTile(ctx, img, tc.houseWallL, px, py)
+      break
+    case 37: // WALL_WIN
+      blitTile(ctx, img, tc.houseWallWin, px, py)
+      break
+    case 38: // WALL_R
+      blitTile(ctx, img, tc.houseWallR, px, py)
+      break
+    case 39: // WALL_DL
+      blitTile(ctx, img, tc.houseWallDL, px, py)
+      break
+    case 40: // DOOR
+      blitTile(ctx, img, tc.houseDoor, px, py)
+      break
+    case 41: // WALL_DR
+      blitTile(ctx, img, tc.houseWallDR, px, py)
       break
 
     case 14: // SIGN
@@ -327,21 +243,19 @@ export function drawSpriteTile(ctx, atlas, tileType, px, py, tick) {
   }
 }
 
-// Draw player (16x32 character, cols 0-2 of character.png)
+// Draw player (16x16 chibi sprite, cols 0-2 of character.png)
 export function drawPlayerSprite(ctx, atlas, direction, frame, px, py) {
   const img = atlas.character
   const frameIdx = frame % 3
   const dirOffset = DIR_ROWS[direction] || 0
 
   const sx = frameIdx * S
-  const syTop = dirOffset * S
-  const syBot = (dirOffset + 1) * S
+  const sy = dirOffset * S
 
-  ctx.drawImage(img, sx, syTop, S, S, Math.floor(px), Math.floor(py) - S, S, S)
-  ctx.drawImage(img, sx, syBot, S, S, Math.floor(px), Math.floor(py), S, S)
+  ctx.drawImage(img, sx, sy, S, S, Math.floor(px), Math.floor(py), S, S)
 }
 
-// Draw NPC using character.png (different character slots)
+// Draw NPC using character.png (16x16 chibi sprite)
 export function drawNPCSprite(ctx, atlas, spriteType, px, py, tick, direction) {
   const charDef = NPC_CHARS[spriteType]
   if (!charDef) {
@@ -350,16 +264,14 @@ export function drawNPCSprite(ctx, atlas, spriteType, px, py, tick, direction) {
   }
 
   const img = atlas.character
-  // NPCs use frame 1 (standing/neutral pose), with subtle idle sway
+  // NPCs use frame 1 (standing/neutral pose)
   const frameIdx = 1
 
   const sx = (charDef.startCol + frameIdx) * S
   const dirOffset = DIR_ROWS[direction || 'down'] || 0
-  const syTop = (charDef.baseRow + dirOffset) * S
-  const syBot = (charDef.baseRow + dirOffset + 1) * S
+  const sy = (charDef.baseRow + dirOffset) * S
 
-  ctx.drawImage(img, sx, syTop, S, S, Math.floor(px), Math.floor(py) - S, S, S)
-  ctx.drawImage(img, sx, syBot, S, S, Math.floor(px), Math.floor(py), S, S)
+  ctx.drawImage(img, sx, sy, S, S, Math.floor(px), Math.floor(py), S, S)
 }
 
 // ==================== INTERIOR TILES ====================
