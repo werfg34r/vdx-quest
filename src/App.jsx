@@ -1,34 +1,29 @@
-import { AuthProvider, useAuth } from './hooks/useAuth'
-import { GameProvider } from './hooks/useGameState'
-import AuthPage from './pages/AuthPage'
-import GamePage from './pages/GamePage'
+import { useEffect, useRef } from 'react';
+import { startGame } from './game/engine.js';
 
-function AppContent() {
-  const { user, loading } = useAuth()
+function App() {
+  const canvasRef = useRef(null);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-dark flex items-center justify-center">
-        <p className="text-gold animate-pulse text-lg">Chargement...</p>
-      </div>
-    )
-  }
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-  if (!user) {
-    return <AuthPage />
-  }
+    const cleanup = startGame(canvas);
+    return cleanup;
+  }, []);
 
   return (
-    <GameProvider userId={user.id}>
-      <GamePage />
-    </GameProvider>
-  )
+    <canvas
+      ref={canvasRef}
+      style={{
+        display: 'block',
+        width: '100vw',
+        height: '100vh',
+        background: '#0a0a1a',
+        cursor: 'default',
+      }}
+    />
+  );
 }
 
-export default function App() {
-  return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
-  )
-}
+export default App;
