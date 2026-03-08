@@ -25,16 +25,83 @@ const SOLID = new Set([
   T.HOUSE_WALL_DL, T.HOUSE_WALL_DR,
 ])
 
-// Week 1 village: 4 quests (zones)
+// Semaine 1 village: 3 missions (zones) — each house = 1 action non negociable
 const ZONES = [
-  { id: 1, houseX: 4, houseY: 4, name: 'Cabane de la Verite', region: 1,
-    desc: 'Qui es-tu vraiment ? Identifie ta valeur unique.' },
-  { id: 2, houseX: 16, houseY: 4, name: 'Tour du Choix', region: 1,
-    desc: 'Choisis ta niche. A qui veux-tu parler ?' },
-  { id: 3, houseX: 4, houseY: 14, name: 'Forge de l\'Offre', region: 1,
-    desc: 'Construis ton offre irresistible.' },
-  { id: 4, houseX: 16, houseY: 14, name: 'Place Publique', region: 1,
-    desc: 'Fais ta premiere proposition de vente.' },
+  { id: 1, weekId: 1, houseX: 4, houseY: 4, name: 'Cabane de la Verite', region: 1,
+    desc: 'Ecrire noir sur blanc : ta raison profonde.',
+    interiorNpcs: [
+      { id: 'h1_sage', x: 3, y: 5, sprite: 'sage', name: 'Maeva', dialog: [
+        'Bienvenue dans la Cabane de la Verite.',
+        'Ta premiere mission : ecrire noir sur blanc pourquoi tu veux entreprendre.',
+        'Pas 3 lignes. Un texte brut, long, sans chercher le style.',
+        '5 blocs a ecrire : ta raison reelle, ce que tu refuses, tes plus jamais, ta honte silencieuse, ta promesse.',
+        'Ecris en "je". Mets des exemples concrets. Pas de generalites.',
+        'Termine par une seule phrase : "Je fais ca parce que..."',
+      ]},
+      { id: 'h1_warrior', x: 8, y: 5, sprite: 'warrior', name: 'Victor', dialog: [
+        'Tant que tu restes dans le mental, tu es intouchable.',
+        'Des que tu ecris vrai, tu deviens responsable.',
+        'C\'est ca, le seuil. Et c\'est exactement ce qu\'on cherche.',
+        'Accepte de ne plus chercher la reponse parfaite.',
+        'Chercher la reponse parfaite, c\'est souvent une strategie pour eviter de choisir.',
+      ]},
+      { id: 'h1_helper', x: 8, y: 7, sprite: 'villager', name: 'Camille', dialog: [
+        'Ton livrable : un document de minimum 2 pages.',
+        'Une phrase de synthese : "Je fais ca parce que..."',
+        'Et une liste "plus jamais" de 10 lignes.',
+        'Va a l\'autel au fond pour valider ta mission quand c\'est fait.',
+      ]},
+    ],
+  },
+  { id: 2, weekId: 1, houseX: 16, houseY: 4, name: 'Tour de l\'Inventaire', region: 1,
+    desc: 'Inventaire honnete : ce que tu sais faire.',
+    interiorNpcs: [
+      { id: 'h2_sage', x: 3, y: 5, sprite: 'sage', name: 'Raphael', dialog: [
+        'Bienvenue dans la Tour de l\'Inventaire.',
+        'Ta mission : inventorier ce que tu sais VRAIMENT faire.',
+        'Pas ce que tu "pourrais" faire. Ce que tu as PROUVE.',
+        '4 listes : competences techniques, competences humaines, experiences vecues, ce que les autres cherchent chez toi.',
+        'Tu ecris TOUT. Meme ce que tu juges banal.',
+      ]},
+      { id: 'h2_warrior', x: 8, y: 5, sprite: 'warrior', name: 'Nadia', dialog: [
+        'Le banal, quand c\'est maitrise, devient monetisable.',
+        'Pour chaque competence, ajoute une preuve concrete.',
+        '"Je sais organiser" devient : "J\'ai coordonne une equipe de 3 pendant 6 mois avec des deadlines hebdo."',
+        'Tu veux de la matiere qui resiste a la realite.',
+      ]},
+      { id: 'h2_helper', x: 8, y: 7, sprite: 'villager', name: 'Theo', dialog: [
+        'A la fin, extrais 3 piliers de valeur :',
+        '1. Ce que tu maitrises et peux delivrer vite.',
+        '2. Ce que tu comprends profondement et peux expliquer.',
+        '3. Ce que tu as deja resolu et peux reproduire.',
+        'Livrable : 4 listes + 3 piliers + 10 preuves ecrites.',
+      ]},
+    ],
+  },
+  { id: 3, weekId: 1, houseX: 4, houseY: 14, name: 'Forge du Silence', region: 1,
+    desc: '7 jours sans surconsommation.',
+    interiorNpcs: [
+      { id: 'h3_sage', x: 3, y: 5, sprite: 'sage', name: 'Eliane', dialog: [
+        'Bienvenue dans la Forge du Silence.',
+        'Ta mission : 7 jours de silence informationnel.',
+        'Bloque YouTube, les formations, les podcasts business, les threads sans fin.',
+        'Ton energie va dans la production de reel, pas dans l\'absorption de contenu.',
+        'Autorise uniquement : notes, ecriture, inventaire, conversations reelles.',
+      ]},
+      { id: 'h3_warrior', x: 8, y: 5, sprite: 'warrior', name: 'Axel', dialog: [
+        'La clarte arrive quand le bruit descend.',
+        'Ta tete recevra un signal fort : mon futur depend de mes decisions, pas de ma prochaine video.',
+        'Tu recuperes ton attention. Et ton attention, c\'est ton actif le plus precieux.',
+        'Quand ton attention se stabilise, ta trajectoire gagne en puissance.',
+      ]},
+      { id: 'h3_helper', x: 8, y: 7, sprite: 'villager', name: 'Ines', dialog: [
+        'Remplace la consommation par un rituel minimal :',
+        '30 min/jour : ecrire, clarifier, structurer ton inventaire.',
+        '15 min/jour : relire ce que tu as ecrit et surligner les phrases vraies.',
+        'Tracking simple : 7 cases a cocher. Un rituel quotidien fixe (horaire + duree).',
+      ]},
+    ],
+  },
 ]
 
 // Computed door positions (bottom center of house)
@@ -43,24 +110,31 @@ ZONES.forEach(z => {
   z.doorY = z.houseY + 3
 })
 
-// NPCs with proper positions in the village
+// NPCs on the overworld
 const NPCS = [
   {
     id: 'mentor', x: 14, y: 20, sprite: 'mentor', name: 'Laurent',
     dialog: [
-      'Bienvenue dans le Village de la Clarte, aventurier.',
-      'Je suis Laurent, maitre de la methodologie VDX.',
-      'Chaque maison contient une epreuve. Entre pour la decouvrir.',
-      'Commence par la Cabane de la Verite au nord-ouest.',
+      'Bienvenue, aventurier. Je suis Laurent, ton guide pour les 90 prochains jours.',
+      'L\'objectif du Niveau 0 : passer de quelqu\'un qui pense a entreprendre... a quelqu\'un qui agit.',
+      'Ce premier mois, on va te sortir du flou et t\'ancrer dans le reel.',
+      'Cette semaine — Semaine 1 : Arreter la fuite mentale.',
+      'Tu as 3 missions. Chaque maison contient une epreuve avec des conseillers.',
+      'Cabane de la Verite au nord-ouest : ecrire ta raison profonde.',
+      'Tour de l\'Inventaire au nord-est : identifier ce que tu sais faire.',
+      'Forge du Silence au sud-ouest : couper le bruit pendant 7 jours.',
+      'Entre dans chaque maison, parle aux conseillers, puis valide ta mission a l\'autel.',
+      'A la fin de cette semaine, tu dois pouvoir dire : "Voila pourquoi je fais ca."',
       'Bonne route, entrepreneur.',
     ]
   },
   {
     id: 'guide1', x: 10, y: 10, sprite: 'villager', name: 'Elise',
     dialog: [
-      'Salut ! Bienvenue dans notre village.',
-      'Les 4 maisons sont les 4 epreuves de la semaine.',
-      'Chaque quete te rapprochera de ton objectif.',
+      'Salut ! Bienvenue dans le Village de la Clarte.',
+      'Les 3 maisons sont les 3 epreuves de la Semaine 1.',
+      'Chaque maison a des conseillers qui t\'expliquent ta mission.',
+      'Parle-leur, puis va a l\'autel pour valider quand c\'est fait.',
     ]
   },
   {
@@ -68,6 +142,9 @@ const NPCS = [
     dialog: [
       'Beaucoup passent par ici... peu vont jusqu\'au bout.',
       'Le secret ? La constance bat le talent.',
+      'Au niveau 0, le vrai probleme n\'est pas le manque de competences.',
+      'C\'est la dispersion mentale. Trop de pistes, trop de scenarios.',
+      'Reste concentre. Une mission a la fois.',
     ]
   },
 ]
@@ -318,8 +395,18 @@ function canMove(map, x, y) {
   return true
 }
 
+function getAdjacentInteriorNPC(tileX, tileY, interiorNpcs) {
+  if (!interiorNpcs) return null
+  for (const npc of interiorNpcs) {
+    const dx = Math.abs(tileX - npc.x)
+    const dy = Math.abs(tileY - npc.y)
+    if (dx <= 1 && dy <= 1) return npc
+  }
+  return null
+}
+
 export {
   TILE, COLS, ROWS, T, ZONES, NPCS,
   generateMap, drawZoneLabel, drawNPCLabel,
-  getAdjacentZone, getAdjacentNPC, canMove,
+  getAdjacentZone, getAdjacentNPC, getAdjacentInteriorNPC, canMove,
 }

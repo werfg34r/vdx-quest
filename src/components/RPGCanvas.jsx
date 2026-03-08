@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import {
   TILE, COLS, ROWS, ZONES, NPCS,
   generateMap, drawZoneLabel, drawNPCLabel,
-  getAdjacentZone, getAdjacentNPC, canMove,
+  getAdjacentZone, getAdjacentNPC, getAdjacentInteriorNPC, canMove,
 } from '../game/engine'
 import {
   loadSpriteAtlas, drawSpriteTile, drawPlayerSprite, drawNPCSprite,
@@ -194,17 +194,27 @@ export default function RPGCanvas({ onOpenZone }) {
       // Interior interactions
       if (game.scene === 'interior') {
         const im = game.interior.map
-        // Check if near altar
         const { px, py } = game
+        const zone = game.interiorZone
+
+        // Check if near interior NPC
+        const intNpc = getAdjacentInteriorNPC(px, py, zone.interiorNpcs)
+        if (intNpc) {
+          game.dialog = { speaker: intNpc.name, lines: intNpc.dialog, lineIdx: 0, charIdx: 0 }
+          setShowDialog(true)
+          return
+        }
+
+        // Check if near altar
         for (let dy = -1; dy <= 1; dy++) {
           for (let dx = -1; dx <= 1; dx++) {
             const cx = px + dx, cy = py + dy
             if (cy >= 0 && cy < game.interior.height && cx >= 0 && cx < game.interior.width) {
               if (im[cy][cx] === IT.ALTAR) {
-                const zone = game.interiorZone
                 const wp = wpRef.current
-                if (wp[zone.id]?.unlocked) {
-                  onOpenZone(zone.id)
+                const wid = zone.weekId || zone.id
+                if (wp[wid]?.unlocked) {
+                  onOpenZone(wid)
                 } else {
                   game.dialog = {
                     speaker: '', lines: ['Cette epreuve est encore verrouillee.'],
@@ -289,7 +299,7 @@ export default function RPGCanvas({ onOpenZone }) {
           if (dx || dy) {
             const ntx = game.px + dx, nty = game.py + dy
             const canMoveHere = game.scene === 'interior'
-              ? canMoveInterior(game.interior.map, ntx, nty)
+              ? canMoveInterior(game.interior.map, ntx, nty, game.interiorZone?.interiorNpcs)
               : canMove(map, ntx, nty)
             if (canMoveHere) {
               game.tx = ntx
@@ -314,23 +324,24 @@ export default function RPGCanvas({ onOpenZone }) {
             setPromptText(null)
           }
         } else if (game.scene === 'interior') {
-          // Check near altar
+          // Check proximity to interior elements
           let nearAltar = false
-          let nearDoor = false
           const im = game.interior.map
+          const intNpc = getAdjacentInteriorNPC(game.px, game.py, game.interiorZone?.interiorNpcs)
           for (let dy = -1; dy <= 1; dy++) {
             for (let dx = -1; dx <= 1; dx++) {
               const cx = game.px + dx, cy = game.py + dy
               if (cy >= 0 && cy < game.interior.height && cx >= 0 && cx < game.interior.width) {
                 if (im[cy][cx] === IT.ALTAR) nearAltar = true
-                if (im[cy][cx] === IT.DOOR_MAT) nearDoor = true
               }
             }
           }
           if (im[game.py]?.[game.px] === IT.DOOR_MAT) {
             setPromptText('[ ESPACE ] Sortir')
+          } else if (intNpc) {
+            setPromptText('[ ESPACE ] Parler')
           } else if (nearAltar) {
-            setPromptText('[ ESPACE ] Charger l\'epreuve')
+            setPromptText('[ ESPACE ] Valider la mission')
           } else {
             setPromptText(null)
           }
@@ -447,7 +458,8 @@ export default function RPGCanvas({ onOpenZone }) {
       const wp = wpRef.current
       for (const zone of ZONES) {
         if (zone.houseX >= startCol - 3 && zone.houseX <= endCol + 3 && zone.houseY >= startRow - 3 && zone.houseY <= endRow + 3) {
-          drawZoneLabel(ctx, zone, zone.houseX * TILE * SCALE, zone.houseY * TILE * SCALE, wp[zone.id]?.unlocked, wp[zone.id]?.completed)
+          const wid = zone.weekId || zone.id
+          drawZoneLabel(ctx, zone, zone.houseX * TILE * SCALE, zone.houseY * TILE * SCALE, wp[wid]?.unlocked, wp[wid]?.completed)
         }
       }
       for (const npc of NPCS) {
@@ -463,6 +475,7 @@ export default function RPGCanvas({ onOpenZone }) {
       const interior = game.interior
       const iw = interior.width * TILE * SCALE
       const ih = interior.height * TILE * SCALE
+      const zone = game.interiorZone
 
       // Center interior on screen
       const offX = Math.round((viewW - iw) / 2)
@@ -480,6 +493,21 @@ export default function RPGCanvas({ onOpenZone }) {
         }
       }
 
+      // Draw interior NPCs
+      if (zone.interiorNpcs) {
+        for (const npc of zone.interiorNpcs) {
+          // Face toward player if nearby
+          let dir = 'down'
+          const dx = game.px - npc.x
+          const dy = game.py - npc.y
+          if (Math.abs(dx) + Math.abs(dy) <= 3) {
+            if (Math.abs(dx) > Math.abs(dy)) dir = dx > 0 ? 'right' : 'left'
+            else dir = dy > 0 ? 'down' : 'up'
+          }
+          drawNPCSprite(ctx, atlas, npc.sprite, npc.x * TILE, npc.y * TILE, game.tick, dir)
+        }
+      }
+
       // Draw player
       const pDrawX = game.px * TILE + game.ox / SCALE
       const pDrawY = game.py * TILE + game.oy / SCALE
@@ -487,8 +515,36 @@ export default function RPGCanvas({ onOpenZone }) {
 
       ctx.restore() // undo scale
 
+      // Interior NPC name labels (above NPCs)
+      if (zone.interiorNpcs) {
+        for (const npc of zone.interiorNpcs) {
+          const npx = npc.x * TILE * SCALE
+          const npy = npc.y * TILE * SCALE
+          const bob = Math.sin(game.tick * 0.05 + npc.x) * 2
+
+          // Exclamation mark
+          ctx.fillStyle = '#c7b777'
+          ctx.font = 'bold 10px sans-serif'
+          ctx.textAlign = 'center'
+          ctx.fillText('!', npx + TILE * SCALE / 2, npy - 4 + bob)
+
+          // Name background
+          const nameW = npc.name.length * 5 + 10
+          const nameX = npx + TILE * SCALE / 2 - nameW / 2
+          const nameY = npy - 16 + bob
+          ctx.fillStyle = 'rgba(5,5,15,0.8)'
+          ctx.beginPath()
+          ctx.roundRect(nameX, nameY, nameW, 12, 3)
+          ctx.fill()
+
+          // Name text
+          ctx.fillStyle = '#c7b777'
+          ctx.font = '8px monospace'
+          ctx.fillText(npc.name, npx + TILE * SCALE / 2, nameY + 9)
+        }
+      }
+
       // Zone name header
-      const zone = game.interiorZone
       ctx.fillStyle = 'rgba(10,10,25,0.85)'
       ctx.beginPath()
       ctx.roundRect(iw / 2 - 100, -30, 200, 24, 6)

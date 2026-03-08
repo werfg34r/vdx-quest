@@ -573,9 +573,15 @@ export const IT = {
 
 const SOLID_INTERIOR = new Set([IT.WALL, IT.TABLE, IT.BOOKSHELF, IT.BARREL, IT.BED, IT.TORCH, IT.POT, IT.CHEST])
 
-export function canMoveInterior(interiorMap, x, y) {
+export function canMoveInterior(interiorMap, x, y, interiorNpcs) {
   if (x < 0 || y < 0 || y >= interiorMap.length || x >= interiorMap[0].length) return false
-  return !SOLID_INTERIOR.has(interiorMap[y][x])
+  if (SOLID_INTERIOR.has(interiorMap[y][x])) return false
+  if (interiorNpcs) {
+    for (const npc of interiorNpcs) {
+      if (npc.x === x && npc.y === y) return false
+    }
+  }
+  return true
 }
 
 // Generate interior map for a zone
