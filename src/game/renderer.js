@@ -49,18 +49,15 @@ function oTile(ctx, sx, sy, dx, dy, tw = 1, th = 1) {
 }
 
 // ── GRASS ──
-// In the Serene Village tileset, the top-left area has grass tiles
-// Row 0, col 0-2 area = pure grass
+// Outdoors tileset rows 6-7 have grass tiles
+// Row 6 col 0 = solid green grass, col 1 = slight variation
 function drawGrass(ctx, x, y, col, row) {
-  // Use the green grass from the tileset - top-left corner
-  // The tileset shows grass at (0,0) as bright green
-  vTile(ctx, 0, 0, x, y);
-
-  // Occasional variation using nearby grass tiles
-  const v = (col * 7 + row * 13) % 8;
+  // Use the outdoors tileset grass at row 6 (y=96px area)
+  const v = (col * 7 + row * 13) % 6;
   if (v === 0) {
-    // Small grass detail overlay
-    vTile(ctx, 1, 0, x, y);
+    oTile(ctx, 1, 6, x, y); // grass variant
+  } else {
+    oTile(ctx, 0, 6, x, y); // main grass
   }
 }
 
@@ -106,19 +103,21 @@ function drawPath(ctx, x, y, col, row) {
 }
 
 // ── TREE ──
+// Outdoors tileset: round Pokemon-style trees at top
+// Each tree is 2x2 tiles (32x32px) starting at (0,0)
+// Row 0-1, cols 0-1: green round tree
+// Row 0-1, cols 2-3: another green tree
+// Row 3-4: second row of trees
 function drawTree(ctx, x, y) {
-  // Draw grass underneath
-  vTile(ctx, 0, 0, x, y);
-
-  // Use the pre-rendered tree image scaled to fill the tile
-  const tree = getImg('tree1');
-  if (tree) {
-    ctx.drawImage(tree, x, y - RS * 0.3, RS, RS * 1.3);
-  } else {
-    ctx.fillStyle = '#2d7a2d';
-    ctx.beginPath(); ctx.arc(x + RS / 2, y + RS * 0.35, RS * 0.4, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#5a3018';
-    ctx.fillRect(x + RS * 0.4, y + RS * 0.6, RS * 0.2, RS * 0.4);
+  // Draw a 2x2 round tree from the outdoors tileset
+  // Source: 32x32 pixels from (0,0) in the tileset
+  // Rendered: 2 tiles wide x 2 tiles tall, centered on this tile
+  const img = getImg('outdoors');
+  if (img) {
+    ctx.drawImage(img,
+      0, 0, 32, 32,                           // source: 2x2 tiles from top-left
+      x - RS * 0.5, y - RS * 0.5, RS * 2, RS * 2  // dest: centered, overlapping neighbors
+    );
   }
 }
 
@@ -152,22 +151,11 @@ function drawFlower(ctx, x, y, col, row) {
 }
 
 // ── BRIDGE ──
+// Village tileset: bridge/pier area at rows 3-5
 function drawBridge(ctx, x, y) {
-  // Water underneath
-  ctx.fillStyle = '#3c8cc8';
-  ctx.fillRect(x, y, RS, RS);
-  // Wooden planks
-  ctx.fillStyle = '#a0784c';
-  ctx.fillRect(x + 2, y, RS - 4, RS);
-  ctx.fillStyle = '#8a6838';
-  ctx.fillRect(x + 2, y, 2, RS);
-  ctx.fillRect(x + RS - 4, y, 2, RS);
-  // Plank lines
-  ctx.strokeStyle = 'rgba(0,0,0,0.1)';
-  ctx.lineWidth = 1;
-  for (let py = 4; py < RS; py += 12) {
-    ctx.beginPath(); ctx.moveTo(x + 4, y + py); ctx.lineTo(x + RS - 4, y + py); ctx.stroke();
-  }
+  // Try to use the village tileset bridge tile
+  // The bridge planks appear around (5, 3) area
+  vTile(ctx, 5, 4, x, y);
 }
 
 // ── HOUSE (using pre-rendered house images) ──
@@ -292,7 +280,7 @@ export function renderVillage(ctx, canvas, player, frame) {
   const ec = Math.min(MAP_W, Math.ceil((camX + canvas.width) / RS) + 1);
   const er = Math.min(MAP_H, Math.ceil((camY + canvas.height) / RS) + 1);
 
-  // Ground tiles
+  // Pass 1: Ground tiles (everything except trees)
   for (let row = sr; row < er; row++) {
     for (let col = sc; col < ec; col++) {
       const tile = villageMap[row]?.[col];
@@ -305,12 +293,21 @@ export function renderVillage(ctx, canvas, player, frame) {
         case W:            drawWater(ctx, x, y, col, row, frame); break;
         case WE:           drawWaterEdge(ctx, x, y, col, row, frame); break;
         case P:            drawPath(ctx, x, y, col, row); break;
-        case T:            drawTree(ctx, x, y); break;
+        case T:            drawGrass(ctx, x, y, col, row); break; // grass under trees
         case FL:           drawFlower(ctx, x, y, col, row); break;
         case B:            drawBridge(ctx, x, y); break;
         case R:            drawRock(ctx, x, y, col, row); break;
         case H:            drawGrass(ctx, x, y, col, row); break;
         default:           drawGrass(ctx, x, y, col, row);
+      }
+    }
+  }
+
+  // Pass 2: Trees (drawn on top so they overlap neighbors properly)
+  for (let row = sr; row < er; row++) {
+    for (let col = sc; col < ec; col++) {
+      if (villageMap[row]?.[col] === T) {
+        drawTree(ctx, col * RS - camX, row * RS - camY);
       }
     }
   }
