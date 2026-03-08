@@ -1,11 +1,38 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import * as THREE from 'three'
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js'
 import {
   TILE, COLS, ROWS, ZONES, NPCS,
   generateMap, getAdjacentZone, getAdjacentNPC, canMove,
 } from '../game/engine'
 import { buildScene, createCharacter, createTextSprite } from '../game/world3d'
 import { useGameState } from '../hooks/useGameState'
+
+// Vignette shader
+const VignetteShader = {
+  uniforms: {
+    tDiffuse: { value: null },
+    offset: { value: 0.95 },
+    darkness: { value: 1.2 },
+  },
+  vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: `
+    uniform sampler2D tDiffuse;
+    uniform float offset;
+    uniform float darkness;
+    varying vec2 vUv;
+    void main() {
+      vec4 texel = texture2D(tDiffuse, vUv);
+      vec2 uv = (vUv - vec2(0.5)) * vec2(offset);
+      float vignette = 1.0 - dot(uv, uv);
+      texel.rgb *= smoothstep(0.0, 1.0, pow(vignette, darkness));
+      gl_FragColor = texel;
+    }
+  `,
+}
 
 const MOVE_SPEED = 0.1
 const TEXT_SPEED = 0.6
@@ -61,8 +88,45 @@ export default function RPGCanvas({ onOpenZone }) {
     mount.appendChild(renderer.domElement)
 
     const scene = new THREE.Scene()
-    scene.background = new THREE.Color(0x87CEEB)
-    scene.fog = new THREE.FogExp2(0x9BC5E8, 0.018)
+    scene.fog = new THREE.FogExp2(0xB8D8F0, 0.016)
+
+    // Gradient sky (sphere with shader)
+    const skyGeo = new THREE.SphereGeometry(100, 16, 12)
+    const skyMat = new THREE.ShaderMaterial({
+      side: THREE.BackSide,
+      uniforms: {
+        topColor: { value: new THREE.Color(0x4488CC) },
+        bottomColor: { value: new THREE.Color(0xC8E0F0) },
+        horizonColor: { value: new THREE.Color(0xF0E8D0) },
+        offset: { value: 10 },
+        exponent: { value: 0.5 },
+      },
+      vertexShader: `
+        varying vec3 vWorldPosition;
+        void main() {
+          vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+          vWorldPosition = worldPosition.xyz;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 topColor;
+        uniform vec3 bottomColor;
+        uniform vec3 horizonColor;
+        uniform float offset;
+        uniform float exponent;
+        varying vec3 vWorldPosition;
+        void main() {
+          float h = normalize(vWorldPosition + offset).y;
+          float t = max(pow(max(h, 0.0), exponent), 0.0);
+          vec3 sky = mix(horizonColor, topColor, t);
+          float b = max(pow(max(-h, 0.0), 0.8), 0.0);
+          sky = mix(sky, bottomColor, b);
+          gl_FragColor = vec4(sky, 1.0);
+        }
+      `,
+    })
+    scene.add(new THREE.Mesh(skyGeo, skyMat))
 
     const camera = new THREE.PerspectiveCamera(
       50, mount.clientWidth / mount.clientHeight, 0.1, 200
@@ -70,14 +134,29 @@ export default function RPGCanvas({ onOpenZone }) {
     camera.position.set(8 + CAM_OFFSET.x, CAM_OFFSET.y, 38 + CAM_OFFSET.z)
     camera.lookAt(8, 0, 38)
 
+    // ==================== POST-PROCESSING ====================
+    const composer = new EffectComposer(renderer)
+    composer.addPass(new RenderPass(scene, camera))
+
+    const bloomPass = new UnrealBloomPass(
+      new THREE.Vector2(mount.clientWidth, mount.clientHeight),
+      0.3,  // strength
+      0.4,  // radius
+      0.85  // threshold
+    )
+    composer.addPass(bloomPass)
+
+    const vignettePass = new ShaderPass(VignetteShader)
+    composer.addPass(vignettePass)
+
     // ==================== LIGHTING ====================
-    const ambient = new THREE.AmbientLight(0xffffff, 0.5)
+    const ambient = new THREE.AmbientLight(0xffffff, 0.45)
     scene.add(ambient)
 
-    const hemi = new THREE.HemisphereLight(0x87CEEB, 0x4CAF50, 0.35)
+    const hemi = new THREE.HemisphereLight(0x88BBDD, 0x446633, 0.4)
     scene.add(hemi)
 
-    const sun = new THREE.DirectionalLight(0xffeedd, 0.9)
+    const sun = new THREE.DirectionalLight(0xFFEECC, 1.0)
     sun.position.set(20, 30, 15)
     sun.castShadow = true
     sun.shadow.mapSize.set(2048, 2048)
@@ -87,8 +166,14 @@ export default function RPGCanvas({ onOpenZone }) {
     sun.shadow.camera.bottom = -20
     sun.shadow.camera.near = 0.5
     sun.shadow.camera.far = 80
+    sun.shadow.bias = -0.001
     scene.add(sun)
     scene.add(sun.target)
+
+    // Subtle fill light from opposite side
+    const fill = new THREE.DirectionalLight(0x8899BB, 0.3)
+    fill.position.set(-15, 10, -10)
+    scene.add(fill)
 
     // ==================== BUILD WORLD ====================
     const map = generateMap()
@@ -328,7 +413,17 @@ export default function RPGCanvas({ onOpenZone }) {
       sun.position.set(game.px + 15, 30, game.pz + 10)
       sun.target.position.set(game.px, 0, game.pz)
 
-      renderer.render(scene, camera)
+      // Animate particles
+      if (worldObjects.particles) {
+        const pArr = worldObjects.particles.geometry.attributes.position.array
+        for (let i = 0; i < pArr.length; i += 3) {
+          pArr[i + 1] += Math.sin(game.tick * 0.01 + pArr[i] * 0.5) * 0.002
+          if (pArr[i + 1] > 5) pArr[i + 1] = 0.5
+        }
+        worldObjects.particles.geometry.attributes.position.needsUpdate = true
+      }
+
+      composer.render()
       animId = requestAnimationFrame(animate)
     }
 
@@ -340,6 +435,7 @@ export default function RPGCanvas({ onOpenZone }) {
       camera.aspect = w / h
       camera.updateProjectionMatrix()
       renderer.setSize(w, h)
+      composer.setSize(w, h)
     }
     window.addEventListener('resize', onResize)
 
