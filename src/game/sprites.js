@@ -44,23 +44,20 @@ const TILE_COORDS = {
   bridge: { x: 34, y: 2, needsBase: 'water' },
   fence: { x: 6, y: 3, needsBase: 'grass' },
 
-  // Wooden house tiles from the large house in tileset
-  // Row 0 of house: Roof top (cols 3-5 of the big house, rows 0-1)
-  houseRoofTL:  { x: 3, y: 0 },
-  houseRoofTC:  { x: 4, y: 0 },
-  houseRoofTR:  { x: 5, y: 0 },
-  // Row 1: Roof middle
-  houseRoofML:  { x: 3, y: 1 },
-  houseRoofMC:  { x: 4, y: 1 },
-  houseRoofMR:  { x: 5, y: 1 },
-  // Row 2: Wall with windows
-  houseWallL:   { x: 3, y: 2 },
-  houseWallWin: { x: 4, y: 2 },
-  houseWallR:   { x: 5, y: 2 },
-  // Row 3: Wall with door
-  houseWallDL:  { x: 3, y: 3 },
-  houseDoor:    { x: 4, y: 3 },
-  houseWallDR:  { x: 5, y: 3 },
+  // Wooden house tiles - from the large house in tileset (cols 7-9, rows 0-4)
+  // Verified via pixel analysis: brown roof, dark walls, dark door at (8,3)
+  houseRoofTL:  { x: 7, y: 0 },
+  houseRoofTC:  { x: 8, y: 0 },
+  houseRoofTR:  { x: 9, y: 0 },
+  houseRoofML:  { x: 7, y: 1 },
+  houseRoofMC:  { x: 8, y: 1 },
+  houseRoofMR:  { x: 9, y: 1 },
+  houseWallL:   { x: 7, y: 2 },
+  houseWallWin: { x: 8, y: 2 },
+  houseWallR:   { x: 9, y: 2 },
+  houseWallDL:  { x: 7, y: 3 },
+  houseDoor:    { x: 8, y: 3 },
+  houseWallDR:  { x: 9, y: 3 },
 
   sign: { x: 30, y: 0, needsBase: 'path' },
   sand: [
@@ -190,7 +187,7 @@ export function drawSpriteTile(ctx, atlas, tileType, px, py, tick) {
       blitTile(ctx, img, tc.fence, px, py)
       break
 
-    // House tiles - from overworld.png tileset (cols 3-5, rows 0-3)
+    // House tiles - from overworld.png tileset (cols 7-9, rows 0-3)
     case 30: // ROOF_TL
       drawBase(ctx, img, 'grass', px, py)
       blitTile(ctx, img, tc.houseRoofTL, px, py)
@@ -243,6 +240,10 @@ export function drawSpriteTile(ctx, atlas, tileType, px, py, tick) {
   }
 }
 
+// Character render size (draw 16x16 source at larger dest for visibility)
+const CHAR_DRAW = 22 // destination size in tile-space (22px = 66px on screen at SCALE=3)
+const CHAR_OFF = (CHAR_DRAW - S) / 2 // centering offset
+
 // Draw player (16x16 chibi sprite, cols 0-2 of character.png)
 export function drawPlayerSprite(ctx, atlas, direction, frame, px, py) {
   const img = atlas.character
@@ -252,10 +253,12 @@ export function drawPlayerSprite(ctx, atlas, direction, frame, px, py) {
   const sx = frameIdx * S
   const sy = dirOffset * S
 
-  ctx.drawImage(img, sx, sy, S, S, Math.floor(px), Math.floor(py), S, S)
+  ctx.drawImage(img, sx, sy, S, S,
+    Math.floor(px - CHAR_OFF), Math.floor(py - CHAR_OFF - 2),
+    CHAR_DRAW, CHAR_DRAW)
 }
 
-// Draw NPC using character.png (16x16 chibi sprite)
+// Draw NPC using character.png (16x16 chibi sprite, rendered larger)
 export function drawNPCSprite(ctx, atlas, spriteType, px, py, tick, direction) {
   const charDef = NPC_CHARS[spriteType]
   if (!charDef) {
@@ -271,7 +274,9 @@ export function drawNPCSprite(ctx, atlas, spriteType, px, py, tick, direction) {
   const dirOffset = DIR_ROWS[direction || 'down'] || 0
   const sy = (charDef.baseRow + dirOffset) * S
 
-  ctx.drawImage(img, sx, sy, S, S, Math.floor(px), Math.floor(py), S, S)
+  ctx.drawImage(img, sx, sy, S, S,
+    Math.floor(px - CHAR_OFF), Math.floor(py - CHAR_OFF - 2),
+    CHAR_DRAW, CHAR_DRAW)
 }
 
 // ==================== INTERIOR TILES ====================
