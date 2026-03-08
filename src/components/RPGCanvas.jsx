@@ -8,6 +8,9 @@ import {
   loadSpriteAtlas, drawSpriteTile, drawPlayerSprite, drawNPCSprite,
   drawInteriorTile, generateInterior, canMoveInterior, IT,
 } from '../game/sprites'
+import {
+  ParticleSystem, DayNightCycle, Minimap, MINIMAP_TILE_COLORS,
+} from '../game/particles'
 import { useGameState } from '../hooks/useGameState'
 
 const SCALE = 3
@@ -52,17 +55,24 @@ export default function RPGCanvas({ onOpenZone }) {
     const map = generateMap()
     let atlas = null
 
+    // Systems
+    const particles = new ParticleSystem()
+    const dayNight = new DayNightCycle()
+    const minimap = new Minimap(COLS, ROWS)
+    particles.setWeather('leaves') // ambient leaves
+
     // Game state
     const game = {
       // Player position
-      px: 14, py: 20,
-      tx: 14, ty: 20,
+      px: 19, py: 24,
+      tx: 19, ty: 24,
       ox: 0, oy: 0,
       moveFrame: 0,
       moving: false,
       direction: 'down',
       walkFrame: 0,
       walkTick: 0,
+      lastFootstep: 0,
       keys: {},
       tick: 0,
       camX: 0, camY: 0,
@@ -85,6 +95,7 @@ export default function RPGCanvas({ onOpenZone }) {
 
     loadSpriteAtlas().then(a => {
       atlas = a
+      minimap.generate(map, ZONES, MINIMAP_TILE_COLORS)
       setLoading(false)
     })
 
@@ -261,10 +272,9 @@ export default function RPGCanvas({ onOpenZone }) {
       if (game.scene === 'transition') {
         game.transitionFrame++
         if (game.transitionFrame >= TRANSITION_FRAMES) {
-          if (game.transitionCallback) {
-            game.transitionCallback()
-            game.transitionCallback = null
-          }
+          const cb = game.transitionCallback
+          game.transitionCallback = null
+          if (cb) cb()
         }
       }
 
@@ -286,6 +296,14 @@ export default function RPGCanvas({ onOpenZone }) {
             game.oy = 0
             game.moving = false
             game.moveFrame = 0
+            // Footstep dust on overworld paths
+            if (game.scene === 'overworld' && game.tick - game.lastFootstep > 4) {
+              const tile = map[game.py]?.[game.px]
+              if (tile === 1) { // PATH
+                particles.spawnFootstepDust(game.px * TILE + 8, game.py * TILE + 12, game.direction)
+              }
+              game.lastFootstep = game.tick
+            }
           }
         }
 
@@ -373,13 +391,68 @@ export default function RPGCanvas({ onOpenZone }) {
         }
       }
 
+      // ==================== UPDATE SYSTEMS ====================
+      particles.update()
+      dayNight.update()
+
+      // Spawn particles based on scene
+      if (game.scene === 'overworld' || game.scene === 'interior') {
+        if (game.tick % 3 === 0) {
+          if (game.scene === 'overworld') {
+            // Spawn ambient particles
+            particles.spawnAmbient(
+              game.camX / SCALE, game.camY / SCALE,
+              viewW / SCALE, viewH / SCALE
+            )
+            // Water ripples near visible water tiles
+            if (game.tick % 12 === 0) {
+              const cx = Math.floor(game.px)
+              const cy = Math.floor(game.py)
+              for (let dy = -5; dy <= 5; dy++) {
+                for (let dx = -5; dx <= 5; dx++) {
+                  const wx = cx + dx, wy = cy + dy
+                  if (wx >= 0 && wy >= 0 && wx < COLS && wy < ROWS && map[wy][wx] === 2) {
+                    if (Math.random() > 0.7) {
+                      particles.spawnWaterRipple(wx * TILE, wy * TILE, TILE)
+                    }
+                  }
+                }
+              }
+            }
+          }
+          if (game.scene === 'interior' && game.interior) {
+            // Torch flames in interior
+            const im = game.interior.map
+            for (let y = 0; y < game.interior.height; y++) {
+              for (let x = 0; x < game.interior.width; x++) {
+                if (im[y][x] === IT.TORCH) {
+                  particles.spawnTorchFlame(x * TILE, y * TILE, TILE)
+                }
+                if (im[y][x] === IT.ALTAR) {
+                  const wp = wpRef.current
+                  const wid = game.interiorZone?.weekId || game.interiorZone?.id
+                  particles.spawnAltarGlow(x * TILE, y * TILE, TILE, wp[wid]?.unlocked)
+                }
+              }
+            }
+          }
+        }
+        // Weather
+        if (game.scene === 'overworld') {
+          particles.spawnWeather(viewW, viewH)
+        }
+      }
+
       // ==================== RENDER ====================
+      const shake = particles.getScreenShake()
       ctx.fillStyle = '#0a0a0f'
       ctx.fillRect(0, 0, viewW, viewH)
 
+      ctx.save()
+      ctx.translate(shake.x, shake.y)
+
       if (game.scene === 'overworld' || (game.scene === 'transition' && !game.interior && game.transitionDir === 'in') ||
           (game.scene === 'transition' && game.interior && game.transitionDir === 'out' && game.savedPos)) {
-        // Only render overworld if we're showing it (not yet switched to interior)
         if (game.scene !== 'transition' || !game.interior) {
           renderOverworld(ctx, viewW, viewH, game, atlas, map)
         }
@@ -391,12 +464,32 @@ export default function RPGCanvas({ onOpenZone }) {
         }
       }
 
+      ctx.restore() // undo shake
+
+      // Day/night overlay (overworld only)
+      if (game.scene === 'overworld' || (game.scene === 'transition' && !game.interior)) {
+        dayNight.render(ctx, viewW, viewH)
+      }
+
+      // Weather overlay
+      if (game.scene === 'overworld') {
+        particles.renderWeather(ctx, viewW, viewH)
+      }
+
+      // Screen effects (flash etc)
+      particles.renderScreenEffects(ctx, viewW, viewH)
+
       // Transition overlay
       if (game.scene === 'transition') {
         const progress = Math.min(game.transitionFrame / TRANSITION_FRAMES, 1)
         const alpha = game.transitionDir === 'in' ? progress : (1 - progress)
         ctx.fillStyle = `rgba(0,0,0,${alpha})`
         ctx.fillRect(0, 0, viewW, viewH)
+      }
+
+      // Minimap (overworld only, not during dialog/intro)
+      if (game.scene === 'overworld' && !game.intro && !game.dialog) {
+        minimap.render(ctx, game.px, game.py, NPCS, viewW - 140, 50)
       }
     }
 
@@ -447,6 +540,9 @@ export default function RPGCanvas({ onOpenZone }) {
         }
       }
 
+      // Overworld particles (in tile-space, scaled)
+      particles.render(ctx, true)
+
       // Draw player
       const pDrawX = game.px * TILE + game.ox / SCALE
       const pDrawY = game.py * TILE + game.oy / SCALE
@@ -467,6 +563,16 @@ export default function RPGCanvas({ onOpenZone }) {
           drawNPCLabel(ctx, npc, npc.x * TILE * SCALE, npc.y * TILE * SCALE, game.tick)
         }
       }
+
+      // Time display
+      ctx.fillStyle = 'rgba(5,5,15,0.7)'
+      ctx.beginPath()
+      ctx.roundRect(viewW - 146, 30, 38, 16, 3)
+      ctx.fill()
+      ctx.fillStyle = '#c7b777'
+      ctx.font = '8px monospace'
+      ctx.textAlign = 'center'
+      ctx.fillText(dayNight.getTimeLabel(), viewW - 127, 41)
 
       ctx.restore() // undo camera
     }
@@ -492,6 +598,9 @@ export default function RPGCanvas({ onOpenZone }) {
           drawInteriorTile(ctx, interior.map[row][col], col * TILE, row * TILE, game.tick)
         }
       }
+
+      // Interior particles (torch flames, altar glow - in tile space)
+      particles.render(ctx, true)
 
       // Draw interior NPCs
       if (zone.interiorNpcs) {

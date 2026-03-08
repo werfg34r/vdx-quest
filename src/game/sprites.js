@@ -584,9 +584,9 @@ export function canMoveInterior(interiorMap, x, y, interiorNpcs) {
   return true
 }
 
-// Generate interior map for a zone
+// Generate interior map for a zone — each house has unique layout
 export function generateInterior(zone) {
-  const W = 12, H = 10
+  const W = 14, H = 12
   const m = Array.from({ length: H }, () => Array(W).fill(IT.FLOOR))
 
   // Walls on all edges
@@ -594,54 +594,99 @@ export function generateInterior(zone) {
   for (let y = 0; y < H; y++) { m[y][0] = IT.WALL; m[y][W-1] = IT.WALL }
 
   // Door mat at bottom center
-  m[H-1][5] = IT.DOOR_MAT
   m[H-1][6] = IT.DOOR_MAT
+  m[H-1][7] = IT.DOOR_MAT
 
-  // Torches on walls
+  // Torches on top wall
   m[0][2] = IT.TORCH
   m[0][W-3] = IT.TORCH
+  // Torches on side walls
+  m[4][0] = IT.TORCH
+  m[4][W-1] = IT.TORCH
+  m[8][0] = IT.TORCH
+  m[8][W-1] = IT.TORCH
 
   // Quest altar in center-top
-  m[2][5] = IT.ALTAR
   m[2][6] = IT.ALTAR
+  m[2][7] = IT.ALTAR
 
-  // Carpet leading to altar
+  // Carpet leading from altar to door
   for (let y = 3; y <= H-2; y++) {
-    m[y][5] = IT.CARPET
     m[y][6] = IT.CARPET
+    m[y][7] = IT.CARPET
   }
 
-  // Decoration varies by region
-  if (zone.region === 1) {
-    // Cozy: bookshelves, table, chairs
-    m[1][1] = IT.BOOKSHELF; m[1][2] = IT.BOOKSHELF
-    m[1][W-2] = IT.BOOKSHELF; m[1][W-3] = IT.BOOKSHELF
+  // Unique layouts per house
+  if (zone.id === 1) {
+    // Cabane de la Verite — warm study, writing room
+    // Bookshelves along top
+    m[1][1] = IT.BOOKSHELF; m[1][2] = IT.BOOKSHELF; m[1][3] = IT.BOOKSHELF
+    m[1][W-2] = IT.BOOKSHELF; m[1][W-3] = IT.BOOKSHELF; m[1][W-4] = IT.BOOKSHELF
+    // Writing tables left
     m[3][2] = IT.TABLE; m[3][3] = IT.TABLE
     m[4][2] = IT.CHAIR; m[4][3] = IT.CHAIR
+    // Writing tables right
     m[3][W-3] = IT.TABLE; m[3][W-4] = IT.TABLE
     m[4][W-3] = IT.CHAIR; m[4][W-4] = IT.CHAIR
-    m[6][1] = IT.POT; m[7][W-2] = IT.POT
-    m[7][1] = IT.BARREL
-  } else if (zone.region === 2) {
-    // Training: barrels, chests, weapons
-    m[1][1] = IT.TORCH; m[1][W-2] = IT.TORCH
-    m[2][1] = IT.BARREL; m[2][2] = IT.BARREL
-    m[2][W-2] = IT.BARREL; m[2][W-3] = IT.BARREL
-    m[4][1] = IT.CHEST; m[4][W-2] = IT.CHEST
-    m[6][2] = IT.TABLE; m[6][3] = IT.CHAIR
-    m[6][W-3] = IT.TABLE; m[6][W-4] = IT.CHAIR
-    m[7][1] = IT.POT; m[7][W-2] = IT.POT
-  } else {
-    // Temple: ornate, symmetric
+    // Cozy corner: bed and chest (rest area)
+    m[7][1] = IT.BED; m[8][1] = IT.CHEST
+    // Pots and barrels for ambiance
+    m[6][1] = IT.POT
+    m[9][W-2] = IT.POT
+    m[9][1] = IT.BARREL; m[9][2] = IT.BARREL
+    m[7][W-2] = IT.BARREL
+    // Second row of bookshelves mid-left
+    m[6][2] = IT.BOOKSHELF; m[6][3] = IT.BOOKSHELF
+  } else if (zone.id === 2) {
+    // Tour de l'Inventaire — organized archive, inventory room
+    // Long bookshelves both sides
+    m[1][1] = IT.BOOKSHELF; m[1][2] = IT.BOOKSHELF
+    m[1][W-2] = IT.BOOKSHELF; m[1][W-3] = IT.BOOKSHELF
+    // Chests (storage) left
+    m[3][1] = IT.CHEST; m[3][2] = IT.CHEST
+    m[5][1] = IT.CHEST
+    // Chests right
+    m[3][W-2] = IT.CHEST; m[3][W-3] = IT.CHEST
+    m[5][W-2] = IT.CHEST
+    // Central work tables
+    m[5][4] = IT.TABLE; m[5][5] = IT.TABLE
+    m[5][8] = IT.TABLE; m[5][9] = IT.TABLE
+    // Chairs at tables
+    m[6][4] = IT.CHAIR; m[6][5] = IT.CHAIR
+    m[6][8] = IT.CHAIR; m[6][9] = IT.CHAIR
+    // Pots and barrels
+    m[8][1] = IT.POT; m[9][1] = IT.BARREL
+    m[8][W-2] = IT.POT; m[9][W-2] = IT.BARREL
+    // More bookshelves lower
+    m[8][2] = IT.BOOKSHELF; m[8][3] = IT.BOOKSHELF
+    m[8][W-3] = IT.BOOKSHELF; m[8][W-4] = IT.BOOKSHELF
+  } else if (zone.id === 3) {
+    // Forge du Silence — meditation room, sparse and calm
+    // Minimal furniture: emphasis on open space
     m[1][1] = IT.BOOKSHELF; m[1][W-2] = IT.BOOKSHELF
-    m[3][1] = IT.CHEST; m[3][W-2] = IT.CHEST
-    m[4][2] = IT.POT; m[4][W-3] = IT.POT
-    m[6][1] = IT.BED; m[6][W-2] = IT.BED
-    m[7][2] = IT.TABLE; m[7][3] = IT.CHAIR
-    m[7][W-3] = IT.TABLE; m[7][W-4] = IT.CHAIR
+    // Meditation pots around altar
+    m[2][4] = IT.POT; m[2][9] = IT.POT
+    m[3][1] = IT.POT; m[3][W-2] = IT.POT
+    // Single table and chair (journaling spot)
+    m[5][2] = IT.TABLE; m[5][3] = IT.TABLE
+    m[6][2] = IT.CHAIR
+    // Bed for rest
+    m[8][W-2] = IT.BED; m[8][W-3] = IT.BED
+    // Barrels for supplies
+    m[9][1] = IT.BARREL; m[9][2] = IT.BARREL
+    m[9][W-2] = IT.BARREL
+    // Chest with tracking tools
+    m[7][1] = IT.CHEST
+  } else {
+    // Default: generic layout
+    m[1][1] = IT.BOOKSHELF; m[1][2] = IT.BOOKSHELF
+    m[1][W-2] = IT.BOOKSHELF; m[1][W-3] = IT.BOOKSHELF
+    m[3][2] = IT.TABLE; m[4][2] = IT.CHAIR
+    m[3][W-3] = IT.TABLE; m[4][W-3] = IT.CHAIR
+    m[7][1] = IT.BARREL; m[7][W-2] = IT.POT
   }
 
-  return { map: m, width: W, height: H, spawnX: 5, spawnY: H - 2 }
+  return { map: m, width: W, height: H, spawnX: 6, spawnY: H - 2 }
 }
 
 export { S }

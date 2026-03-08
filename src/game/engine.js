@@ -1,8 +1,8 @@
 // VDX Quest RPG Engine - Village-based week structure
 
 const TILE = 16
-const COLS = 30
-const ROWS = 24
+const COLS = 40
+const ROWS = 32
 
 // Tile types
 const T = {
@@ -27,10 +27,10 @@ const SOLID = new Set([
 
 // Semaine 1 village: 3 missions (zones) — each house = 1 action non negociable
 const ZONES = [
-  { id: 1, weekId: 1, houseX: 4, houseY: 4, name: 'Cabane de la Verite', region: 1,
+  { id: 1, weekId: 1, houseX: 6, houseY: 5, name: 'Cabane de la Verite', region: 1,
     desc: 'Ecrire noir sur blanc : ta raison profonde.',
     interiorNpcs: [
-      { id: 'h1_sage', x: 3, y: 5, sprite: 'sage', name: 'Maeva', dialog: [
+      { id: 'h1_sage', x: 4, y: 7, sprite: 'sage', name: 'Maeva', dialog: [
         'Bienvenue dans la Cabane de la Verite.',
         'Ta premiere mission : ecrire noir sur blanc pourquoi tu veux entreprendre.',
         'Pas 3 lignes. Un texte brut, long, sans chercher le style.',
@@ -38,14 +38,14 @@ const ZONES = [
         'Ecris en "je". Mets des exemples concrets. Pas de generalites.',
         'Termine par une seule phrase : "Je fais ca parce que..."',
       ]},
-      { id: 'h1_warrior', x: 8, y: 5, sprite: 'warrior', name: 'Victor', dialog: [
+      { id: 'h1_warrior', x: 9, y: 7, sprite: 'warrior', name: 'Victor', dialog: [
         'Tant que tu restes dans le mental, tu es intouchable.',
         'Des que tu ecris vrai, tu deviens responsable.',
         'C\'est ca, le seuil. Et c\'est exactement ce qu\'on cherche.',
         'Accepte de ne plus chercher la reponse parfaite.',
         'Chercher la reponse parfaite, c\'est souvent une strategie pour eviter de choisir.',
       ]},
-      { id: 'h1_helper', x: 8, y: 7, sprite: 'villager', name: 'Camille', dialog: [
+      { id: 'h1_helper', x: 9, y: 9, sprite: 'villager', name: 'Camille', dialog: [
         'Ton livrable : un document de minimum 2 pages.',
         'Une phrase de synthese : "Je fais ca parce que..."',
         'Et une liste "plus jamais" de 10 lignes.',
@@ -53,23 +53,23 @@ const ZONES = [
       ]},
     ],
   },
-  { id: 2, weekId: 1, houseX: 16, houseY: 4, name: 'Tour de l\'Inventaire', region: 1,
+  { id: 2, weekId: 1, houseX: 24, houseY: 5, name: 'Tour de l\'Inventaire', region: 1,
     desc: 'Inventaire honnete : ce que tu sais faire.',
     interiorNpcs: [
-      { id: 'h2_sage', x: 3, y: 5, sprite: 'sage', name: 'Raphael', dialog: [
+      { id: 'h2_sage', x: 4, y: 7, sprite: 'sage', name: 'Raphael', dialog: [
         'Bienvenue dans la Tour de l\'Inventaire.',
         'Ta mission : inventorier ce que tu sais VRAIMENT faire.',
         'Pas ce que tu "pourrais" faire. Ce que tu as PROUVE.',
         '4 listes : competences techniques, competences humaines, experiences vecues, ce que les autres cherchent chez toi.',
         'Tu ecris TOUT. Meme ce que tu juges banal.',
       ]},
-      { id: 'h2_warrior', x: 8, y: 5, sprite: 'warrior', name: 'Nadia', dialog: [
+      { id: 'h2_warrior', x: 9, y: 7, sprite: 'warrior', name: 'Nadia', dialog: [
         'Le banal, quand c\'est maitrise, devient monetisable.',
         'Pour chaque competence, ajoute une preuve concrete.',
         '"Je sais organiser" devient : "J\'ai coordonne une equipe de 3 pendant 6 mois avec des deadlines hebdo."',
         'Tu veux de la matiere qui resiste a la realite.',
       ]},
-      { id: 'h2_helper', x: 8, y: 7, sprite: 'villager', name: 'Theo', dialog: [
+      { id: 'h2_helper', x: 9, y: 9, sprite: 'villager', name: 'Theo', dialog: [
         'A la fin, extrais 3 piliers de valeur :',
         '1. Ce que tu maitrises et peux delivrer vite.',
         '2. Ce que tu comprends profondement et peux expliquer.',
@@ -78,23 +78,23 @@ const ZONES = [
       ]},
     ],
   },
-  { id: 3, weekId: 1, houseX: 4, houseY: 14, name: 'Forge du Silence', region: 1,
+  { id: 3, weekId: 1, houseX: 6, houseY: 17, name: 'Forge du Silence', region: 1,
     desc: '7 jours sans surconsommation.',
     interiorNpcs: [
-      { id: 'h3_sage', x: 3, y: 5, sprite: 'sage', name: 'Eliane', dialog: [
+      { id: 'h3_sage', x: 4, y: 7, sprite: 'sage', name: 'Eliane', dialog: [
         'Bienvenue dans la Forge du Silence.',
         'Ta mission : 7 jours de silence informationnel.',
         'Bloque YouTube, les formations, les podcasts business, les threads sans fin.',
         'Ton energie va dans la production de reel, pas dans l\'absorption de contenu.',
         'Autorise uniquement : notes, ecriture, inventaire, conversations reelles.',
       ]},
-      { id: 'h3_warrior', x: 8, y: 5, sprite: 'warrior', name: 'Axel', dialog: [
+      { id: 'h3_warrior', x: 9, y: 7, sprite: 'warrior', name: 'Axel', dialog: [
         'La clarte arrive quand le bruit descend.',
         'Ta tete recevra un signal fort : mon futur depend de mes decisions, pas de ma prochaine video.',
         'Tu recuperes ton attention. Et ton attention, c\'est ton actif le plus precieux.',
         'Quand ton attention se stabilise, ta trajectoire gagne en puissance.',
       ]},
-      { id: 'h3_helper', x: 8, y: 7, sprite: 'villager', name: 'Ines', dialog: [
+      { id: 'h3_helper', x: 9, y: 9, sprite: 'villager', name: 'Ines', dialog: [
         'Remplace la consommation par un rituel minimal :',
         '30 min/jour : ecrire, clarifier, structurer ton inventaire.',
         '15 min/jour : relire ce que tu as ecrit et surligner les phrases vraies.',
@@ -113,7 +113,7 @@ ZONES.forEach(z => {
 // NPCs on the overworld
 const NPCS = [
   {
-    id: 'mentor', x: 14, y: 20, sprite: 'mentor', name: 'Laurent',
+    id: 'mentor', x: 19, y: 26, sprite: 'mentor', name: 'Laurent',
     dialog: [
       'Bienvenue, aventurier. Je suis Laurent, ton guide pour les 90 prochains jours.',
       'L\'objectif du Niveau 0 : passer de quelqu\'un qui pense a entreprendre... a quelqu\'un qui agit.',
@@ -129,7 +129,7 @@ const NPCS = [
     ]
   },
   {
-    id: 'guide1', x: 10, y: 10, sprite: 'villager', name: 'Elise',
+    id: 'guide1', x: 15, y: 13, sprite: 'villager', name: 'Elise',
     dialog: [
       'Salut ! Bienvenue dans le Village de la Clarte.',
       'Les 3 maisons sont les 3 epreuves de la Semaine 1.',
@@ -138,13 +138,48 @@ const NPCS = [
     ]
   },
   {
-    id: 'old1', x: 24, y: 8, sprite: 'old', name: 'Ancien',
+    id: 'old1', x: 27, y: 14, sprite: 'old', name: 'Ancien',
     dialog: [
       'Beaucoup passent par ici... peu vont jusqu\'au bout.',
       'Le secret ? La constance bat le talent.',
       'Au niveau 0, le vrai probleme n\'est pas le manque de competences.',
       'C\'est la dispersion mentale. Trop de pistes, trop de scenarios.',
       'Reste concentre. Une mission a la fois.',
+    ]
+  },
+  {
+    id: 'trader1', x: 22, y: 12, sprite: 'trader', name: 'Marc',
+    dialog: [
+      'Je suis Marc, ancien entrepreneur.',
+      'Mon premier business a echoue. Le deuxieme aussi.',
+      'Mais j\'ai appris une chose : le passage a l\'action bat la reflexion.',
+      'Chaque echec est une donnee. Pas un verdict.',
+    ]
+  },
+  {
+    id: 'villager2', x: 8, y: 24, sprite: 'villager', name: 'Sophie',
+    dialog: [
+      'Tu vois ce jardin ? Je l\'ai plante graine par graine.',
+      'L\'entrepreneuriat, c\'est pareil. Une action a la fois.',
+      'Ne regarde pas la montagne. Regarde le prochain pas.',
+    ]
+  },
+  {
+    id: 'warrior1', x: 17, y: 16, sprite: 'warrior', name: 'Karim',
+    dialog: [
+      'J\'etais paralyse par la peur de me tromper.',
+      'Puis j\'ai compris : ne rien faire, c\'est deja se tromper.',
+      'La peur ne disparait jamais. On apprend a agir avec.',
+      'Le courage, c\'est pas l\'absence de peur. C\'est le choix d\'avancer malgre elle.',
+    ]
+  },
+  {
+    id: 'sage1', x: 32, y: 13, sprite: 'sage', name: 'Aiko',
+    dialog: [
+      'L\'eau de ce lac est calme... comme ton esprit devrait l\'etre.',
+      'La clarte ne vient pas en cherchant plus.',
+      'Elle vient quand tu arretes de fuir le silence.',
+      'Pose-toi. Ecris. Observe ce qui monte.',
     ]
   },
 ]
@@ -161,103 +196,168 @@ function generateMap() {
   const rng = seededRandom(42)
   const map = Array.from({ length: ROWS }, () => Array(COLS).fill(T.GRASS))
 
-  // Flower patches for decoration
-  for (let i = 0; i < 40; i++) {
+  // ============ NATURAL TERRAIN ============
+
+  // Scattered flowers
+  for (let i = 0; i < 80; i++) {
     const x = Math.floor(rng() * COLS)
     const y = Math.floor(rng() * ROWS)
     if (map[y][x] === T.GRASS) map[y][x] = T.FLOWER
   }
 
-  // Tall grass patches
-  for (const [cx, cy] of [[2, 12], [26, 6], [26, 18], [12, 22]]) {
-    for (let dy = -1; dy <= 1; dy++) {
+  // Dark grass patches (variety)
+  for (const [cx, cy] of [[8, 20], [30, 5], [35, 22], [3, 8], [25, 28]]) {
+    for (let dy = -2; dy <= 2; dy++) {
       for (let dx = -2; dx <= 2; dx++) {
         const nx = cx + dx, ny = cy + dy
-        if (nx > 0 && ny > 0 && nx < COLS - 1 && ny < ROWS - 1 && rng() > 0.3) {
-          if (map[ny][nx] === T.GRASS) map[ny][nx] = T.TALL_GRASS
+        if (nx > 0 && ny > 0 && nx < COLS - 1 && ny < ROWS - 1 && rng() > 0.35) {
+          if (map[ny][nx] === T.GRASS) map[ny][nx] = T.DARK_GRASS
         }
       }
     }
   }
 
-  // Trees around edges
-  for (let x = 0; x < COLS; x++) {
-    if (rng() > 0.15) map[0][x] = T.TREE
-    if (rng() > 0.15) map[ROWS - 1][x] = T.TREE
-  }
-  for (let y = 0; y < ROWS; y++) {
-    if (rng() > 0.15) map[y][0] = T.TREE
-    if (rng() > 0.15) map[y][COLS - 1] = T.TREE
+  // Tall grass patches
+  for (const [cx, cy] of [[2, 15], [36, 8], [36, 25], [15, 28], [28, 3], [8, 5]]) {
+    const size = 1 + Math.floor(rng() * 2)
+    for (let dy = -size; dy <= size; dy++) {
+      for (let dx = -size - 1; dx <= size + 1; dx++) {
+        const nx = cx + dx, ny = cy + dy
+        if (nx > 0 && ny > 0 && nx < COLS - 1 && ny < ROWS - 1 && rng() > 0.25) {
+          if (map[ny][nx] === T.GRASS || map[ny][nx] === T.DARK_GRASS) map[ny][nx] = T.TALL_GRASS
+        }
+      }
+    }
   }
 
-  // Tree clusters for decoration
-  for (const [fx, fy] of [[28, 3], [1, 19], [28, 20], [12, 1]]) {
-    for (let dy = -1; dy <= 1; dy++) {
-      for (let dx = -1; dx <= 1; dx++) {
+  // ============ DENSE FOREST BORDERS ============
+  // Two rows of trees on all edges
+  for (let x = 0; x < COLS; x++) {
+    map[0][x] = T.TREE
+    if (rng() > 0.15) map[1][x] = T.TREE
+    map[ROWS - 1][x] = T.TREE
+    if (rng() > 0.15) map[ROWS - 2][x] = T.TREE
+  }
+  for (let y = 0; y < ROWS; y++) {
+    map[y][0] = T.TREE
+    if (rng() > 0.15) map[y][1] = T.TREE
+    map[y][COLS - 1] = T.TREE
+    if (rng() > 0.15) map[y][COLS - 2] = T.TREE
+  }
+
+  // Interior forest clusters (scenic)
+  const forestClusters = [
+    [37, 4, 2], [2, 24, 2], [37, 26, 2], [14, 2, 1],
+    [26, 2, 1], [2, 10, 1], [37, 15, 1], [30, 20, 2],
+    [10, 26, 1], [33, 10, 1],
+  ]
+  for (const [fx, fy, rad] of forestClusters) {
+    for (let dy = -rad; dy <= rad; dy++) {
+      for (let dx = -rad; dx <= rad; dx++) {
         const nx = fx + dx, ny = fy + dy
-        if (nx > 0 && ny > 0 && nx < COLS - 1 && ny < ROWS - 1 && rng() > 0.2) {
+        if (nx > 1 && ny > 1 && nx < COLS - 2 && ny < ROWS - 2 && rng() > 0.15) {
           map[ny][nx] = T.TREE
         }
       }
     }
   }
 
-  // Small pond
-  for (const [wx, wy] of [[22, 11], [23, 11], [24, 11], [22, 12], [23, 12], [24, 12]]) {
-    map[wy][wx] = T.WATER
+  // ============ WATER: LAKE + RIVER ============
+  // Main lake (east side)
+  const lakeCX = 30, lakeCY = 14
+  for (let dy = -3; dy <= 3; dy++) {
+    for (let dx = -4; dx <= 4; dx++) {
+      const dist = Math.sqrt(dx * dx * 0.8 + dy * dy * 1.2)
+      if (dist < 3.5 && lakeCX + dx > 2 && lakeCY + dy > 2 && lakeCX + dx < COLS - 2 && lakeCY + dy < ROWS - 2) {
+        map[lakeCY + dy][lakeCX + dx] = T.WATER
+      }
+    }
   }
-  // Sand shores
-  for (let y = 1; y < ROWS - 1; y++) {
-    for (let x = 1; x < COLS - 1; x++) {
+
+  // Small stream flowing south from lake
+  for (let y = 17; y <= 22; y++) {
+    map[y][29] = T.WATER
+    if (rng() > 0.4) map[y][30] = T.WATER
+  }
+
+  // Small pond south
+  for (const [wx, wy] of [[29, 23], [30, 23], [29, 24], [30, 24]]) {
+    if (wy < ROWS - 2) map[wy][wx] = T.WATER
+  }
+
+  // Bridge over stream
+  map[19][29] = T.BRIDGE
+  if (map[19][30] === T.WATER) map[19][30] = T.BRIDGE
+
+  // Sand shores around all water
+  for (let y = 2; y < ROWS - 2; y++) {
+    for (let x = 2; x < COLS - 2; x++) {
       if (map[y][x] !== T.WATER) continue
       for (let dy = -1; dy <= 1; dy++) {
         for (let dx = -1; dx <= 1; dx++) {
           if (dx === 0 && dy === 0) continue
           const nx = x + dx, ny = y + dy
           if (nx >= 0 && ny >= 0 && nx < COLS && ny < ROWS) {
-            if (map[ny][nx] === T.GRASS || map[ny][nx] === T.FLOWER) map[ny][nx] = T.SAND
+            const t = map[ny][nx]
+            if (t === T.GRASS || t === T.FLOWER || t === T.DARK_GRASS || t === T.TALL_GRASS) {
+              map[ny][nx] = T.SAND
+            }
           }
         }
       }
     }
   }
 
-  // Main village paths
-  // Central horizontal path
-  for (let x = 1; x < COLS - 1; x++) {
-    map[10][x] = T.PATH
-    map[11][x] = T.PATH
+  // ============ MOUNTAINS (north-east corner) ============
+  for (const [mx, my] of [[34, 4], [35, 4], [36, 5], [34, 5], [35, 5], [33, 5]]) {
+    if (mx < COLS - 2 && my < ROWS - 2) map[my][mx] = T.MOUNTAIN
   }
-  // Central vertical path
-  for (let y = 1; y < ROWS - 1; y++) {
-    map[y][14] = T.PATH
-    map[y][15] = T.PATH
+
+  // ============ VILLAGE PATH NETWORK ============
+  // Main crossroads at center (y=13, x=20)
+  // Horizontal main road
+  for (let x = 2; x < COLS - 2; x++) {
+    map[13][x] = T.PATH
+    map[14][x] = T.PATH
   }
-  // Paths to houses
+  // Vertical main road
+  for (let y = 2; y < ROWS - 2; y++) {
+    map[y][19] = T.PATH
+    map[y][20] = T.PATH
+  }
+
+  // Secondary paths to houses
   for (const zone of ZONES) {
-    // Path from house door to nearest main path
     const doorX = zone.doorX
     const doorY = zone.doorY + 1
-    // Vertical path from door down/up to horizontal path
-    const targetY = 10
-    const startY = Math.min(doorY, targetY)
-    const endY = Math.max(doorY, targetY)
-    for (let y = startY; y <= endY; y++) {
-      if (map[y][doorX] === T.GRASS || map[y][doorX] === T.FLOWER || map[y][doorX] === T.TALL_GRASS) {
-        map[y][doorX] = T.PATH
-      }
+
+    // Vertical path from door to horizontal main road
+    const targetY = 13
+    const minY = Math.min(doorY, targetY)
+    const maxY = Math.max(doorY, targetY)
+    for (let y = minY; y <= maxY; y++) {
+      const t = map[y][doorX]
+      if (t !== T.PATH && t !== T.WATER && t !== T.BRIDGE) map[y][doorX] = T.PATH
     }
-    // Horizontal path from door to vertical path
-    const startX = Math.min(doorX, 14)
-    const endX = Math.max(doorX, 15)
-    for (let x = startX; x <= endX; x++) {
-      if (map[doorY][x] === T.GRASS || map[doorY][x] === T.FLOWER || map[doorY][x] === T.TALL_GRASS) {
-        map[doorY][x] = T.PATH
-      }
+
+    // Horizontal path from door to vertical main road
+    const minX = Math.min(doorX, 19)
+    const maxX = Math.max(doorX, 20)
+    for (let x = minX; x <= maxX; x++) {
+      const t = map[doorY][x]
+      if (t !== T.PATH && t !== T.WATER && t !== T.BRIDGE) map[doorY][x] = T.PATH
     }
   }
 
-  // Place houses (3 wide x 4 tall each)
+  // Path to lake area
+  for (let x = 20; x <= 27; x++) { map[14][x] = T.PATH }
+  // Path to south area
+  for (let y = 14; y <= 26; y++) { map[y][20] = T.PATH }
+  // Circular village square path
+  for (let x = 16; x <= 23; x++) { map[11][x] = T.PATH; map[16][x] = T.PATH }
+  for (let y = 11; y <= 16; y++) { map[y][16] = T.PATH; map[y][23] = T.PATH }
+
+  // ============ PLACE HOUSES ============
   for (const zone of ZONES) {
     const hx = zone.houseX
     const hy = zone.houseY
@@ -267,24 +367,21 @@ function generateMap() {
       for (let dx = -1; dx <= 3; dx++) {
         const nx = hx + dx, ny = hy + dy
         if (nx >= 0 && ny >= 0 && nx < COLS && ny < ROWS) {
-          if (![T.PATH].includes(map[ny][nx])) map[ny][nx] = T.GRASS
+          if (map[ny][nx] !== T.PATH) map[ny][nx] = T.GRASS
         }
       }
     }
 
-    // Row 0: Roof top
+    // House structure (3 wide x 4 tall)
     map[hy][hx]     = T.HOUSE_ROOF_TL
     map[hy][hx + 1] = T.HOUSE_ROOF_TC
     map[hy][hx + 2] = T.HOUSE_ROOF_TR
-    // Row 1: Roof middle
     map[hy + 1][hx]     = T.HOUSE_ROOF_ML
     map[hy + 1][hx + 1] = T.HOUSE_ROOF_MC
     map[hy + 1][hx + 2] = T.HOUSE_ROOF_MR
-    // Row 2: Wall with windows
     map[hy + 2][hx]     = T.HOUSE_WALL_L
     map[hy + 2][hx + 1] = T.HOUSE_WALL_WIN
     map[hy + 2][hx + 2] = T.HOUSE_WALL_R
-    // Row 3: Wall with door
     map[hy + 3][hx]     = T.HOUSE_WALL_DL
     map[hy + 3][hx + 1] = T.HOUSE_DOOR
     map[hy + 3][hx + 2] = T.HOUSE_WALL_DR
@@ -295,13 +392,36 @@ function generateMap() {
     if (hx + 3 < COLS) map[hy + 3][hx + 3] = T.SIGN
   }
 
-  // Fences near village center
-  for (let x = 10; x <= 13; x++) { map[9][x] = T.FENCE }
-  for (let x = 16; x <= 19; x++) { map[9][x] = T.FENCE }
+  // ============ GARDEN AREA (south-west) ============
+  for (let y = 22; y <= 26; y++) {
+    for (let x = 5; x <= 12; x++) {
+      if (map[y][x] === T.GRASS || map[y][x] === T.DARK_GRASS) {
+        map[y][x] = rng() > 0.4 ? T.FLOWER : T.GRASS
+      }
+    }
+  }
+  // Garden fences
+  for (let x = 4; x <= 13; x++) { map[21][x] = T.FENCE; map[27][x] = T.FENCE }
+  for (let y = 21; y <= 27; y++) { map[y][4] = T.FENCE; map[y][13] = T.FENCE }
+  // Garden entrances
+  map[21][8] = T.PATH; map[21][9] = T.PATH
+  map[27][8] = T.PATH; map[27][9] = T.PATH
 
-  // Make sure NPC positions are walkable
+  // ============ VILLAGE DECORATIONS ============
+  // Fences near village square
+  for (let x = 13; x <= 15; x++) { map[11][x] = T.FENCE }
+  for (let x = 24; x <= 26; x++) { map[11][x] = T.FENCE }
+
+  // Flower garden near crossroads
+  for (const [fx, fy] of [[17, 12], [18, 12], [21, 12], [22, 12], [17, 15], [18, 15], [21, 15], [22, 15]]) {
+    map[fy][fx] = T.FLOWER
+  }
+
+  // ============ ENSURE WALKABILITY ============
   for (const npc of NPCS) {
-    if (map[npc.y][npc.x] !== T.PATH) map[npc.y][npc.x] = T.PATH
+    if (npc.y < ROWS && npc.x < COLS) {
+      if (map[npc.y][npc.x] !== T.PATH) map[npc.y][npc.x] = T.PATH
+    }
   }
 
   return map
