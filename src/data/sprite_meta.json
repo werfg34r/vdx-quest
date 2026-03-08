@@ -782,5 +782,26 @@
     "ox": 16,
     "oy": 32,
     "frames": 10
+  },
+  "base_idle_strip9": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 64,
+    "frames": 9
+  },
+  "base_walk_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 64,
+    "frames": 8
+  },
+  "base_run_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 64,
+    "frames": 8
   }
 }
