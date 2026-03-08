@@ -1,19 +1,15 @@
-import { MODE, TILE } from './constants.js';
 import { loadAssets } from './assets.js';
-import { renderVillage, renderInterior, renderPlayer } from './renderer.js';
-import { createPlayer, updatePlayer, getNearbyHouse, isAtDoor } from './player.js';
+import { renderWorld } from './renderer.js';
+import { createPlayer, updatePlayer } from './player.js';
 
 export function startGame(canvas) {
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
 
-  let mode = MODE.VILLAGE;
   let player = createPlayer();
-  let house = null;
   let frame = 0;
   let keys = {};
   let raf = null;
-  let transitioning = false;
 
   function resize() {
     canvas.width = window.innerWidth;
@@ -24,43 +20,10 @@ export function startGame(canvas) {
   window.addEventListener('resize', resize);
 
   // ── Keyboard ──
-  function onDown(e) {
-    keys[e.code] = true;
-    if (e.code === 'Space' && !transitioning) {
-      e.preventDefault();
-      if (mode === MODE.VILLAGE) {
-        const h = getNearbyHouse(player);
-        if (h) enterHouse(h);
-      } else if (mode === MODE.INTERIOR && isAtDoor(player)) {
-        exitHouse();
-      }
-    }
-  }
+  function onDown(e) { keys[e.code] = true; }
   function onUp(e) { keys[e.code] = false; }
   window.addEventListener('keydown', onDown);
   window.addEventListener('keyup', onUp);
-
-  function enterHouse(h) {
-    transitioning = true;
-    house = h;
-    mode = MODE.INTERIOR;
-    player.interiorX = 4 * TILE;
-    player.interiorY = 5 * TILE;
-    player.direction = 'up';
-    setTimeout(() => { transitioning = false; }, 250);
-  }
-
-  function exitHouse() {
-    transitioning = true;
-    mode = MODE.VILLAGE;
-    if (house) {
-      player.x = house.doorX * TILE;
-      player.y = (house.doorY + 1) * TILE;
-    }
-    player.direction = 'down';
-    house = null;
-    setTimeout(() => { transitioning = false; }, 250);
-  }
 
   // ── Touch ──
   let touchX = 0, touchY = 0;
@@ -88,44 +51,25 @@ export function startGame(canvas) {
   // ── Game Loop ──
   function loop() {
     frame++;
-    updatePlayer(player, keys, mode);
+    updatePlayer(player, keys);
 
-    let cam = { cameraX: 0, cameraY: 0 };
-    let intOff = { offsetX: 0, offsetY: 0 };
+    const cam = renderWorld(ctx, canvas, player, frame);
 
-    if (mode === MODE.VILLAGE) {
-      cam = renderVillage(ctx, canvas, player, frame);
-      renderPlayer(ctx, player, cam.cameraX, cam.cameraY, mode, intOff, frame);
-    } else {
-      intOff = renderInterior(ctx, canvas, player, house, frame);
-      renderPlayer(ctx, player, 0, 0, mode, intOff, frame);
-    }
+    // HUD
+    drawHUD(ctx, canvas);
 
-    drawHUD(ctx, canvas, mode, house);
     raf = requestAnimationFrame(loop);
   }
 
-  // ── HUD ──
-  function drawHUD(ctx, canvas, mode, house) {
-    // Top bar
-    ctx.fillStyle = 'rgba(0,0,0,0.55)';
-    ctx.fillRect(0, 0, canvas.width, 40);
+  function drawHUD(ctx, canvas) {
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(0, 0, canvas.width, 36);
     ctx.fillStyle = '#c7b777';
-    ctx.font = 'bold 16px monospace';
-    ctx.fillText('VDX QUEST', 14, 26);
-    ctx.fillStyle = '#999';
-    ctx.font = '12px monospace';
-    ctx.fillText(
-      mode === MODE.VILLAGE ? 'Village de Départ — Semaine 1' : (house?.name || 'Intérieur'),
-      150, 26
-    );
-
-    // Bottom bar
-    ctx.fillStyle = 'rgba(0,0,0,0.45)';
-    ctx.fillRect(0, canvas.height - 32, canvas.width, 32);
-    ctx.fillStyle = '#777';
+    ctx.font = 'bold 14px monospace';
+    ctx.fillText('SUNNYSIDE WORLD', 14, 24);
+    ctx.fillStyle = '#aaa';
     ctx.font = '11px monospace';
-    ctx.fillText('Flèches / ZQSD pour se déplacer  │  ESPACE pour interagir', 14, canvas.height - 12);
+    ctx.fillText('Flèches / ZQSD pour se déplacer', 200, 24);
   }
 
   // Load then start
