@@ -1,4 +1,4 @@
-import { TILE, SCALE, RS, MAP_W, MAP_H, ROOM_W, ROOM_H, MODE, INT_W, INT_H, HOUSES } from './constants.js';
+import { TILE, SCALE, RS, MAP_W, MAP_H, ROOM_W, ROOM_H, MODE, INT_W, INT_H, HOUSES, ITEM_TYPES } from './constants.js';
 import { getImg, getMeta } from './assets.js';
 import { tileLayerNames, tileLayers, getTile, placedAssets } from './maps.js';
 import { interiorMap, INTERIOR_BLOCKED } from './player.js';
@@ -97,8 +97,31 @@ function drawSprite(ctx, asset, camX, camY, frame) {
 }
 
 // ════════════════════════════════════════════════════════
-// PLAYER
+// CHARACTER DRAWING (player + NPCs)
 // ════════════════════════════════════════════════════════
+
+function drawCharacterSprite(ctx, spriteName, x, y, direction, frame, isMoving) {
+  const img = getImg(spriteName);
+  if (!img || !img.complete || img.naturalWidth === 0) return;
+
+  const meta = getMeta(spriteName);
+  const fw = meta.w;
+  const fh = meta.h;
+  const nFrames = meta.frames;
+  const animFrame = isMoving
+    ? Math.floor(frame / 8) % nFrames
+    : Math.floor(frame / 12) % nFrames;
+
+  const drawW = fw * SCALE * 0.5;
+  const drawH = fh * SCALE * 0.5;
+
+  ctx.save();
+  ctx.translate(x, y);
+  if (direction === 'left') ctx.scale(-1, 1);
+  const srcX = animFrame * fw;
+  ctx.drawImage(img, srcX, 0, fw, fh, -drawW / 2, -drawH, drawW, drawH);
+  ctx.restore();
+}
 
 export function renderPlayer(ctx, player, camX, camY, frame, mode) {
   let sx, sy;
@@ -113,35 +136,47 @@ export function renderPlayer(ctx, player, camX, camY, frame, mode) {
   const cx = sx + RS / 2;
   const cy = sy + RS;
 
-  // Shadow under player
+  // Shadow
   ctx.fillStyle = 'rgba(0,0,0,0.3)';
   ctx.beginPath();
   ctx.ellipse(cx, cy - 1, 12, 4, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Use the REAL Sunnyside World character sprites (spr_idle / spr_walking)
-  const spriteName = player.moving ? 'spr_walking' : 'spr_idle';
-  const img = getImg(spriteName);
+  // Player sprite (spr_idle / spr_walking / action sprites)
+  const spriteName = player.actionSprite || (player.moving ? 'spr_walking' : 'spr_idle');
+  drawCharacterSprite(ctx, spriteName, cx, cy, player.direction, frame, player.moving);
+}
 
-  if (img && img.complete && img.naturalWidth > 0) {
-    const meta = getMeta(spriteName);
-    const fw = meta.w;
-    const fh = meta.h;
-    const nFrames = meta.frames;
-    const animFrame = player.moving
-      ? Math.floor(frame / 8) % nFrames
-      : Math.floor(frame / 12) % nFrames;
+function renderNPC(ctx, npc, camX, camY, frame) {
+  const sx = npc.currentX * SCALE - camX;
+  const sy = npc.currentY * SCALE - camY;
+  const cx = sx + RS / 2;
+  const cy = sy + RS;
 
-    const drawW = fw * SCALE * 0.5;
-    const drawH = fh * SCALE * 0.5;
+  // Cull off-screen
+  if (cx < -100 || cy < -100 || cx > ctx.canvas.width + 100 || cy > ctx.canvas.height + 100) return;
 
-    ctx.save();
-    ctx.translate(cx, cy);
-    if (player.direction === 'left') ctx.scale(-1, 1);
-    const srcX = animFrame * fw;
-    ctx.drawImage(img, srcX, 0, fw, fh, -drawW / 2, -drawH, drawW, drawH);
-    ctx.restore();
-  }
+  // Shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx.beginPath();
+  ctx.ellipse(cx, cy - 1, 10, 3.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // NPC sprite
+  const idleSprite = `${npc.hair}_idle_strip9`;
+  const walkSprite = `${npc.hair}_walk_strip8`;
+  const spriteName = npc.moving ? walkSprite : idleSprite;
+  drawCharacterSprite(ctx, spriteName, cx, cy, npc.direction, frame, npc.moving);
+
+  // Name label above NPC
+  ctx.font = 'bold 9px monospace';
+  const nameW = ctx.measureText(npc.name).width + 10;
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.fillRect(cx - nameW / 2, cy - 50, nameW, 14);
+  ctx.fillStyle = '#fff';
+  ctx.textAlign = 'center';
+  ctx.fillText(npc.name, cx, cy - 39);
+  ctx.textAlign = 'left';
 }
 
 // ════════════════════════════════════════════════════════
@@ -188,18 +223,22 @@ function renderTileLayer(ctx, layerName, camX, camY) {
   }
 }
 
-// Draw house door markers
+// Door markers on houses
 function renderHouseMarkers(ctx, camX, camY, frame) {
   for (const h of HOUSES) {
     const doorScreenX = h.doorX * TILE * SCALE - camX;
     const doorScreenY = h.doorY * TILE * SCALE - camY;
 
-    // Pulsing glow on the door tile
+    // Cull
+    if (doorScreenX < -100 || doorScreenX > ctx.canvas.width + 100) continue;
+    if (doorScreenY < -100 || doorScreenY > ctx.canvas.height + 100) continue;
+
+    // Pulsing glow
     const pulse = 0.5 + Math.sin(frame * 0.08) * 0.3;
-    ctx.fillStyle = `rgba(255, 215, 0, ${pulse * 0.4})`;
+    ctx.fillStyle = `rgba(255, 215, 0, ${pulse * 0.35})`;
     ctx.fillRect(doorScreenX - RS / 2, doorScreenY - RS, RS * 2, RS);
 
-    // Door marker arrow (bouncing)
+    // Bouncing arrow
     const bounce = Math.sin(frame * 0.1) * 4;
     ctx.fillStyle = '#FFD700';
     ctx.beginPath();
@@ -209,24 +248,24 @@ function renderHouseMarkers(ctx, camX, camY, frame) {
     ctx.closePath();
     ctx.fill();
 
-    // House name label
-    ctx.font = 'bold 11px monospace';
-    const nameW = ctx.measureText(h.name).width + 16;
+    // Name label
+    ctx.font = 'bold 10px monospace';
+    const nameW = ctx.measureText(h.name).width + 14;
     const lx = doorScreenX + RS / 2 - nameW / 2;
-    const ly = doorScreenY - RS - 38;
+    const ly = doorScreenY - RS - 36;
     ctx.fillStyle = 'rgba(0,0,0,0.8)';
-    ctx.fillRect(lx, ly, nameW, 18);
+    ctx.fillRect(lx, ly, nameW, 16);
     ctx.strokeStyle = '#FFD700';
     ctx.lineWidth = 1;
-    ctx.strokeRect(lx, ly, nameW, 18);
+    ctx.strokeRect(lx, ly, nameW, 16);
     ctx.fillStyle = '#FFD700';
     ctx.textAlign = 'center';
-    ctx.fillText(h.name, doorScreenX + RS / 2, ly + 13);
+    ctx.fillText(h.name, doorScreenX + RS / 2, ly + 12);
     ctx.textAlign = 'left';
   }
 }
 
-export function renderWorld(ctx, canvas, player, frame) {
+export function renderWorld(ctx, canvas, player, npcs, frame) {
   const maxCamX = Math.max(0, ROOM_W * SCALE - canvas.width);
   const maxCamY = Math.max(0, ROOM_H * SCALE - canvas.height);
   const camX = Math.max(0, Math.min(player.x * SCALE - canvas.width / 2, maxCamX));
@@ -238,25 +277,282 @@ export function renderWorld(ctx, canvas, player, frame) {
   // Back tile layers
   for (const name of tilesBefore2) renderTileLayer(ctx, name, camX, camY);
 
-  // Assets_2
+  // Assets_2 (behind buildings)
   for (const asset of assets2Sorted) drawSprite(ctx, asset, camX, camY, frame);
 
   // Middle tile layers
   for (const name of tilesBetween) renderTileLayer(ctx, name, camX, camY);
 
+  // Collect all Y-sorted entities (assets1 + player + NPCs) for proper depth
+  const entities = [];
+
   // Assets_1 sprites
-  for (const asset of assets1Sorted) drawSprite(ctx, asset, camX, camY, frame);
+  for (const asset of assets1Sorted) {
+    entities.push({ type: 'asset', y: asset.y, data: asset });
+  }
 
-  // House door markers (above all sprites)
+  // Player
+  entities.push({ type: 'player', y: player.y, data: player });
+
+  // NPCs
+  for (const npc of npcs) {
+    entities.push({ type: 'npc', y: npc.currentY, data: npc });
+  }
+
+  // Sort by Y for depth
+  entities.sort((a, b) => a.y - b.y);
+
+  // Render all entities in Y order
+  for (const e of entities) {
+    switch (e.type) {
+      case 'asset':
+        drawSprite(ctx, e.data, camX, camY, frame);
+        break;
+      case 'player':
+        renderPlayer(ctx, e.data, camX, camY, frame, MODE.WORLD);
+        break;
+      case 'npc':
+        renderNPC(ctx, e.data, camX, camY, frame);
+        break;
+    }
+  }
+
+  // House markers
   renderHouseMarkers(ctx, camX, camY, frame);
-
-  // Player ALWAYS on top of sprites (below clouds only)
-  renderPlayer(ctx, player, camX, camY, frame, MODE.WORLD);
 
   // Top tile layers (clouds)
   for (const name of tilesAfter1) renderTileLayer(ctx, name, camX, camY);
 
   return { cameraX: camX, cameraY: camY };
+}
+
+// ════════════════════════════════════════════════════════
+// DIALOGUE BOX
+// ════════════════════════════════════════════════════════
+
+export function renderDialogue(ctx, canvas, dialogueState) {
+  if (!dialogueState.active) return;
+
+  const boxW = Math.min(600, canvas.width - 40);
+  const boxH = 100;
+  const boxX = (canvas.width - boxW) / 2;
+  const boxY = canvas.height - boxH - 50;
+
+  // Box background
+  ctx.fillStyle = 'rgba(15, 10, 25, 0.92)';
+  ctx.fillRect(boxX, boxY, boxW, boxH);
+
+  // Border
+  ctx.strokeStyle = '#c7b777';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(boxX + 2, boxY + 2, boxW - 4, boxH - 4);
+
+  // NPC name
+  const name = dialogueState.npc?.name || '???';
+  ctx.font = 'bold 13px monospace';
+  const nameW = ctx.measureText(name).width + 16;
+  ctx.fillStyle = '#c7b777';
+  ctx.fillRect(boxX + 16, boxY - 12, nameW, 20);
+  ctx.fillStyle = '#0f0a19';
+  ctx.fillText(name, boxX + 24, boxY + 3);
+
+  // Expression icon
+  if (dialogueState.npc?.expression) {
+    const exprImg = getImg(dialogueState.npc.expression);
+    if (exprImg) {
+      ctx.drawImage(exprImg, 0, 0, exprImg.width, exprImg.height,
+        boxX + boxW - 50, boxY - 24, 32, 32);
+    }
+  }
+
+  // Dialogue text (with word wrap)
+  ctx.fillStyle = '#f0ead0';
+  ctx.font = '12px monospace';
+  const maxLineW = boxW - 40;
+  const words = dialogueState.text.split(' ');
+  let line = '';
+  let ly = boxY + 30;
+  for (const word of words) {
+    const testLine = line + (line ? ' ' : '') + word;
+    if (ctx.measureText(testLine).width > maxLineW) {
+      ctx.fillText(line, boxX + 20, ly);
+      line = word;
+      ly += 18;
+    } else {
+      line = testLine;
+    }
+  }
+  ctx.fillText(line, boxX + 20, ly);
+
+  // Continue indicator
+  if (dialogueState.charIdx >= dialogueState.fullText.length) {
+    const blink = Math.sin(Date.now() * 0.005) > 0;
+    if (blink) {
+      ctx.fillStyle = '#c7b777';
+      ctx.beginPath();
+      ctx.moveTo(boxX + boxW - 30, boxY + boxH - 20);
+      ctx.lineTo(boxX + boxW - 24, boxY + boxH - 12);
+      ctx.lineTo(boxX + boxW - 18, boxY + boxH - 20);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+}
+
+// ════════════════════════════════════════════════════════
+// INVENTORY UI
+// ════════════════════════════════════════════════════════
+
+export function renderInventory(ctx, canvas, inventory) {
+  if (!inventory.open) return;
+
+  const slotSize = 48;
+  const cols = 6;
+  const rows = 2;
+  const padding = 6;
+  const panelW = cols * (slotSize + padding) + padding;
+  const panelH = rows * (slotSize + padding) + padding + 30;
+  const px = (canvas.width - panelW) / 2;
+  const py = (canvas.height - panelH) / 2;
+
+  // Panel background
+  ctx.fillStyle = 'rgba(15, 10, 25, 0.95)';
+  ctx.fillRect(px, py, panelW, panelH);
+  ctx.strokeStyle = '#c7b777';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(px + 2, py + 2, panelW - 4, panelH - 4);
+
+  // Title
+  ctx.fillStyle = '#c7b777';
+  ctx.font = 'bold 13px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('INVENTAIRE', px + panelW / 2, py + 20);
+  ctx.textAlign = 'left';
+
+  // Slots
+  for (let i = 0; i < cols * rows; i++) {
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const sx = px + padding + col * (slotSize + padding);
+    const sy = py + 30 + row * (slotSize + padding);
+
+    // Slot background
+    ctx.fillStyle = i === inventory.selectedSlot ? 'rgba(199, 183, 119, 0.3)' : 'rgba(255,255,255,0.08)';
+    ctx.fillRect(sx, sy, slotSize, slotSize);
+    ctx.strokeStyle = i === inventory.selectedSlot ? '#c7b777' : 'rgba(255,255,255,0.15)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(sx, sy, slotSize, slotSize);
+
+    // Item in slot
+    const slot = inventory.slots[i];
+    if (slot) {
+      const def = ITEM_TYPES[slot.type];
+      if (def) {
+        const itemImg = getImg(def.icon);
+        if (itemImg) {
+          ctx.drawImage(itemImg, 0, 0, itemImg.width, itemImg.height,
+            sx + 8, sy + 4, slotSize - 16, slotSize - 16);
+        }
+
+        // Count
+        if (slot.count > 1) {
+          ctx.fillStyle = '#fff';
+          ctx.font = 'bold 10px monospace';
+          ctx.textAlign = 'right';
+          ctx.fillText(`${slot.count}`, sx + slotSize - 4, sy + slotSize - 4);
+          ctx.textAlign = 'left';
+        }
+
+        // Name on hover/selected
+        if (i === inventory.selectedSlot) {
+          ctx.fillStyle = '#c7b777';
+          ctx.font = '10px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText(def.name, px + panelW / 2, py + panelH - 6);
+          ctx.textAlign = 'left';
+        }
+      }
+    }
+  }
+}
+
+// ════════════════════════════════════════════════════════
+// HUD
+// ════════════════════════════════════════════════════════
+
+export function renderHUD(ctx, canvas, mode, house, inventory, notifications) {
+  // Top bar
+  ctx.fillStyle = 'rgba(0,0,0,0.55)';
+  ctx.fillRect(0, 0, canvas.width, 36);
+  ctx.fillStyle = '#c7b777';
+  ctx.font = 'bold 14px monospace';
+  ctx.fillText('SUNNYSIDE WORLD', 14, 24);
+  ctx.fillStyle = '#aaa';
+  ctx.font = '11px monospace';
+  const loc = mode === MODE.WORLD ? 'Village' : (house?.name || 'Int\u00e9rieur');
+  ctx.fillText(loc, 200, 24);
+
+  // Quick inventory bar (top right)
+  const barX = canvas.width - 260;
+  const barY = 6;
+  const slotW = 28;
+  for (let i = 0; i < Math.min(6, inventory.maxSlots); i++) {
+    const sx = barX + i * (slotW + 3);
+    ctx.fillStyle = i === inventory.selectedSlot ? 'rgba(199, 183, 119, 0.5)' : 'rgba(0,0,0,0.4)';
+    ctx.fillRect(sx, barY, slotW, slotW);
+    ctx.strokeStyle = i === inventory.selectedSlot ? '#c7b777' : 'rgba(255,255,255,0.2)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(sx, barY, slotW, slotW);
+
+    const slot = inventory.slots[i];
+    if (slot) {
+      const def = ITEM_TYPES[slot.type];
+      if (def) {
+        const img = getImg(def.icon);
+        if (img) {
+          ctx.drawImage(img, 0, 0, img.width, img.height, sx + 4, barY + 2, slotW - 8, slotW - 8);
+        }
+        if (slot.count > 1) {
+          ctx.fillStyle = '#fff';
+          ctx.font = '8px monospace';
+          ctx.fillText(`${slot.count}`, sx + slotW - 10, barY + slotW - 2);
+        }
+      }
+    }
+
+    // Slot number
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.font = '8px monospace';
+    ctx.fillText(`${i + 1}`, sx + 2, barY + 10);
+  }
+
+  // Bottom bar
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  ctx.fillRect(0, canvas.height - 28, canvas.width, 28);
+  ctx.fillStyle = '#888';
+  ctx.font = '10px monospace';
+  ctx.fillText('Fl\u00e8ches/ZQSD = d\u00e9placer | ESPACE = interagir | I = inventaire | 1-6 = s\u00e9lectionner', 14, canvas.height - 10);
+
+  // Notifications
+  if (notifications && notifications.length > 0) {
+    let ny = canvas.height - 70;
+    for (let i = notifications.length - 1; i >= 0; i--) {
+      const n = notifications[i];
+      const alpha = Math.max(0, 1 - n.age / n.duration);
+      if (alpha <= 0) continue;
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = 'rgba(0,0,0,0.7)';
+      ctx.font = '11px monospace';
+      const tw = ctx.measureText(n.text).width + 16;
+      ctx.fillRect(canvas.width / 2 - tw / 2, ny - 8, tw, 22);
+      ctx.fillStyle = n.color || '#c7b777';
+      ctx.textAlign = 'center';
+      ctx.fillText(n.text, canvas.width / 2, ny + 8);
+      ctx.textAlign = 'left';
+      ctx.globalAlpha = 1;
+      ny -= 26;
+    }
+  }
 }
 
 // ════════════════════════════════════════════════════════
@@ -317,7 +613,7 @@ export function renderInterior(ctx, canvas, player, house, frame) {
           ctx.fillStyle = '#4a7fbf';
           ctx.fillRect(x + 5, y + RS * 0.5, RS - 10, RS * 0.35);
           break;
-        case 5: // Bookshelf
+        case 5: { // Bookshelf
           ctx.fillStyle = '#5a3018';
           ctx.fillRect(x + 3, y + 3, RS - 6, RS - 6);
           const colors = ['#c0392b', '#2980b9', '#27ae60', '#8e44ad'];
@@ -327,6 +623,7 @@ export function renderInterior(ctx, canvas, player, house, frame) {
             ctx.fillRect(x + 6 + i * 7, y + RS / 2 + 2, 5, 10);
           }
           break;
+        }
         case 6: // Chest
           ctx.fillStyle = '#7a4e28';
           ctx.fillRect(x + 7, y + 12, RS - 14, RS - 16);
@@ -351,7 +648,7 @@ export function renderInterior(ctx, canvas, player, house, frame) {
           ctx.lineWidth = 1.5;
           ctx.strokeRect(x + 5, y + 5, RS - 10, RS - 10);
           break;
-        case 9: // Fireplace
+        case 9: { // Fireplace
           ctx.fillStyle = '#555';
           ctx.fillRect(x + 3, y + 3, RS - 6, RS - 6);
           ctx.fillStyle = '#333';
@@ -362,6 +659,7 @@ export function renderInterior(ctx, canvas, player, house, frame) {
           ctx.fillStyle = '#f1c40f';
           ctx.beginPath(); ctx.arc(x + RS / 2, y + RS / 2 - 3 + Math.sin(t) * 2, 3, 0, Math.PI * 2); ctx.fill();
           break;
+        }
         case 10: // Barrel
           ctx.fillStyle = '#7a4e28';
           ctx.fillRect(x + 9, y + 5, RS - 18, RS - 10);
@@ -385,7 +683,7 @@ export function renderInterior(ctx, canvas, player, house, frame) {
   renderPlayer(ctx, player, 0, 0, frame, MODE.INTERIOR);
 
   // House name header
-  const name = house?.name || 'Intérieur';
+  const name = house?.name || 'Int\u00e9rieur';
   ctx.font = 'bold 14px monospace';
   const tw = ctx.measureText(name).width + 28;
   ctx.fillStyle = 'rgba(0,0,0,0.75)';

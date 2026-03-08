@@ -803,5 +803,2574 @@
     "ox": 48,
     "oy": 64,
     "frames": 8
+  },
+  "arrow_left": {
+    "w": 11,
+    "h": 12,
+    "ox": 5,
+    "oy": 6,
+    "frames": 1
+  },
+  "arrow_right": {
+    "w": 11,
+    "h": 12,
+    "ox": 5,
+    "oy": 6,
+    "frames": 1
+  },
+  "arrow_up-1": {
+    "w": 10,
+    "h": 13,
+    "ox": 5,
+    "oy": 6,
+    "frames": 1
+  },
+  "arrow_up": {
+    "w": 10,
+    "h": 13,
+    "ox": 5,
+    "oy": 6,
+    "frames": 1
+  },
+  "axe": {
+    "w": 15,
+    "h": 13,
+    "ox": 7,
+    "oy": 6,
+    "frames": 1
+  },
+  "base_attack_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "base_axe_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "base_carry_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 8
+  },
+  "base_casting_strip15": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 15
+  },
+  "base_caught_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "base_death_strip13": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 13
+  },
+  "base_dig_strip13": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 13
+  },
+  "base_doing_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 8
+  },
+  "base_hamering_strip23": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 23
+  },
+  "base_hurt_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 8
+  },
+  "base_jump_strip9": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 9
+  },
+  "base_mining_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "base_reeling_strip13": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 13
+  },
+  "base_roll_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "base_swimming_strip12": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 12
+  },
+  "base_waiting_strip9": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 9
+  },
+  "base_watering_strip5": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 5
+  },
+  "basket": {
+    "w": 12,
+    "h": 12,
+    "ox": 6,
+    "oy": 6,
+    "frames": 1
+  },
+  "beetroot_01": {
+    "w": 6,
+    "h": 5,
+    "ox": 3,
+    "oy": 2,
+    "frames": 1
+  },
+  "beetroot_02": {
+    "w": 8,
+    "h": 6,
+    "ox": 4,
+    "oy": 3,
+    "frames": 1
+  },
+  "beetroot_03": {
+    "w": 8,
+    "h": 11,
+    "ox": 4,
+    "oy": 5,
+    "frames": 1
+  },
+  "beetroot_04": {
+    "w": 12,
+    "h": 14,
+    "ox": 6,
+    "oy": 7,
+    "frames": 1
+  },
+  "beetroot_05": {
+    "w": 16,
+    "h": 16,
+    "ox": 8,
+    "oy": 8,
+    "frames": 1
+  },
+  "bluebar_00": {
+    "w": 15,
+    "h": 7,
+    "ox": 7,
+    "oy": 3,
+    "frames": 1
+  },
+  "bluebar_01": {
+    "w": 15,
+    "h": 7,
+    "ox": 7,
+    "oy": 3,
+    "frames": 1
+  },
+  "bluebar_02": {
+    "w": 15,
+    "h": 7,
+    "ox": 7,
+    "oy": 3,
+    "frames": 1
+  },
+  "bluebar_03": {
+    "w": 15,
+    "h": 7,
+    "ox": 7,
+    "oy": 3,
+    "frames": 1
+  },
+  "bluebar_04": {
+    "w": 15,
+    "h": 7,
+    "ox": 7,
+    "oy": 3,
+    "frames": 1
+  },
+  "bluebar_05": {
+    "w": 15,
+    "h": 7,
+    "ox": 7,
+    "oy": 3,
+    "frames": 1
+  },
+  "bowlhair_attack_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "bowlhair_axe_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "bowlhair_carry_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 8
+  },
+  "bowlhair_casting_strip15": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 15
+  },
+  "bowlhair_caught_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "bowlhair_death_strip13": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 13
+  },
+  "bowlhair_dig_strip13": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 13
+  },
+  "bowlhair_doing_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 8
+  },
+  "bowlhair_hamering_strip23": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 23
+  },
+  "bowlhair_hurt_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 8
+  },
+  "bowlhair_idle_strip9": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 9
+  },
+  "bowlhair_jump_strip9": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 9
+  },
+  "bowlhair_mining_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "bowlhair_reeling_strip13": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 13
+  },
+  "bowlhair_roll_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "bowlhair_run_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 8
+  },
+  "bowlhair_swimming_strip12": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 12
+  },
+  "bowlhair_waiting_strip9": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 9
+  },
+  "bowlhair_walk_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 8
+  },
+  "bowlhair_watering_strip5": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 5
+  },
+  "cabbage_00": {
+    "w": 5,
+    "h": 5,
+    "ox": 2,
+    "oy": 2,
+    "frames": 1
+  },
+  "cabbage_01": {
+    "w": 10,
+    "h": 7,
+    "ox": 5,
+    "oy": 3,
+    "frames": 1
+  },
+  "cabbage_02": {
+    "w": 8,
+    "h": 7,
+    "ox": 4,
+    "oy": 3,
+    "frames": 1
+  },
+  "cabbage_03": {
+    "w": 12,
+    "h": 10,
+    "ox": 6,
+    "oy": 5,
+    "frames": 1
+  },
+  "cabbage_04": {
+    "w": 16,
+    "h": 13,
+    "ox": 8,
+    "oy": 6,
+    "frames": 1
+  },
+  "cancel": {
+    "w": 11,
+    "h": 11,
+    "ox": 5,
+    "oy": 5,
+    "frames": 1
+  },
+  "carrot_00": {
+    "w": 7,
+    "h": 7,
+    "ox": 3,
+    "oy": 3,
+    "frames": 1
+  },
+  "carrot_01": {
+    "w": 6,
+    "h": 7,
+    "ox": 3,
+    "oy": 3,
+    "frames": 1
+  },
+  "carrot_02": {
+    "w": 6,
+    "h": 7,
+    "ox": 3,
+    "oy": 3,
+    "frames": 1
+  },
+  "carrot_03": {
+    "w": 8,
+    "h": 10,
+    "ox": 4,
+    "oy": 5,
+    "frames": 1
+  },
+  "carrot_04": {
+    "w": 10,
+    "h": 13,
+    "ox": 5,
+    "oy": 6,
+    "frames": 1
+  },
+  "carrot_05": {
+    "w": 12,
+    "h": 12,
+    "ox": 6,
+    "oy": 6,
+    "frames": 1
+  },
+  "cauliflower_00": {
+    "w": 5,
+    "h": 5,
+    "ox": 2,
+    "oy": 2,
+    "frames": 1
+  },
+  "cauliflower_01": {
+    "w": 6,
+    "h": 7,
+    "ox": 3,
+    "oy": 3,
+    "frames": 1
+  },
+  "cauliflower_02": {
+    "w": 8,
+    "h": 8,
+    "ox": 4,
+    "oy": 4,
+    "frames": 1
+  },
+  "cauliflower_03": {
+    "w": 10,
+    "h": 11,
+    "ox": 5,
+    "oy": 5,
+    "frames": 1
+  },
+  "cauliflower_04": {
+    "w": 12,
+    "h": 12,
+    "ox": 6,
+    "oy": 6,
+    "frames": 1
+  },
+  "confirm": {
+    "w": 12,
+    "h": 11,
+    "ox": 6,
+    "oy": 5,
+    "frames": 1
+  },
+  "crate_base": {
+    "w": 16,
+    "h": 16,
+    "ox": 8,
+    "oy": 8,
+    "frames": 1
+  },
+  "crate_top": {
+    "w": 16,
+    "h": 14,
+    "ox": 8,
+    "oy": 7,
+    "frames": 1
+  },
+  "curlyhair_attack_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "curlyhair_axe_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "curlyhair_carry_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 8
+  },
+  "curlyhair_casting_strip15": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 15
+  },
+  "curlyhair_caught_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "curlyhair_death_strip13": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 13
+  },
+  "curlyhair_dig_strip13": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 13
+  },
+  "curlyhair_doing_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 8
+  },
+  "curlyhair_hamering_strip23": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 23
+  },
+  "curlyhair_hurt_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 8
+  },
+  "curlyhair_idle_strip9": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 9
+  },
+  "curlyhair_jump_strip9": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 9
+  },
+  "curlyhair_mining_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "curlyhair_reeling_strip13": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 13
+  },
+  "curlyhair_roll_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "curlyhair_run_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 8
+  },
+  "curlyhair_swimming_strip12": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 12
+  },
+  "curlyhair_waiting_strip9": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 9
+  },
+  "curlyhair_walk_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 8
+  },
+  "curlyhair_watering_strip5": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 5
+  },
+  "cursor_01": {
+    "w": 11,
+    "h": 19,
+    "ox": 5,
+    "oy": 9,
+    "frames": 1
+  },
+  "cursor_02": {
+    "w": 11,
+    "h": 14,
+    "ox": 5,
+    "oy": 7,
+    "frames": 1
+  },
+  "cursor_03": {
+    "w": 12,
+    "h": 13,
+    "ox": 6,
+    "oy": 6,
+    "frames": 1
+  },
+  "cursor_04": {
+    "w": 12,
+    "h": 14,
+    "ox": 6,
+    "oy": 7,
+    "frames": 1
+  },
+  "cursor_05": {
+    "w": 10,
+    "h": 15,
+    "ox": 5,
+    "oy": 7,
+    "frames": 1
+  },
+  "dt_box_9slice_bc": {
+    "w": 3,
+    "h": 3,
+    "ox": 1,
+    "oy": 1,
+    "frames": 1
+  },
+  "dt_box_9slice_bl": {
+    "w": 3,
+    "h": 3,
+    "ox": 1,
+    "oy": 1,
+    "frames": 1
+  },
+  "dt_box_9slice_br": {
+    "w": 3,
+    "h": 3,
+    "ox": 1,
+    "oy": 1,
+    "frames": 1
+  },
+  "dt_box_9slice_c": {
+    "w": 3,
+    "h": 3,
+    "ox": 1,
+    "oy": 1,
+    "frames": 1
+  },
+  "dt_box_9slice_lc": {
+    "w": 3,
+    "h": 3,
+    "ox": 1,
+    "oy": 1,
+    "frames": 1
+  },
+  "dt_box_9slice_rc": {
+    "w": 3,
+    "h": 3,
+    "ox": 1,
+    "oy": 1,
+    "frames": 1
+  },
+  "dt_box_9slice_tc": {
+    "w": 3,
+    "h": 3,
+    "ox": 1,
+    "oy": 1,
+    "frames": 1
+  },
+  "dt_box_9slice_tl": {
+    "w": 3,
+    "h": 3,
+    "ox": 1,
+    "oy": 1,
+    "frames": 1
+  },
+  "dt_box_9slice_tr": {
+    "w": 3,
+    "h": 3,
+    "ox": 1,
+    "oy": 1,
+    "frames": 1
+  },
+  "expression_confused-1": {
+    "w": 8,
+    "h": 9,
+    "ox": 4,
+    "oy": 4,
+    "frames": 1
+  },
+  "expression_confused": {
+    "w": 7,
+    "h": 10,
+    "ox": 3,
+    "oy": 5,
+    "frames": 1
+  },
+  "greenbar_00": {
+    "w": 15,
+    "h": 7,
+    "ox": 7,
+    "oy": 3,
+    "frames": 1
+  },
+  "greenbar_01": {
+    "w": 15,
+    "h": 7,
+    "ox": 7,
+    "oy": 3,
+    "frames": 1
+  },
+  "greenbar_02": {
+    "w": 15,
+    "h": 7,
+    "ox": 7,
+    "oy": 3,
+    "frames": 1
+  },
+  "greenbar_03": {
+    "w": 15,
+    "h": 7,
+    "ox": 7,
+    "oy": 3,
+    "frames": 1
+  },
+  "greenbar_04": {
+    "w": 15,
+    "h": 7,
+    "ox": 7,
+    "oy": 3,
+    "frames": 1
+  },
+  "greenbar_05": {
+    "w": 15,
+    "h": 7,
+    "ox": 7,
+    "oy": 3,
+    "frames": 1
+  },
+  "greenbar_06-1": {
+    "w": 15,
+    "h": 7,
+    "ox": 7,
+    "oy": 3,
+    "frames": 1
+  },
+  "greenbar_06": {
+    "w": 15,
+    "h": 7,
+    "ox": 7,
+    "oy": 3,
+    "frames": 1
+  },
+  "hammer": {
+    "w": 13,
+    "h": 13,
+    "ox": 6,
+    "oy": 6,
+    "frames": 1
+  },
+  "hand_closed_01": {
+    "w": 9,
+    "h": 9,
+    "ox": 4,
+    "oy": 4,
+    "frames": 1
+  },
+  "hand_closed_02": {
+    "w": 13,
+    "h": 12,
+    "ox": 6,
+    "oy": 6,
+    "frames": 1
+  },
+  "hand_open_01": {
+    "w": 11,
+    "h": 11,
+    "ox": 5,
+    "oy": 5,
+    "frames": 1
+  },
+  "hand_open_02": {
+    "w": 14,
+    "h": 14,
+    "ox": 7,
+    "oy": 7,
+    "frames": 1
+  },
+  "happiness_02": {
+    "w": 7,
+    "h": 8,
+    "ox": 3,
+    "oy": 4,
+    "frames": 1
+  },
+  "happiness_04": {
+    "w": 7,
+    "h": 8,
+    "ox": 3,
+    "oy": 4,
+    "frames": 1
+  },
+  "indicator": {
+    "w": 8,
+    "h": 6,
+    "ox": 4,
+    "oy": 3,
+    "frames": 1
+  },
+  "itemdisc_01": {
+    "w": 18,
+    "h": 19,
+    "ox": 9,
+    "oy": 9,
+    "frames": 1
+  },
+  "itemdisc_02": {
+    "w": 17,
+    "h": 18,
+    "ox": 8,
+    "oy": 9,
+    "frames": 1
+  },
+  "kale_00": {
+    "w": 5,
+    "h": 5,
+    "ox": 2,
+    "oy": 2,
+    "frames": 1
+  },
+  "kale_01": {
+    "w": 4,
+    "h": 7,
+    "ox": 2,
+    "oy": 3,
+    "frames": 1
+  },
+  "kale_02": {
+    "w": 6,
+    "h": 8,
+    "ox": 3,
+    "oy": 4,
+    "frames": 1
+  },
+  "kale_03": {
+    "w": 10,
+    "h": 9,
+    "ox": 5,
+    "oy": 4,
+    "frames": 1
+  },
+  "kale_04": {
+    "w": 14,
+    "h": 11,
+    "ox": 7,
+    "oy": 5,
+    "frames": 1
+  },
+  "label_left": {
+    "w": 4,
+    "h": 13,
+    "ox": 2,
+    "oy": 6,
+    "frames": 1
+  },
+  "label_middle": {
+    "w": 16,
+    "h": 13,
+    "ox": 8,
+    "oy": 6,
+    "frames": 1
+  },
+  "label_right": {
+    "w": 4,
+    "h": 13,
+    "ox": 2,
+    "oy": 6,
+    "frames": 1
+  },
+  "longhair_attack_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "longhair_axe_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "longhair_carry_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 8
+  },
+  "longhair_casting_strip15": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 15
+  },
+  "longhair_caught_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "longhair_death_strip13": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 13
+  },
+  "longhair_dig_strip13": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 13
+  },
+  "longhair_doing_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 8
+  },
+  "longhair_hamering_strip23": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 23
+  },
+  "longhair_hurt_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 8
+  },
+  "longhair_idle_strip9": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 9
+  },
+  "longhair_jump_strip9": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 9
+  },
+  "longhair_mining_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "longhair_reeling_strip13": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 13
+  },
+  "longhair_roll_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "longhair_run_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 8
+  },
+  "longhair_swimming_strip12": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 12
+  },
+  "longhair_waiting_strip9": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 9
+  },
+  "longhair_walk_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 8
+  },
+  "longhair_watering_strip5": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 5
+  },
+  "lt_box_9slice_bc": {
+    "w": 3,
+    "h": 3,
+    "ox": 1,
+    "oy": 1,
+    "frames": 1
+  },
+  "lt_box_9slice_bl": {
+    "w": 3,
+    "h": 3,
+    "ox": 1,
+    "oy": 1,
+    "frames": 1
+  },
+  "lt_box_9slice_br": {
+    "w": 3,
+    "h": 3,
+    "ox": 1,
+    "oy": 1,
+    "frames": 1
+  },
+  "lt_box_9slice_c": {
+    "w": 3,
+    "h": 3,
+    "ox": 1,
+    "oy": 1,
+    "frames": 1
+  },
+  "lt_box_9slice_lc": {
+    "w": 3,
+    "h": 3,
+    "ox": 1,
+    "oy": 1,
+    "frames": 1
+  },
+  "lt_box_9slice_rc": {
+    "w": 3,
+    "h": 3,
+    "ox": 1,
+    "oy": 1,
+    "frames": 1
+  },
+  "lt_box_9slice_tc": {
+    "w": 3,
+    "h": 3,
+    "ox": 1,
+    "oy": 1,
+    "frames": 1
+  },
+  "lt_box_9slice_tl": {
+    "w": 3,
+    "h": 3,
+    "ox": 1,
+    "oy": 1,
+    "frames": 1
+  },
+  "lt_box_9slice_tr": {
+    "w": 3,
+    "h": 3,
+    "ox": 1,
+    "oy": 1,
+    "frames": 1
+  },
+  "mophair_attack_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "mophair_axe_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "mophair_carry_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 8
+  },
+  "mophair_casting_strip15": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 15
+  },
+  "mophair_caught_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "mophair_death_strip13": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 13
+  },
+  "mophair_dig_strip13": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 13
+  },
+  "mophair_doing_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 8
+  },
+  "mophair_hamering_strip23": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 23
+  },
+  "mophair_hurt_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 8
+  },
+  "mophair_idle_strip9": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 9
+  },
+  "mophair_jump_strip9": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 9
+  },
+  "mophair_mining_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "mophair_reeling_strip13": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 13
+  },
+  "mophair_roll_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "mophair_run_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 8
+  },
+  "mophair_swimming_strip12": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 12
+  },
+  "mophair_waiting_strip9": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 9
+  },
+  "mophair_walk_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 8
+  },
+  "mophair_watering_strip5": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 5
+  },
+  "parsnip_00": {
+    "w": 6,
+    "h": 6,
+    "ox": 3,
+    "oy": 3,
+    "frames": 1
+  },
+  "parsnip_01": {
+    "w": 6,
+    "h": 6,
+    "ox": 3,
+    "oy": 3,
+    "frames": 1
+  },
+  "parsnip_02": {
+    "w": 8,
+    "h": 7,
+    "ox": 4,
+    "oy": 3,
+    "frames": 1
+  },
+  "parsnip_04": {
+    "w": 10,
+    "h": 14,
+    "ox": 5,
+    "oy": 7,
+    "frames": 1
+  },
+  "parsnip_05": {
+    "w": 14,
+    "h": 14,
+    "ox": 7,
+    "oy": 7,
+    "frames": 1
+  },
+  "pickaxe": {
+    "w": 13,
+    "h": 13,
+    "ox": 6,
+    "oy": 6,
+    "frames": 1
+  },
+  "plan alt": {
+    "w": 12,
+    "h": 12,
+    "ox": 6,
+    "oy": 6,
+    "frames": 1
+  },
+  "plant": {
+    "w": 10,
+    "h": 11,
+    "ox": 5,
+    "oy": 5,
+    "frames": 1
+  },
+  "playercount": {
+    "w": 13,
+    "h": 14,
+    "ox": 6,
+    "oy": 7,
+    "frames": 1
+  },
+  "potato_00": {
+    "w": 6,
+    "h": 6,
+    "ox": 3,
+    "oy": 3,
+    "frames": 1
+  },
+  "potato_01": {
+    "w": 6,
+    "h": 6,
+    "ox": 3,
+    "oy": 3,
+    "frames": 1
+  },
+  "potato_02": {
+    "w": 8,
+    "h": 8,
+    "ox": 4,
+    "oy": 4,
+    "frames": 1
+  },
+  "potato_03": {
+    "w": 8,
+    "h": 11,
+    "ox": 4,
+    "oy": 5,
+    "frames": 1
+  },
+  "potato_04": {
+    "w": 11,
+    "h": 15,
+    "ox": 5,
+    "oy": 7,
+    "frames": 1
+  },
+  "potato_05": {
+    "w": 10,
+    "h": 10,
+    "ox": 5,
+    "oy": 5,
+    "frames": 1
+  },
+  "pumpkin_00": {
+    "w": 7,
+    "h": 7,
+    "ox": 3,
+    "oy": 3,
+    "frames": 1
+  },
+  "pumpkin_01": {
+    "w": 8,
+    "h": 7,
+    "ox": 4,
+    "oy": 3,
+    "frames": 1
+  },
+  "pumpkin_02": {
+    "w": 9,
+    "h": 9,
+    "ox": 4,
+    "oy": 4,
+    "frames": 1
+  },
+  "pumpkin_03": {
+    "w": 12,
+    "h": 11,
+    "ox": 6,
+    "oy": 5,
+    "frames": 1
+  },
+  "pumpkin_04": {
+    "w": 12,
+    "h": 14,
+    "ox": 6,
+    "oy": 7,
+    "frames": 1
+  },
+  "radish_00": {
+    "w": 6,
+    "h": 6,
+    "ox": 3,
+    "oy": 3,
+    "frames": 1
+  },
+  "radish_01": {
+    "w": 6,
+    "h": 6,
+    "ox": 3,
+    "oy": 3,
+    "frames": 1
+  },
+  "radish_02": {
+    "w": 8,
+    "h": 7,
+    "ox": 4,
+    "oy": 3,
+    "frames": 1
+  },
+  "radish_03": {
+    "w": 8,
+    "h": 10,
+    "ox": 4,
+    "oy": 5,
+    "frames": 1
+  },
+  "radish_04": {
+    "w": 12,
+    "h": 15,
+    "ox": 6,
+    "oy": 7,
+    "frames": 1
+  },
+  "radish_05": {
+    "w": 12,
+    "h": 15,
+    "ox": 6,
+    "oy": 7,
+    "frames": 1
+  },
+  "redbar_00": {
+    "w": 15,
+    "h": 7,
+    "ox": 7,
+    "oy": 3,
+    "frames": 1
+  },
+  "redbar_01": {
+    "w": 15,
+    "h": 7,
+    "ox": 7,
+    "oy": 3,
+    "frames": 1
+  },
+  "redbar_02": {
+    "w": 15,
+    "h": 7,
+    "ox": 7,
+    "oy": 3,
+    "frames": 1
+  },
+  "redbar_03": {
+    "w": 15,
+    "h": 7,
+    "ox": 7,
+    "oy": 3,
+    "frames": 1
+  },
+  "redbar_04": {
+    "w": 15,
+    "h": 7,
+    "ox": 7,
+    "oy": 3,
+    "frames": 1
+  },
+  "redbar_05": {
+    "w": 15,
+    "h": 7,
+    "ox": 7,
+    "oy": 3,
+    "frames": 1
+  },
+  "redbar_06": {
+    "w": 15,
+    "h": 7,
+    "ox": 7,
+    "oy": 3,
+    "frames": 1
+  },
+  "rod alt": {
+    "w": 16,
+    "h": 14,
+    "ox": 8,
+    "oy": 7,
+    "frames": 1
+  },
+  "rod": {
+    "w": 15,
+    "h": 14,
+    "ox": 7,
+    "oy": 7,
+    "frames": 1
+  },
+  "sandtimer": {
+    "w": 8,
+    "h": 11,
+    "ox": 4,
+    "oy": 5,
+    "frames": 1
+  },
+  "search": {
+    "w": 16,
+    "h": 16,
+    "ox": 8,
+    "oy": 8,
+    "frames": 1
+  },
+  "seeds_generic": {
+    "w": 11,
+    "h": 10,
+    "ox": 5,
+    "oy": 5,
+    "frames": 1
+  },
+  "select_dots": {
+    "w": 5,
+    "h": 6,
+    "ox": 2,
+    "oy": 3,
+    "frames": 1
+  },
+  "select_dots_large": {
+    "w": 6,
+    "h": 7,
+    "ox": 3,
+    "oy": 3,
+    "frames": 1
+  },
+  "selectbox_bl": {
+    "w": 8,
+    "h": 9,
+    "ox": 4,
+    "oy": 4,
+    "frames": 1
+  },
+  "selectbox_br": {
+    "w": 8,
+    "h": 9,
+    "ox": 4,
+    "oy": 4,
+    "frames": 1
+  },
+  "selectbox_tl": {
+    "w": 8,
+    "h": 9,
+    "ox": 4,
+    "oy": 4,
+    "frames": 1
+  },
+  "selectbox_tr": {
+    "w": 8,
+    "h": 9,
+    "ox": 4,
+    "oy": 4,
+    "frames": 1
+  },
+  "shorthair_attack_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "shorthair_axe_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "shorthair_carry_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 8
+  },
+  "shorthair_casting_strip15": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 15
+  },
+  "shorthair_caught_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "shorthair_death_strip13": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 13
+  },
+  "shorthair_dig_strip13": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 13
+  },
+  "shorthair_doing_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 8
+  },
+  "shorthair_hamering_strip23": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 23
+  },
+  "shorthair_hurt_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 8
+  },
+  "shorthair_idle_strip9": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 9
+  },
+  "shorthair_jump_strip9": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 9
+  },
+  "shorthair_mining_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "shorthair_reeling_strip13": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 13
+  },
+  "shorthair_roll_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "shorthair_run_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 8
+  },
+  "shorthair_swimming_strip12": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 12
+  },
+  "shorthair_waiting_strip9": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 9
+  },
+  "shorthair_walk_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 8
+  },
+  "shorthair_watering_strip5": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 5
+  },
+  "shovel": {
+    "w": 14,
+    "h": 14,
+    "ox": 7,
+    "oy": 7,
+    "frames": 1
+  },
+  "skeleton_attack_strip7": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 7
+  },
+  "skeleton_death_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "skeleton_hurt_strip7": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 7
+  },
+  "skeleton_idle_strip6": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 6
+  },
+  "skeleton_jump_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "skeleton_walk_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 8
+  },
+  "soil_00": {
+    "w": 16,
+    "h": 12,
+    "ox": 8,
+    "oy": 6,
+    "frames": 1
+  },
+  "soil_01": {
+    "w": 16,
+    "h": 12,
+    "ox": 8,
+    "oy": 6,
+    "frames": 1
+  },
+  "soil_03": {
+    "w": 16,
+    "h": 12,
+    "ox": 8,
+    "oy": 6,
+    "frames": 1
+  },
+  "soil_04": {
+    "w": 16,
+    "h": 12,
+    "ox": 8,
+    "oy": 6,
+    "frames": 1
+  },
+  "spikeyhair_attack_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "spikeyhair_axe_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "spikeyhair_carry_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 8
+  },
+  "spikeyhair_casting_strip15": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 15
+  },
+  "spikeyhair_caught_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "spikeyhair_death_strip13": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 13
+  },
+  "spikeyhair_dig_strip13": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 13
+  },
+  "spikeyhair_doing_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 8
+  },
+  "spikeyhair_hamering_strip23": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 23
+  },
+  "spikeyhair_hurt_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 8
+  },
+  "spikeyhair_idle_strip9": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 9
+  },
+  "spikeyhair_jump_strip9": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 9
+  },
+  "spikeyhair_mining_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "spikeyhair_reeling_strip13": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 13
+  },
+  "spikeyhair_roll_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "spikeyhair_run_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 8
+  },
+  "spikeyhair_swimming_strip12": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 12
+  },
+  "spikeyhair_waiting_strip9": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 9
+  },
+  "spikeyhair_walk_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 8
+  },
+  "spikeyhair_watering_strip5": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 5
+  },
+  "spr_attack_strip10": {
+    "w": 86,
+    "h": 64,
+    "ox": 43,
+    "oy": 32,
+    "frames": 10
+  },
+  "spr_axe_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "spr_carry_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 8
+  },
+  "spr_casting_strip15": {
+    "w": 64,
+    "h": 128,
+    "ox": 32,
+    "oy": 64,
+    "frames": 15
+  },
+  "spr_caught_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "spr_death_strip13": {
+    "w": 66,
+    "h": 64,
+    "ox": 33,
+    "oy": 32,
+    "frames": 13
+  },
+  "spr_deco_bird_01_strip4": {
+    "w": 16,
+    "h": 16,
+    "ox": 8,
+    "oy": 8,
+    "frames": 4
+  },
+  "spr_deco_blinking_strip12": {
+    "w": 16,
+    "h": 16,
+    "ox": 8,
+    "oy": 8,
+    "frames": 12
+  },
+  "spr_deco_buckect_rope": {
+    "w": 11,
+    "h": 13,
+    "ox": 5,
+    "oy": 6,
+    "frames": 1
+  },
+  "spr_deco_chest_01_closed": {
+    "w": 16,
+    "h": 21,
+    "ox": 8,
+    "oy": 10,
+    "frames": 1
+  },
+  "spr_deco_chicken_01_strip4": {
+    "w": 32,
+    "h": 32,
+    "ox": 16,
+    "oy": 16,
+    "frames": 4
+  },
+  "spr_deco_coracle_strip4": {
+    "w": 48,
+    "h": 37,
+    "ox": 24,
+    "oy": 18,
+    "frames": 4
+  },
+  "spr_deco_cow_strip4": {
+    "w": 32,
+    "h": 32,
+    "ox": 16,
+    "oy": 16,
+    "frames": 4
+  },
+  "spr_deco_duck_01_strip4": {
+    "w": 16,
+    "h": 16,
+    "ox": 8,
+    "oy": 8,
+    "frames": 4
+  },
+  "spr_deco_knifeandfork": {
+    "w": 6,
+    "h": 13,
+    "ox": 3,
+    "oy": 6,
+    "frames": 1
+  },
+  "spr_deco_mushroom_blue_01_strip4": {
+    "w": 16,
+    "h": 16,
+    "ox": 8,
+    "oy": 8,
+    "frames": 4
+  },
+  "spr_deco_mushroom_blue_02_strip4": {
+    "w": 16,
+    "h": 16,
+    "ox": 8,
+    "oy": 8,
+    "frames": 4
+  },
+  "spr_deco_mushroom_blue_03_strip4": {
+    "w": 16,
+    "h": 16,
+    "ox": 8,
+    "oy": 8,
+    "frames": 4
+  },
+  "spr_deco_mushroom_red_01_strip4": {
+    "w": 16,
+    "h": 16,
+    "ox": 8,
+    "oy": 8,
+    "frames": 4
+  },
+  "spr_deco_ore_stone": {
+    "w": 10,
+    "h": 10,
+    "ox": 5,
+    "oy": 5,
+    "frames": 1
+  },
+  "spr_deco_picture_01": {
+    "w": 9,
+    "h": 9,
+    "ox": 4,
+    "oy": 4,
+    "frames": 1
+  },
+  "spr_deco_pig_01_strip4": {
+    "w": 32,
+    "h": 32,
+    "ox": 16,
+    "oy": 16,
+    "frames": 4
+  },
+  "spr_deco_plate": {
+    "w": 7,
+    "h": 9,
+    "ox": 3,
+    "oy": 4,
+    "frames": 1
+  },
+  "spr_deco_rug_01": {
+    "w": 10,
+    "h": 12,
+    "ox": 5,
+    "oy": 6,
+    "frames": 1
+  },
+  "spr_deco_sheep_01_strip4": {
+    "w": 32,
+    "h": 32,
+    "ox": 16,
+    "oy": 16,
+    "frames": 4
+  },
+  "spr_deco_tree_01_strip4": {
+    "w": 32,
+    "h": 34,
+    "ox": 16,
+    "oy": 17,
+    "frames": 4
+  },
+  "spr_deco_tree_02_strip4": {
+    "w": 28,
+    "h": 43,
+    "ox": 14,
+    "oy": 21,
+    "frames": 4
+  },
+  "spr_deco_windmill_strip9": {
+    "w": 112,
+    "h": 112,
+    "ox": 56,
+    "oy": 56,
+    "frames": 9
+  },
+  "spr_deco_windmill_withshadow_strip9": {
+    "w": 112,
+    "h": 112,
+    "ox": 56,
+    "oy": 56,
+    "frames": 9
+  },
+  "spr_deco_windmillshadow_strip9": {
+    "w": 112,
+    "h": 112,
+    "ox": 56,
+    "oy": 56,
+    "frames": 9
+  },
+  "spr_dig_strip13": {
+    "w": 73,
+    "h": 128,
+    "ox": 36,
+    "oy": 64,
+    "frames": 13
+  },
+  "spr_doing_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 8
+  },
+  "spr_hammering_strip23": {
+    "w": 41,
+    "h": 192,
+    "ox": 20,
+    "oy": 96,
+    "frames": 23
+  },
+  "spr_hurt_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 8
+  },
+  "spr_idle_strip9": {
+    "w": 85,
+    "h": 64,
+    "ox": 42,
+    "oy": 32,
+    "frames": 9
+  },
+  "spr_jump_strip9": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 9
+  },
+  "spr_mining_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "spr_reeling_strip13": {
+    "w": 73,
+    "h": 128,
+    "ox": 36,
+    "oy": 64,
+    "frames": 13
+  },
+  "spr_roll_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "spr_run_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 8
+  },
+  "spr_swimming_strip12": {
+    "w": 32,
+    "h": 64,
+    "ox": 16,
+    "oy": 32,
+    "frames": 12
+  },
+  "spr_waiting_strip9": {
+    "w": 85,
+    "h": 64,
+    "ox": 42,
+    "oy": 32,
+    "frames": 9
+  },
+  "spr_walk_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 8
+  },
+  "spr_watering_strip5": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 5
+  },
+  "stopwatch": {
+    "w": 10,
+    "h": 12,
+    "ox": 5,
+    "oy": 6,
+    "frames": 1
+  },
+  "sunflower_00": {
+    "w": 7,
+    "h": 7,
+    "ox": 3,
+    "oy": 3,
+    "frames": 1
+  },
+  "sunflower_01": {
+    "w": 10,
+    "h": 7,
+    "ox": 5,
+    "oy": 3,
+    "frames": 1
+  },
+  "sunflower_02": {
+    "w": 11,
+    "h": 9,
+    "ox": 5,
+    "oy": 4,
+    "frames": 1
+  },
+  "sunflower_03": {
+    "w": 11,
+    "h": 13,
+    "ox": 5,
+    "oy": 6,
+    "frames": 1
+  },
+  "sunflower_04": {
+    "w": 13,
+    "h": 19,
+    "ox": 6,
+    "oy": 9,
+    "frames": 1
+  },
+  "sunflower_05": {
+    "w": 13,
+    "h": 16,
+    "ox": 6,
+    "oy": 8,
+    "frames": 1
+  },
+  "sword": {
+    "w": 14,
+    "h": 14,
+    "ox": 7,
+    "oy": 7,
+    "frames": 1
+  },
+  "tools_attack_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "tools_axe_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "tools_carry_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 8
+  },
+  "tools_casting_strip15": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 15
+  },
+  "tools_caught_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "tools_death_strip13": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 13
+  },
+  "tools_dig_strip13": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 13
+  },
+  "tools_doing_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 8
+  },
+  "tools_hamering_strip23": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 23
+  },
+  "tools_hurt_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 8
+  },
+  "tools_idle_strip9": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 9
+  },
+  "tools_jump_strip9": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 9
+  },
+  "tools_mining_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "tools_reeling_strip13": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 13
+  },
+  "tools_roll_strip10": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 10
+  },
+  "tools_run_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 8
+  },
+  "tools_swimming_strip12": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 12
+  },
+  "tools_waiting_strip9": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 9
+  },
+  "tools_walk_strip8": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 8
+  },
+  "tools_watering_strip5": {
+    "w": 96,
+    "h": 64,
+    "ox": 48,
+    "oy": 32,
+    "frames": 5
+  },
+  "w_box_9slice_bc": {
+    "w": 3,
+    "h": 3,
+    "ox": 1,
+    "oy": 1,
+    "frames": 1
+  },
+  "w_box_9slice_bl": {
+    "w": 3,
+    "h": 3,
+    "ox": 1,
+    "oy": 1,
+    "frames": 1
+  },
+  "w_box_9slice_br": {
+    "w": 3,
+    "h": 3,
+    "ox": 1,
+    "oy": 1,
+    "frames": 1
+  },
+  "w_box_9slice_c": {
+    "w": 3,
+    "h": 3,
+    "ox": 1,
+    "oy": 1,
+    "frames": 1
+  },
+  "w_box_9slice_lc": {
+    "w": 3,
+    "h": 3,
+    "ox": 1,
+    "oy": 1,
+    "frames": 1
+  },
+  "w_box_9slice_rc": {
+    "w": 3,
+    "h": 3,
+    "ox": 1,
+    "oy": 1,
+    "frames": 1
+  },
+  "w_box_9slice_tc": {
+    "w": 3,
+    "h": 3,
+    "ox": 1,
+    "oy": 1,
+    "frames": 1
+  },
+  "w_box_9slice_tl": {
+    "w": 3,
+    "h": 3,
+    "ox": 1,
+    "oy": 1,
+    "frames": 1
+  },
+  "w_box_9slice_tr": {
+    "w": 3,
+    "h": 3,
+    "ox": 1,
+    "oy": 1,
+    "frames": 1
+  },
+  "water": {
+    "w": 13,
+    "h": 13,
+    "ox": 6,
+    "oy": 6,
+    "frames": 1
+  },
+  "wheat_00": {
+    "w": 6,
+    "h": 6,
+    "ox": 3,
+    "oy": 3,
+    "frames": 1
+  },
+  "wheat_02": {
+    "w": 11,
+    "h": 10,
+    "ox": 5,
+    "oy": 5,
+    "frames": 1
+  },
+  "wheat_03": {
+    "w": 13,
+    "h": 14,
+    "ox": 6,
+    "oy": 7,
+    "frames": 1
+  },
+  "wheat_04": {
+    "w": 13,
+    "h": 16,
+    "ox": 6,
+    "oy": 8,
+    "frames": 1
+  },
+  "wheat_05": {
+    "w": 13,
+    "h": 13,
+    "ox": 6,
+    "oy": 6,
+    "frames": 1
   }
 }
