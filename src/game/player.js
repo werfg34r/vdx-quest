@@ -1,8 +1,17 @@
 // ═══════════════════════════════════════════════════════
-// VDX QUEST - Player
+// VDX QUEST - Player Movement & Collision
 // ═══════════════════════════════════════════════════════
 import { TILE, PLAYER_SPEED, PLAYER_START_X, PLAYER_START_Y } from './constants.js';
-import { isWalkable } from './maps.js';
+import collisionData from '../data/collision.json';
+
+const COL_W = collisionData.width;
+const COL_H = collisionData.height;
+const colMap = collisionData.data;
+
+function getCollision(col, row) {
+  if (col < 0 || col >= COL_W || row < 0 || row >= COL_H) return 0;
+  return colMap[row * COL_W + col];
+}
 
 export function createPlayer() {
   return {
@@ -12,6 +21,7 @@ export function createPlayer() {
     moving: false,
     actionSprite: null,
     actionTimer: 0,
+    selectedTool: 0,
   };
 }
 
@@ -40,7 +50,7 @@ export function updatePlayer(player, keys) {
     const rTop = Math.floor((player.y + pad) / TILE);
     const rBot = Math.floor((player.y + TILE - pad) / TILE);
     let ok = true;
-    for (let r = rTop; r <= rBot; r++) { if (!isWalkable(checkCol, r)) { ok = false; break; } }
+    for (let r = rTop; r <= rBot; r++) { if (getCollision(checkCol, r) !== 1) { ok = false; break; } }
     if (ok) player.x = nx;
   }
   if (dy !== 0) {
@@ -49,7 +59,7 @@ export function updatePlayer(player, keys) {
     const cL = Math.floor((player.x + pad) / TILE);
     const cR = Math.floor((player.x + TILE - pad) / TILE);
     let ok = true;
-    for (let c = cL; c <= cR; c++) { if (!isWalkable(c, checkRow)) { ok = false; break; } }
+    for (let c = cL; c <= cR; c++) { if (getCollision(c, checkRow) !== 1) { ok = false; break; } }
     if (ok) player.y = ny;
   }
 }

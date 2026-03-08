@@ -55,7 +55,7 @@ export const QUEST_DEFS = [
     dialogueStart: [
       "Les murs sont montes ! La maison prend forme.",
       "Pour le toit, il faut du bois ET de la pierre.",
-      "Tu trouveras des rochers au sud-ouest. Utilise ta hache dessus !",
+      "Tu trouveras des rochers sur la carte. Selectionne ta pioche (touche 2) !",
       "Ramasse 5 bois et 3 pierres.",
     ],
     objective: { type: 'collect_multi', items: { wood: 5, rock: 3 } },

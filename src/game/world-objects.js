@@ -1,26 +1,27 @@
 // ═══════════════════════════════════════════════════════
-// VDX QUEST - World Objects (trees, rocks)
+// VDX QUEST - World Objects - Trees & Rocks
 // ═══════════════════════════════════════════════════════
-import { TILE, FOREST_TREES, ROCK_POSITIONS } from './constants.js';
+import { TILE, WORLD_TREES, WORLD_ROCKS } from './constants.js';
 
 export function createWorldObjects() {
   const objects = [];
 
-  for (let i = 0; i < FOREST_TREES.length; i++) {
-    const t = FOREST_TREES[i];
+  for (let i = 0; i < WORLD_TREES.length; i++) {
+    const t = WORLD_TREES[i];
     objects.push({
       id: `tree_${i}`, type: 'tree',
       tileX: t.x, tileY: t.y,
       x: t.x * TILE, y: t.y * TILE,
-      hp: 2, maxHp: 2,
+      hp: 3, maxHp: 3,
       alive: true,
       respawnTimer: 0, respawnTime: 600,
+      drop: 'wood', dropCount: 2,
       shakeTimer: 0,
     });
   }
 
-  for (let i = 0; i < ROCK_POSITIONS.length; i++) {
-    const r = ROCK_POSITIONS[i];
+  for (let i = 0; i < WORLD_ROCKS.length; i++) {
+    const r = WORLD_ROCKS[i];
     objects.push({
       id: `rock_${i}`, type: 'rock',
       tileX: r.x, tileY: r.y,
@@ -28,6 +29,7 @@ export function createWorldObjects() {
       hp: 2, maxHp: 2,
       alive: true,
       respawnTimer: 0, respawnTime: 900,
+      drop: 'rock', dropCount: 2,
       shakeTimer: 0,
     });
   }
@@ -35,14 +37,18 @@ export function createWorldObjects() {
   return objects;
 }
 
-export function hitObject(obj) {
+export function hitObject(obj, toolType) {
   if (!obj.alive) return null;
+  if (obj.type === 'tree' && toolType !== 'axe') return null;
+  if (obj.type === 'rock' && toolType !== 'pickaxe') return null;
+
   obj.hp--;
   obj.shakeTimer = 15;
+
   if (obj.hp <= 0) {
     obj.alive = false;
     obj.respawnTimer = obj.respawnTime;
-    return { item: obj.type === 'tree' ? 'wood' : 'rock', count: obj.type === 'tree' ? 1 : 1 };
+    return { item: obj.drop, count: obj.dropCount };
   }
   return { item: null, count: 0 };
 }
@@ -60,17 +66,18 @@ export function updateWorldObjects(objects) {
   }
 }
 
-export function getNearbyObject(objects, px, py) {
-  const range = 2.5 * TILE;
+export function getNearbyObject(objects, px, py, toolType) {
+  const range = 2.2 * TILE;
   let best = null;
   let bestDist = range;
+
+  const wantType = toolType === 'axe' ? 'tree' : toolType === 'pickaxe' ? 'rock' : null;
+  if (!wantType) return null;
+
   for (const obj of objects) {
-    if (!obj.alive) continue;
-    const dist = Math.hypot(obj.x + TILE / 2 - px - TILE / 2, obj.y + TILE / 2 - py - TILE / 2);
-    if (dist < bestDist) {
-      best = obj;
-      bestDist = dist;
-    }
+    if (!obj.alive || obj.type !== wantType) continue;
+    const dist = Math.hypot(obj.x + TILE / 2 - px, obj.y + TILE / 2 - py);
+    if (dist < bestDist) { best = obj; bestDist = dist; }
   }
   return best;
 }

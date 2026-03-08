@@ -1,17 +1,20 @@
 // ═══════════════════════════════════════════════════════
-// VDX QUEST - Inventory
+// VDX QUEST - Inventory (simplified for Village 1)
 // ═══════════════════════════════════════════════════════
-import { ITEM_TYPES } from './constants.js';
 
 export function createInventory() {
   return {
+    tools: ['axe', 'pickaxe'],
+    selectedTool: 0,
     items: [],  // { type: string, count: number }
   };
 }
 
+export function getSelectedTool(inv) {
+  return inv.tools[inv.selectedTool] || null;
+}
+
 export function addItem(inv, itemType, count = 1) {
-  const def = ITEM_TYPES[itemType];
-  if (!def) return false;
   const existing = inv.items.find(s => s.type === itemType);
   if (existing) { existing.count += count; return true; }
   inv.items.push({ type: itemType, count });

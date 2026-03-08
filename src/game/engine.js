@@ -1,11 +1,14 @@
 // ═══════════════════════════════════════════════════════
-// VDX QUEST - Game Engine
+// VDX QUEST - Game Engine - Village 1
 // ═══════════════════════════════════════════════════════
-import { TILE, SCALE, RS, LAURENT, HOUSE_STAGES } from './constants.js';
+import {
+  TILE, SCALE, RS, TOOLS, ITEM_TYPES, BUILD_PLOT, HOUSE_STAGES, LAURENT,
+  PLAYER_SPEED,
+} from './constants.js';
 import { loadAssets } from './assets.js';
-import { renderAll } from './renderer.js';
+import { renderWorld, renderQuestDialogue, renderHUD, renderPrompts } from './renderer.js';
 import { createPlayer, updatePlayer } from './player.js';
-import { createInventory, addItem, removeItem, getItemCount } from './inventory.js';
+import { createInventory, getSelectedTool, addItem, removeItem, getItemCount } from './inventory.js';
 import {
   createQuestState, getCurrentQuest, startQuestDialogue,
   advanceQuestDialogue, updateQuestDialogue, checkObjective,
@@ -14,7 +17,6 @@ import {
 import {
   createWorldObjects, hitObject, updateWorldObjects, getNearbyObject,
 } from './world-objects.js';
-import { isBuildingPlot } from './maps.js';
 
 export function startGame(canvas) {
   const ctx = canvas.getContext('2d');
@@ -24,23 +26,25 @@ export function startGame(canvas) {
   let inventory = createInventory();
   let quests = createQuestState();
   let worldObjects = createWorldObjects();
-  let houseStage = 0; // 0-4
+  let houseStage = 0;
   let frame = 0;
   let keys = {};
   let raf = null;
   let notifications = [];
   let screenShake = 0;
 
-  // Laurent NPC state
+  // Laurent NPC state (simple patrol)
   let laurent = {
     x: LAURENT.x,
     y: LAURENT.y,
     direction: 'down',
     moving: false,
+    patrolIdx: 0,
+    patrolTimer: 0,
   };
 
   function notify(text, color = '#c7b777') {
-    notifications.push({ text, color, age: 0, duration: 200 });
+    notifications.push({ text, color, age: 0, duration: 180 });
   }
 
   function resize() {
@@ -55,14 +59,17 @@ export function startGame(canvas) {
   function onDown(e) {
     keys[e.code] = true;
 
+    // Tool selection
+    if (e.code === 'Digit1') inventory.selectedTool = 0;
+    if (e.code === 'Digit2' && inventory.tools.length > 1) inventory.selectedTool = 1;
+
     if (e.code === 'Space') {
       e.preventDefault();
 
-      // If dialogue is showing, advance it
+      // Dialogue advance
       if (quests.showingDialogue) {
         const continued = advanceQuestDialogue(quests);
         if (!continued) {
-          // Dialogue ended - check if objective is already met
           if (checkObjective(quests, inventory, houseStage)) {
             advanceQuest(quests);
           }
@@ -70,96 +77,7 @@ export function startGame(canvas) {
         return;
       }
 
-      // Check if near Laurent
-      const distToLaurent = Math.hypot(player.x - laurent.x, player.y - laurent.y);
-      if (distToLaurent < TILE * 3) {
-        if (quests.needsTalk) {
-          startQuestDialogue(quests);
-          return;
-        }
-        // Check if objective is met and need to talk
-        if (checkObjective(quests, inventory, houseStage)) {
-          advanceQuest(quests);
-          startQuestDialogue(quests);
-          return;
-        }
-        // Remind of current objective
-        const progress = getObjectiveProgress(quests, inventory, houseStage);
-        notify(progress, '#aaa');
-        return;
-      }
-
-      // Check if at building plot and can build
-      const ptx = Math.round(player.x / TILE);
-      const pty = Math.round(player.y / TILE);
-      let nearPlot = false;
-      for (let dr = -1; dr <= 1; dr++) {
-        for (let dc = -1; dc <= 1; dc++) {
-          if (isBuildingPlot(ptx + dc, pty + dr)) { nearPlot = true; break; }
-        }
-        if (nearPlot) break;
-      }
-
-      if (nearPlot) {
-        const quest = getCurrentQuest(quests);
-        if (quest && quest.objective.type === 'build' && !quests.needsTalk) {
-          const stage = HOUSE_STAGES[houseStage + 1];
-          if (stage) {
-            const hasWood = getItemCount(inventory, 'wood') >= stage.woodCost;
-            const hasRock = getItemCount(inventory, 'rock') >= stage.rockCost;
-            if (hasWood && hasRock) {
-              if (stage.woodCost > 0) removeItem(inventory, 'wood', stage.woodCost);
-              if (stage.rockCost > 0) removeItem(inventory, 'rock', stage.rockCost);
-              houseStage++;
-              screenShake = 8;
-              notify(`${HOUSE_STAGES[houseStage].name} !`, '#FFD700');
-
-              // Check quest objective
-              if (checkObjective(quests, inventory, houseStage)) {
-                setTimeout(() => {
-                  advanceQuest(quests);
-                  notify('Retourne voir Laurent !', '#4CAF50');
-                }, 1000);
-              }
-            } else {
-              const need = [];
-              if (!hasWood) need.push(`${stage.woodCost} bois`);
-              if (!hasRock) need.push(`${stage.rockCost} pierre`);
-              notify(`Il faut: ${need.join(' + ')}`, '#f44336');
-            }
-          }
-        } else {
-          notify('Parle a Laurent d\'abord !', '#aaa');
-        }
-        return;
-      }
-
-      // Try to interact with world object (tree/rock)
-      const obj = getNearbyObject(worldObjects, player.x, player.y);
-      if (obj) {
-        player.actionSprite = 'spr_axe';
-        player.actionTimer = 20;
-
-        const result = hitObject(obj);
-        if (result && result.item) {
-          addItem(inventory, result.item, result.count);
-          notify(`+1 ${result.item === 'wood' ? 'Bois' : 'Pierre'}`, '#4CAF50');
-          screenShake = 4;
-
-          // Check quest objective
-          if (checkObjective(quests, inventory, houseStage)) {
-            if (!quests.needsTalk) {
-              advanceQuest(quests);
-              notify('Retourne voir Laurent !', '#4CAF50');
-            }
-          }
-        } else if (result) {
-          notify('Encore un coup...', '#aaa');
-        }
-        return;
-      }
-
-      notify('Rien ici. Approche un arbre, rocher, ou Laurent.', '#888');
+      handleWorldAction();
     }
   }
 
@@ -167,11 +85,101 @@ export function startGame(canvas) {
   window.addEventListener('keydown', onDown);
   window.addEventListener('keyup', onUp);
 
-  // ── Touch ──
-  let touchX = 0, touchY = 0;
+  function handleWorldAction() {
+    // 1. Talk to Laurent
+    const distToLaurent = Math.hypot(player.x - laurent.x, player.y - laurent.y);
+    if (distToLaurent < TILE * 3) {
+      if (quests.needsTalk) {
+        startQuestDialogue(quests);
+        return;
+      }
+      if (checkObjective(quests, inventory, houseStage)) {
+        advanceQuest(quests);
+        startQuestDialogue(quests);
+        return;
+      }
+      const progress = getObjectiveProgress(quests, inventory, houseStage);
+      notify(progress, '#aaa');
+      return;
+    }
+
+    // 2. Building plot
+    const ptx = Math.round(player.x / TILE);
+    const pty = Math.round(player.y / TILE);
+    const bp = BUILD_PLOT;
+    if (ptx >= bp.x - 1 && ptx <= bp.x + bp.w && pty >= bp.y - 1 && pty <= bp.y + bp.h) {
+      const quest = getCurrentQuest(quests);
+      if (quest && quest.objective.type === 'build' && !quests.needsTalk) {
+        const stage = HOUSE_STAGES[houseStage + 1];
+        if (stage) {
+          const hasWood = getItemCount(inventory, 'wood') >= stage.woodCost;
+          const hasRock = getItemCount(inventory, 'rock') >= stage.rockCost;
+          if (hasWood && hasRock) {
+            if (stage.woodCost > 0) removeItem(inventory, 'wood', stage.woodCost);
+            if (stage.rockCost > 0) removeItem(inventory, 'rock', stage.rockCost);
+            houseStage++;
+            screenShake = 8;
+            notify(`${HOUSE_STAGES[houseStage].name} !`, '#FFD700');
+            if (checkObjective(quests, inventory, houseStage)) {
+              setTimeout(() => {
+                advanceQuest(quests);
+                notify('Retourne voir Laurent !', '#4CAF50');
+              }, 1000);
+            }
+          } else {
+            const need = [];
+            if (!hasWood) need.push(`${stage.woodCost} bois`);
+            if (!hasRock) need.push(`${stage.rockCost} pierre`);
+            notify(`Il faut: ${need.join(' + ')}`, '#f44336');
+          }
+        }
+      } else {
+        notify('Parle a Laurent d\'abord !', '#aaa');
+      }
+      return;
+    }
+
+    // 3. Use tool on world object
+    const toolId = getSelectedTool(inventory);
+    if (!toolId) {
+      notify('Selectionne un outil (1-2)', '#aaa');
+      return;
+    }
+
+    const toolDef = TOOLS[toolId];
+    if (!toolDef) return;
+
+    const obj = getNearbyObject(worldObjects, player.x, player.y, toolId);
+    if (obj) {
+      player.actionSprite = toolDef.action;
+      player.actionTimer = toolDef.frames;
+
+      const result = hitObject(obj, toolId);
+      if (result && result.item) {
+        addItem(inventory, result.item, result.count);
+        notify(`+${result.count} ${ITEM_TYPES[result.item]?.name || result.item}`, '#4CAF50');
+        screenShake = 4;
+        if (checkObjective(quests, inventory, houseStage)) {
+          if (!quests.needsTalk) {
+            advanceQuest(quests);
+            notify('Retourne voir Laurent !', '#4CAF50');
+          }
+        }
+      } else if (result) {
+        notify('Encore un coup...', '#aaa');
+      }
+      return;
+    }
+
+    const objName = toolId === 'axe' ? 'arbre' : 'rocher';
+    notify(`Pas de ${objName} a portee`, '#aaa');
+  }
+
+  // ── Touch controls ──
+  let touchStartX = 0, touchStartY = 0;
   canvas.addEventListener('touchstart', (e) => {
     const t = e.touches[0];
-    touchX = t.clientX; touchY = t.clientY;
+    touchStartX = t.clientX; touchStartY = t.clientY;
     if (e.timeStamp - (canvas._lastTap || 0) < 300) {
       onDown({ code: 'Space', preventDefault() {} });
       setTimeout(() => onUp({ code: 'Space' }), 100);
@@ -181,7 +189,7 @@ export function startGame(canvas) {
   canvas.addEventListener('touchmove', (e) => {
     e.preventDefault();
     const t = e.touches[0];
-    const dx = t.clientX - touchX, dy = t.clientY - touchY;
+    const dx = t.clientX - touchStartX, dy = t.clientY - touchStartY;
     keys.ArrowLeft = keys.ArrowRight = keys.ArrowUp = keys.ArrowDown = false;
     if (Math.abs(dx) > Math.abs(dy)) {
       if (dx > 20) keys.ArrowRight = true;
@@ -195,33 +203,53 @@ export function startGame(canvas) {
     keys.ArrowLeft = keys.ArrowRight = keys.ArrowUp = keys.ArrowDown = false;
   });
 
+  // ── Laurent patrol ──
+  function updateLaurent() {
+    const path = LAURENT.patrolPath;
+    if (!path || path.length < 2) return;
+    const target = path[laurent.patrolIdx];
+    const dx = target.x - laurent.x;
+    const dy = target.y - laurent.y;
+    const dist = Math.hypot(dx, dy);
+
+    if (dist < 2) {
+      laurent.moving = false;
+      laurent.patrolTimer++;
+      if (laurent.patrolTimer > 120) {
+        laurent.patrolTimer = 0;
+        laurent.patrolIdx = (laurent.patrolIdx + 1) % path.length;
+      }
+    } else {
+      laurent.moving = true;
+      const speed = 0.5;
+      laurent.x += (dx / dist) * speed;
+      laurent.y += (dy / dist) * speed;
+      laurent.direction = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
+    }
+
+    // Face player when close
+    const playerDist = Math.hypot(player.x - laurent.x, player.y - laurent.y);
+    if (playerDist < TILE * 4) {
+      laurent.direction = player.x > laurent.x ? 'right' : 'left';
+    }
+  }
+
   // ── Game Loop ──
   function loop() {
     frame++;
 
-    // Update quest dialogue typewriter
     updateQuestDialogue(quests);
 
-    // Update player
     if (!quests.showingDialogue) {
       updatePlayer(player, keys);
     } else {
       player.moving = false;
     }
 
-    // Laurent faces player when close
-    const distToLaurent = Math.hypot(player.x - laurent.x, player.y - laurent.y);
-    if (distToLaurent < TILE * 4) {
-      laurent.direction = player.x > laurent.x ? 'right' : 'left';
-    }
-
-    // Update world objects
+    updateLaurent();
     updateWorldObjects(worldObjects);
 
-    // Screen shake
     if (screenShake > 0) screenShake--;
-
-    // Notifications
     for (const n of notifications) n.age++;
     notifications = notifications.filter(n => n.age < n.duration);
 
@@ -234,21 +262,28 @@ export function startGame(canvas) {
       );
     }
 
-    renderAll(ctx, canvas, {
+    const state = {
       player, laurent, quests, inventory,
       worldObjects, houseStage, frame, notifications,
-    });
+    };
+
+    const cam = renderWorld(ctx, canvas, state);
+    renderPrompts(ctx, state, cam.camX, cam.camY);
 
     ctx.restore();
+
+    // UI (not affected by screen shake)
+    renderQuestDialogue(ctx, canvas, quests);
+    renderHUD(ctx, canvas, state);
 
     raf = requestAnimationFrame(loop);
   }
 
   // ── Start ──
   loadAssets().then(() => {
-    notify('VDX QUEST - Village 1', '#FFD700');
-    notify('Fleches/ZQSD = deplacer | ESPACE = agir', '#aaa');
+    notify('VDX QUEST - Village 1', '#4FC3F7');
     notify('Va parler a Laurent !', '#4CAF50');
+    notify('Fleches/ZQSD = deplacer | ESPACE = agir', '#aaa');
     requestAnimationFrame(loop);
   });
 
