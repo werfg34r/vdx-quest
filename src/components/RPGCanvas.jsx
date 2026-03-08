@@ -1,51 +1,18 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import * as THREE from 'three'
-import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
-import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
-import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
-import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js'
 import {
   TILE, COLS, ROWS, ZONES, NPCS,
-  generateMap, getAdjacentZone, getAdjacentNPC, canMove,
+  generateMap, drawZoneLabel, drawNPCLabel,
+  getAdjacentZone, getAdjacentNPC, canMove,
 } from '../game/engine'
-import { buildScene, createCharacter, createTextSprite } from '../game/world3d'
+import {
+  loadSpriteAtlas, drawSpriteTile, drawPlayerSprite, drawNPCSprite, S,
+} from '../game/sprites'
 import { useGameState } from '../hooks/useGameState'
 
-// Vignette shader
-const VignetteShader = {
-  uniforms: {
-    tDiffuse: { value: null },
-    offset: { value: 0.95 },
-    darkness: { value: 1.2 },
-  },
-  vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-  fragmentShader: `
-    uniform sampler2D tDiffuse;
-    uniform float offset;
-    uniform float darkness;
-    varying vec2 vUv;
-    void main() {
-      vec4 texel = texture2D(tDiffuse, vUv);
-      vec2 uv = (vUv - vec2(0.5)) * vec2(offset);
-      float vignette = 1.0 - dot(uv, uv);
-      texel.rgb *= smoothstep(0.0, 1.0, pow(vignette, darkness));
-      gl_FragColor = texel;
-    }
-  `,
-}
-
-const MOVE_SPEED = 0.1
+const SCALE = 3
+const MOVE_FRAMES = 8
+const ANIM_SPEED = 8
 const TEXT_SPEED = 0.6
-const CAM_OFFSET = new THREE.Vector3(0, 14, 12)
-
-const NPC_BODY_COLORS = {
-  mentor:   0x1565C0,
-  villager: 0x7B1FA2,
-  warrior:  0xC62828,
-  sage:     0x00695C,
-  old:      0x455A64,
-  trader:   0xF57F17,
-}
 
 const INTRO_TEXTS = [
   { speaker: '', text: '...' },
@@ -57,7 +24,7 @@ const INTRO_TEXTS = [
 ]
 
 export default function RPGCanvas({ onOpenZone }) {
-  const mountRef = useRef(null)
+  const canvasRef = useRef(null)
   const gameRef = useRef(null)
   const { weekProgress } = useGameState()
   const wpRef = useRef(weekProgress)
@@ -72,155 +39,31 @@ export default function RPGCanvas({ onOpenZone }) {
   const introTextRef = useRef(null)
 
   useEffect(() => {
-    const mount = mountRef.current
-    if (!mount) return
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
     let cancelled = false
     let animId
 
-    // ==================== THREE.JS SETUP ====================
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false })
-    renderer.setSize(mount.clientWidth, mount.clientHeight)
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5))
-    renderer.shadowMap.enabled = true
-    renderer.shadowMap.type = THREE.PCFShadowMap
-    renderer.toneMapping = THREE.ACESFilmicToneMapping
-    renderer.toneMappingExposure = 1.2
-    mount.appendChild(renderer.domElement)
+    // Pixel-perfect rendering
+    ctx.imageSmoothingEnabled = false
 
-    const scene = new THREE.Scene()
-    scene.fog = new THREE.FogExp2(0xB8D8F0, 0.016)
-
-    // Gradient sky (sphere with shader)
-    const skyGeo = new THREE.SphereGeometry(100, 16, 12)
-    const skyMat = new THREE.ShaderMaterial({
-      side: THREE.BackSide,
-      uniforms: {
-        topColor: { value: new THREE.Color(0x4488CC) },
-        bottomColor: { value: new THREE.Color(0xC8E0F0) },
-        horizonColor: { value: new THREE.Color(0xF0E8D0) },
-        offset: { value: 10 },
-        exponent: { value: 0.5 },
-      },
-      vertexShader: `
-        varying vec3 vWorldPosition;
-        void main() {
-          vec4 worldPosition = modelMatrix * vec4(position, 1.0);
-          vWorldPosition = worldPosition.xyz;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        uniform vec3 topColor;
-        uniform vec3 bottomColor;
-        uniform vec3 horizonColor;
-        uniform float offset;
-        uniform float exponent;
-        varying vec3 vWorldPosition;
-        void main() {
-          float h = normalize(vWorldPosition + offset).y;
-          float t = max(pow(max(h, 0.0), exponent), 0.0);
-          vec3 sky = mix(horizonColor, topColor, t);
-          float b = max(pow(max(-h, 0.0), 0.8), 0.0);
-          sky = mix(sky, bottomColor, b);
-          gl_FragColor = vec4(sky, 1.0);
-        }
-      `,
-    })
-    scene.add(new THREE.Mesh(skyGeo, skyMat))
-
-    const camera = new THREE.PerspectiveCamera(
-      50, mount.clientWidth / mount.clientHeight, 0.1, 200
-    )
-    camera.position.set(8 + CAM_OFFSET.x, CAM_OFFSET.y, 38 + CAM_OFFSET.z)
-    camera.lookAt(8, 0, 38)
-
-    // ==================== POST-PROCESSING ====================
-    const composer = new EffectComposer(renderer)
-    composer.addPass(new RenderPass(scene, camera))
-
-    const bloomPass = new UnrealBloomPass(
-      new THREE.Vector2(mount.clientWidth, mount.clientHeight),
-      0.3,  // strength
-      0.4,  // radius
-      0.85  // threshold
-    )
-    composer.addPass(bloomPass)
-
-    const vignettePass = new ShaderPass(VignetteShader)
-    composer.addPass(vignettePass)
-
-    // ==================== LIGHTING ====================
-    const ambient = new THREE.AmbientLight(0xffffff, 0.45)
-    scene.add(ambient)
-
-    const hemi = new THREE.HemisphereLight(0x88BBDD, 0x446633, 0.4)
-    scene.add(hemi)
-
-    const sun = new THREE.DirectionalLight(0xFFEECC, 1.0)
-    sun.position.set(20, 30, 15)
-    sun.castShadow = true
-    sun.shadow.mapSize.set(1024, 1024)
-    sun.shadow.camera.left = -15
-    sun.shadow.camera.right = 15
-    sun.shadow.camera.top = 15
-    sun.shadow.camera.bottom = -15
-    sun.shadow.camera.near = 0.5
-    sun.shadow.camera.far = 80
-    sun.shadow.bias = -0.001
-    scene.add(sun)
-    scene.add(sun.target)
-
-    // Subtle fill light from opposite side
-    const fill = new THREE.DirectionalLight(0x8899BB, 0.3)
-    fill.position.set(-15, 10, -10)
-    scene.add(fill)
-
-    // ==================== BUILD WORLD ====================
     const map = generateMap()
-    let worldObjects = { water: null, buildings: null, labels: null, particles: null }
+    let atlas = null
 
-    // Player and NPCs are created immediately (sync)
-    const playerMesh = createCharacter(0xE53935, 0xFFCC80)
-    playerMesh.position.set(8 + 0.5, 0, 38 + 0.5)
-    scene.add(playerMesh)
-
-    const npcMeshes = NPCS.map(npc => {
-      const bodyColor = NPC_BODY_COLORS[npc.sprite] || 0x666666
-      const mesh = createCharacter(bodyColor, 0xFFCC80)
-      mesh.position.set(npc.x + 0.5, 0, npc.y + 0.5)
-      scene.add(mesh)
-
-      const label = createTextSprite(npc.name, { fontSize: 22 })
-      label.position.set(npc.x + 0.5, 1.5, npc.y + 0.5)
-      scene.add(label)
-
-      const excl = createTextSprite('!', {
-        fontSize: 36, bgColor: 'rgba(199,183,119,0.95)', textColor: '#0a0a0f',
-      })
-      excl.position.set(npc.x + 0.5, 2.0, npc.y + 0.5)
-      scene.add(excl)
-
-      return { mesh, label, excl }
-    })
-
-    // Load GLTF models async (scene renders progressively)
-    buildScene(scene, map, ZONES).then(objects => {
-      worldObjects = objects
-      setLoading(false)
-    }).catch(err => {
-      console.error('Failed to load 3D models:', err)
-      setLoading(false)
-    })
-
-    // ==================== GAME STATE ====================
+    // Game state
     const game = {
-      px: 8 + 0.5, pz: 38 + 0.5,
-      tileX: 8, tileY: 38,
-      targetTX: 8, targetTY: 38,
-      direction: 'down',
+      px: 8, py: 38,           // tile position
+      tx: 8, ty: 38,           // target tile
+      ox: 0, oy: 0,            // pixel offset during move
+      moveFrame: 0,            // progress through move animation
       moving: false,
+      direction: 'down',
+      walkFrame: 0,
+      walkTick: 0,
       keys: {},
       tick: 0,
+      camX: 0, camY: 0,       // smooth camera
       dialog: null,
       intro: true,
       introStep: 0,
@@ -228,7 +71,23 @@ export default function RPGCanvas({ onOpenZone }) {
     }
     gameRef.current = game
 
-    // ==================== INPUT ====================
+    // Load sprites
+    loadSpriteAtlas().then(a => {
+      atlas = a
+      setLoading(false)
+    })
+
+    // Resize canvas
+    function resize() {
+      const parent = canvas.parentElement
+      canvas.width = parent.clientWidth
+      canvas.height = parent.clientHeight
+      ctx.imageSmoothingEnabled = false
+    }
+    resize()
+    window.addEventListener('resize', resize)
+
+    // Input
     function onKeyDown(e) {
       game.keys[e.key] = true
       if (e.key === ' ' || e.key === 'Enter') {
@@ -244,7 +103,6 @@ export default function RPGCanvas({ onOpenZone }) {
     window.addEventListener('keyup', onKeyUp)
 
     function handleInteract() {
-      // Intro
       if (game.intro) {
         if (game.introCharIdx < INTRO_TEXTS[game.introStep].text.length) {
           game.introCharIdx = INTRO_TEXTS[game.introStep].text.length
@@ -258,7 +116,6 @@ export default function RPGCanvas({ onOpenZone }) {
         }
         return
       }
-      // Dialog
       if (game.dialog) {
         const line = game.dialog.lines[game.dialog.lineIdx]
         if (game.dialog.charIdx < line.length) {
@@ -273,8 +130,7 @@ export default function RPGCanvas({ onOpenZone }) {
         }
         return
       }
-      // Zone
-      const zone = getAdjacentZone(game.tileX, game.tileY)
+      const zone = getAdjacentZone(game.px, game.py)
       if (zone) {
         const wp = wpRef.current
         if (wp[zone.id]?.unlocked) {
@@ -288,64 +144,63 @@ export default function RPGCanvas({ onOpenZone }) {
         }
         return
       }
-      // NPC
-      const npc = getAdjacentNPC(game.tileX, game.tileY)
+      const npc = getAdjacentNPC(game.px, game.py)
       if (npc) {
         game.dialog = { speaker: npc.name, lines: npc.dialog, lineIdx: 0, charIdx: 0 }
         setShowDialog(true)
       }
     }
 
-    // ==================== CAMERA HELPERS ====================
-    const camTarget = new THREE.Vector3()
-    const desiredPos = new THREE.Vector3()
-    const clock = new THREE.Clock()
-
     // ==================== GAME LOOP ====================
-    function animate() {
+    function update() {
       if (cancelled) return
-      const dt = clock.getDelta()
-      game.tick++
+      animId = requestAnimationFrame(update)
+      if (!atlas) return
 
-      // Movement (only when not in dialog/intro)
+      game.tick++
+      const viewW = canvas.width
+      const viewH = canvas.height
+
+      // Movement
       if (!game.intro && !game.dialog) {
+        if (game.moving) {
+          game.moveFrame++
+          const progress = game.moveFrame / MOVE_FRAMES
+          game.ox = (game.tx - game.px) * TILE * SCALE * progress
+          game.oy = (game.ty - game.py) * TILE * SCALE * progress
+          game.walkTick++
+          if (game.walkTick % ANIM_SPEED === 0) game.walkFrame = (game.walkFrame + 1) % 3
+
+          if (game.moveFrame >= MOVE_FRAMES) {
+            game.px = game.tx
+            game.py = game.ty
+            game.ox = 0
+            game.oy = 0
+            game.moving = false
+            game.moveFrame = 0
+          }
+        }
+
         if (!game.moving) {
-          let dx = 0, dz = 0
-          if (game.keys['ArrowUp'] || game.keys['z'] || game.keys['w']) { dz = -1; game.direction = 'up' }
-          else if (game.keys['ArrowDown'] || game.keys['s']) { dz = 1; game.direction = 'down' }
+          let dx = 0, dy = 0
+          if (game.keys['ArrowUp'] || game.keys['z'] || game.keys['w']) { dy = -1; game.direction = 'up' }
+          else if (game.keys['ArrowDown'] || game.keys['s']) { dy = 1; game.direction = 'down' }
           else if (game.keys['ArrowLeft'] || game.keys['q'] || game.keys['a']) { dx = -1; game.direction = 'left' }
           else if (game.keys['ArrowRight'] || game.keys['d']) { dx = 1; game.direction = 'right' }
 
-          if (dx !== 0 || dz !== 0) {
-            const ntx = game.tileX + dx
-            const nty = game.tileY + dz
-            if (canMove(map, ntx, nty)) {
-              game.targetTX = ntx
-              game.targetTY = nty
-              game.moving = true
-            }
+          if ((dx || dy) && canMove(map, game.px + dx, game.py + dy)) {
+            game.tx = game.px + dx
+            game.ty = game.py + dy
+            game.moving = true
+            game.moveFrame = 0
+          } else if (!dx && !dy) {
+            game.walkFrame = 0
           }
         }
 
-        if (game.moving) {
-          const tx = game.targetTX + 0.5
-          const tz = game.targetTY + 0.5
-          const ddx = tx - game.px
-          const ddz = tz - game.pz
-          const dist = Math.sqrt(ddx * ddx + ddz * ddz)
-          if (dist < MOVE_SPEED) {
-            game.px = tx; game.pz = tz
-            game.tileX = game.targetTX; game.tileY = game.targetTY
-            game.moving = false
-          } else {
-            game.px += (ddx / dist) * MOVE_SPEED
-            game.pz += (ddz / dist) * MOVE_SPEED
-          }
-        }
-
-        // Proximity checks
-        const zone = getAdjacentZone(game.tileX, game.tileY)
-        const npc = getAdjacentNPC(game.tileX, game.tileY)
+        // Proximity
+        const zone = getAdjacentZone(game.px, game.py)
+        const npc = getAdjacentNPC(game.px, game.py)
         if (zone) {
           const wp = wpRef.current
           setPromptText(wp[zone.id]?.unlocked ? '[ ESPACE ] Entrer' : 'Verrouillee')
@@ -356,7 +211,7 @@ export default function RPGCanvas({ onOpenZone }) {
         }
       }
 
-      // Dialog text animation
+      // Dialog animation
       if (game.dialog) {
         const line = game.dialog.lines[game.dialog.lineIdx]
         if (game.dialog.charIdx < line.length) {
@@ -370,7 +225,7 @@ export default function RPGCanvas({ onOpenZone }) {
         }
       }
 
-      // Intro text animation
+      // Intro animation
       if (game.intro && game.introStep < INTRO_TEXTS.length) {
         const text = INTRO_TEXTS[game.introStep].text
         if (game.introCharIdx < text.length) {
@@ -381,66 +236,92 @@ export default function RPGCanvas({ onOpenZone }) {
         }
       }
 
-      // ==================== UPDATE 3D ====================
+      // ==================== RENDER ====================
+      // Camera (smooth follow, pixel position)
+      const playerPixelX = game.px * TILE * SCALE + game.ox
+      const playerPixelY = game.py * TILE * SCALE + game.oy
+      const targetCamX = playerPixelX + TILE * SCALE / 2 - viewW / 2
+      const targetCamY = playerPixelY + TILE * SCALE / 2 - viewH / 2
+      const mapPixelW = COLS * TILE * SCALE
+      const mapPixelH = ROWS * TILE * SCALE
+      const clampedCamX = Math.max(0, Math.min(targetCamX, mapPixelW - viewW))
+      const clampedCamY = Math.max(0, Math.min(targetCamY, mapPixelH - viewH))
+      game.camX += (clampedCamX - game.camX) * 0.12
+      game.camY += (clampedCamY - game.camY) * 0.12
 
-      // Player position & rotation
-      const dirAngles = { down: Math.PI, left: Math.PI / 2, up: 0, right: -Math.PI / 2 }
-      playerMesh.position.set(game.px, game.moving ? Math.sin(game.tick * 0.3) * 0.05 : 0, game.pz)
-      playerMesh.rotation.y = dirAngles[game.direction] || 0
+      // Round camera to avoid sub-pixel blur
+      const camX = Math.round(game.camX)
+      const camY = Math.round(game.camY)
 
-      // NPC idle animation
-      npcMeshes.forEach(({ mesh, label, excl }, i) => {
-        const bob = Math.sin(game.tick * 0.02 + i * 2.5) * 0.04
-        mesh.position.y = bob
-        label.position.y = 1.5 + bob
-        excl.position.y = 2.0 + Math.sin(game.tick * 0.05 + i) * 0.08
-      })
+      // Visible tile range
+      const startCol = Math.max(0, Math.floor(camX / (TILE * SCALE)) - 1)
+      const endCol = Math.min(COLS, Math.ceil((camX + viewW) / (TILE * SCALE)) + 1)
+      const startRow = Math.max(0, Math.floor(camY / (TILE * SCALE)) - 1)
+      const endRow = Math.min(ROWS, Math.ceil((camY + viewH) / (TILE * SCALE)) + 1)
 
-      // Camera follow
-      camTarget.set(game.px, 0, game.pz)
-      desiredPos.copy(camTarget).add(CAM_OFFSET)
-      const lerpFactor = 1 - Math.pow(0.02, dt)
-      camera.position.lerp(desiredPos, lerpFactor)
-      camera.lookAt(camTarget)
+      // Clear
+      ctx.fillStyle = '#1a2a1a'
+      ctx.fillRect(0, 0, viewW, viewH)
 
-      // Sun follows player for proper shadows
-      sun.position.set(game.px + 15, 30, game.pz + 10)
-      sun.target.position.set(game.px, 0, game.pz)
+      // Save and apply camera transform
+      ctx.save()
+      ctx.translate(-camX, -camY)
 
-      // Animate particles
-      if (worldObjects.particles) {
-        const pArr = worldObjects.particles.geometry.attributes.position.array
-        for (let i = 0; i < pArr.length; i += 3) {
-          pArr[i + 1] += Math.sin(game.tick * 0.01 + pArr[i] * 0.5) * 0.002
-          if (pArr[i + 1] > 5) pArr[i + 1] = 0.5
+      // Scale context for pixel art
+      ctx.save()
+      ctx.scale(SCALE, SCALE)
+
+      // Draw tiles
+      for (let row = startRow; row < endRow; row++) {
+        for (let col = startCol; col < endCol; col++) {
+          const tile = map[row][col]
+          drawSpriteTile(ctx, atlas, tile, col * TILE, row * TILE, game.tick)
         }
-        worldObjects.particles.geometry.attributes.position.needsUpdate = true
       }
 
-      composer.render()
-      animId = requestAnimationFrame(animate)
+      // Draw NPCs
+      for (const npc of NPCS) {
+        if (npc.x >= startCol - 1 && npc.x <= endCol + 1 && npc.y >= startRow - 1 && npc.y <= endRow + 1) {
+          drawNPCSprite(ctx, atlas, npc.sprite, npc.x * TILE, npc.y * TILE, game.tick)
+        }
+      }
+
+      // Draw player
+      const pDrawX = game.px * TILE + game.ox / SCALE
+      const pDrawY = game.py * TILE + game.oy / SCALE
+      drawPlayerSprite(ctx, atlas, game.direction, game.walkFrame, pDrawX, pDrawY)
+
+      ctx.restore() // undo scale
+
+      // Draw labels (at screen scale, but in world coords)
+      const wp = wpRef.current
+      for (const zone of ZONES) {
+        if (zone.x >= startCol - 3 && zone.x <= endCol + 3 && zone.y >= startRow - 3 && zone.y <= endRow + 3) {
+          const zx = zone.x * TILE * SCALE
+          const zy = (zone.y - 2) * TILE * SCALE
+          const unlocked = wp[zone.id]?.unlocked
+          const completed = wp[zone.id]?.completed
+          drawZoneLabel(ctx, zone, zx, zy, unlocked, completed)
+        }
+      }
+
+      for (const npc of NPCS) {
+        if (npc.x >= startCol - 1 && npc.x <= endCol + 1 && npc.y >= startRow - 1 && npc.y <= endRow + 1) {
+          drawNPCLabel(ctx, npc, npc.x * TILE * SCALE, npc.y * TILE * SCALE, game.tick)
+        }
+      }
+
+      ctx.restore() // undo camera translate
     }
 
-    animId = requestAnimationFrame(animate)
-
-    // ==================== RESIZE ====================
-    function onResize() {
-      const w = mount.clientWidth, h = mount.clientHeight
-      camera.aspect = w / h
-      camera.updateProjectionMatrix()
-      renderer.setSize(w, h)
-      composer.setSize(w, h)
-    }
-    window.addEventListener('resize', onResize)
+    animId = requestAnimationFrame(update)
 
     return () => {
       cancelled = true
       if (animId) cancelAnimationFrame(animId)
       window.removeEventListener('keydown', onKeyDown)
       window.removeEventListener('keyup', onKeyUp)
-      window.removeEventListener('resize', onResize)
-      mount.removeChild(renderer.domElement)
-      renderer.dispose()
+      window.removeEventListener('resize', resize)
     }
   }, [onOpenZone])
 
@@ -453,15 +334,17 @@ export default function RPGCanvas({ onOpenZone }) {
   }, [])
 
   return (
-    <div ref={mountRef} className="w-full h-full relative">
+    <div className="w-full h-full relative bg-black">
+      <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
+
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center bg-[#0a0a0f] z-50">
-          <div className="text-gold font-mono text-lg animate-pulse">Chargement du monde 3D...</div>
+          <div className="text-[#c7b777] font-mono text-lg animate-pulse">Chargement...</div>
         </div>
       )}
 
       {/* HUD */}
-      <div className="absolute top-3 left-3 bg-black/80 border border-gold/50 rounded-lg px-4 py-2 z-10">
+      <div className="absolute top-3 left-3 bg-black/80 border border-[#c7b777]/50 rounded-lg px-4 py-2 z-10">
         <div className="text-[#c7b777] font-mono text-sm font-bold">VDX N0
           <span className="text-[#c7b777]/60 text-xs ml-2">Niv. 0</span>
         </div>
@@ -480,7 +363,7 @@ export default function RPGCanvas({ onOpenZone }) {
         </div>
       )}
 
-      {/* Dialog Box */}
+      {/* Dialog Box (HTML overlay, only for intro) */}
       {showDialog && (
         <div className="absolute bottom-4 left-4 right-4 max-w-2xl mx-auto z-30">
           <div className="bg-[#0a0a19]/95 border-2 border-[#c7b777] rounded-xl p-5 backdrop-blur-sm">
@@ -493,7 +376,7 @@ export default function RPGCanvas({ onOpenZone }) {
         </div>
       )}
 
-      {/* Intro Overlay */}
+      {/* Intro */}
       {showIntro && (
         <div className="absolute inset-0 bg-black/75 flex flex-col items-center justify-center z-40">
           <h1 className="text-[#c7b777] font-mono text-4xl font-bold mb-2 tracking-wider">VDX QUEST</h1>
