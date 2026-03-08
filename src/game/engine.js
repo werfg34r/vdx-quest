@@ -1,20 +1,20 @@
-// VDX Quest RPG Engine - Village-based week structure
+// VDX Quest RPG Engine — Complete Rewrite
+// Village map with 3 houses, NPCs, collision, wandering AI
 
 const TILE = 16
 const COLS = 40
 const ROWS = 32
 
-// Tile types
+// ==================== TILE TYPES ====================
 const T = {
   GRASS: 0, PATH: 1, WATER: 2, TREE: 3,
   MOUNTAIN: 5, FLOWER: 6, BRIDGE: 7, FENCE: 8,
-  DARK_GRASS: 9, SAND: 10, TALL_GRASS: 17,
-  // House tiles (composed from overworld.png)
+  DARK_GRASS: 9, SAND: 10, TALL_GRASS: 17, SIGN: 14,
+  // House tiles (3x4 footprint, drawn as sprite overlay)
   HOUSE_ROOF_TL: 30, HOUSE_ROOF_TC: 31, HOUSE_ROOF_TR: 32,
   HOUSE_ROOF_ML: 33, HOUSE_ROOF_MC: 34, HOUSE_ROOF_MR: 35,
   HOUSE_WALL_L: 36, HOUSE_WALL_WIN: 37, HOUSE_WALL_R: 38,
   HOUSE_WALL_DL: 39, HOUSE_DOOR: 40, HOUSE_WALL_DR: 41,
-  SIGN: 14,
 }
 
 const SOLID = new Set([
@@ -25,9 +25,10 @@ const SOLID = new Set([
   T.HOUSE_WALL_DL, T.HOUSE_WALL_DR,
 ])
 
-// Semaine 1 village: 3 missions (zones) — each house = 1 action non negociable
+// ==================== ZONES (3 HOUSES) ====================
 const ZONES = [
-  { id: 1, weekId: 1, questId: 'w1q1', requiredQuest: null,
+  {
+    id: 1, weekId: 1, questId: 'w1q1', requiredQuest: null,
     houseX: 6, houseY: 5, name: 'Cabane de la Verite', region: 1,
     desc: 'Ecrire noir sur blanc : ta raison profonde.',
     guardian: {
@@ -39,8 +40,7 @@ const ZONES = [
         'Voici ton Badge de Verite. +100 XP. Tu peux maintenant acceder a la prochaine maison.',
         'Continue. La clarte est un muscle. Plus tu ecris, plus tu vois.',
       ],
-      badge: 'Badge de Verite',
-      xpReward: 100,
+      badge: 'Badge de Verite', xpReward: 100,
     },
     interiorNpcs: [
       { id: 'h1_sage', x: 4, y: 7, sprite: 'sage', name: 'Maeva', dialog: [
@@ -66,7 +66,8 @@ const ZONES = [
       ]},
     ],
   },
-  { id: 2, weekId: 1, questId: 'w1q2', requiredQuest: 'w1q1',
+  {
+    id: 2, weekId: 1, questId: 'w1q2', requiredQuest: 'w1q1',
     houseX: 24, houseY: 5, name: 'Tour de l\'Inventaire', region: 1,
     desc: 'Inventaire honnete : ce que tu sais faire.',
     guardian: {
@@ -78,8 +79,7 @@ const ZONES = [
         'Voici ton Badge d\'Inventaire. +100 XP.',
         'La prochaine maison t\'attend. Le silence va te reveler des choses.',
       ],
-      badge: 'Badge d\'Inventaire',
-      xpReward: 100,
+      badge: 'Badge d\'Inventaire', xpReward: 100,
     },
     interiorNpcs: [
       { id: 'h2_sage', x: 4, y: 7, sprite: 'sage', name: 'Raphael', dialog: [
@@ -104,7 +104,8 @@ const ZONES = [
       ]},
     ],
   },
-  { id: 3, weekId: 1, questId: 'w1q3', requiredQuest: 'w1q2',
+  {
+    id: 3, weekId: 1, questId: 'w1q3', requiredQuest: 'w1q2',
     houseX: 6, houseY: 17, name: 'Forge du Silence', region: 1,
     desc: '7 jours sans surconsommation.',
     guardian: {
@@ -117,8 +118,7 @@ const ZONES = [
         'La Semaine 1 est terminee. Tu as prouve que tu peux agir.',
         'Prepare-toi pour la suite : choisir un probleme reel a resoudre.',
       ],
-      badge: 'Badge du Silence',
-      xpReward: 100,
+      badge: 'Badge du Silence', xpReward: 100,
     },
     interiorNpcs: [
       { id: 'h3_sage', x: 4, y: 7, sprite: 'sage', name: 'Eliane', dialog: [
@@ -144,13 +144,13 @@ const ZONES = [
   },
 ]
 
-// Computed door positions (bottom center of house)
+// Computed door positions
 ZONES.forEach(z => {
   z.doorX = z.houseX + 1
   z.doorY = z.houseY + 3
 })
 
-// NPCs on the overworld — with wander support
+// ==================== OVERWORLD NPCs ====================
 const NPCS = [
   {
     id: 'mentor', x: 19, y: 26, sprite: 'mentor', name: 'Laurent', wander: 2,
@@ -166,7 +166,7 @@ const NPCS = [
       'Entre dans chaque maison, parle aux conseillers, puis valide ta mission a l\'autel.',
       'A la fin de cette semaine, tu dois pouvoir dire : "Voila pourquoi je fais ca."',
       'Bonne route, entrepreneur.',
-    ]
+    ],
   },
   {
     id: 'guide1', x: 15, y: 13, sprite: 'villager', name: 'Elise', wander: 3,
@@ -175,7 +175,7 @@ const NPCS = [
       'Les 3 maisons sont les 3 epreuves de la Semaine 1.',
       'Chaque maison a des conseillers qui t\'expliquent ta mission.',
       'Parle-leur, puis va a l\'autel pour valider quand c\'est fait.',
-    ]
+    ],
   },
   {
     id: 'old1', x: 27, y: 14, sprite: 'old', name: 'Ancien', wander: 1,
@@ -185,7 +185,7 @@ const NPCS = [
       'Au niveau 0, le vrai probleme n\'est pas le manque de competences.',
       'C\'est la dispersion mentale. Trop de pistes, trop de scenarios.',
       'Reste concentre. Une mission a la fois.',
-    ]
+    ],
   },
   {
     id: 'trader1', x: 22, y: 12, sprite: 'trader', name: 'Marc', wander: 2,
@@ -194,7 +194,7 @@ const NPCS = [
       'Mon premier business a echoue. Le deuxieme aussi.',
       'Mais j\'ai appris une chose : le passage a l\'action bat la reflexion.',
       'Chaque echec est une donnee. Pas un verdict.',
-    ]
+    ],
   },
   {
     id: 'villager2', x: 8, y: 24, sprite: 'villager', name: 'Sophie', wander: 3,
@@ -202,7 +202,7 @@ const NPCS = [
       'Tu vois ce jardin ? Je l\'ai plante graine par graine.',
       'L\'entrepreneuriat, c\'est pareil. Une action a la fois.',
       'Ne regarde pas la montagne. Regarde le prochain pas.',
-    ]
+    ],
   },
   {
     id: 'warrior1', x: 17, y: 16, sprite: 'warrior', name: 'Karim', wander: 2,
@@ -211,7 +211,7 @@ const NPCS = [
       'Puis j\'ai compris : ne rien faire, c\'est deja se tromper.',
       'La peur ne disparait jamais. On apprend a agir avec.',
       'Le courage, c\'est pas l\'absence de peur. C\'est le choix d\'avancer malgre elle.',
-    ]
+    ],
   },
   {
     id: 'sage1', x: 32, y: 13, sprite: 'sage', name: 'Aiko', wander: 2,
@@ -220,11 +220,11 @@ const NPCS = [
       'La clarte ne vient pas en cherchant plus.',
       'Elle vient quand tu arretes de fuir le silence.',
       'Pose-toi. Ecris. Observe ce qui monte.',
-    ]
+    ],
   },
 ]
 
-// Initialize NPC wandering state
+// ==================== NPC WANDERING SYSTEM ====================
 NPCS.forEach(npc => {
   npc.homeX = npc.x
   npc.homeY = npc.y
@@ -241,7 +241,7 @@ NPCS.forEach(npc => {
 })
 
 const NPC_MOVE_FRAMES = 12
-const DIRS = [
+const WANDER_DIRS = [
   { dx: 0, dy: -1, dir: 'up' },
   { dx: 0, dy: 1, dir: 'down' },
   { dx: -1, dy: 0, dir: 'left' },
@@ -270,28 +270,18 @@ function updateNPCs(map, playerX, playerY) {
       npc.walkFrame = 0
       npc.wanderTimer--
       if (npc.wanderTimer <= 0 && npc.wander) {
-        // Pick a random direction
-        const d = DIRS[Math.floor(Math.random() * DIRS.length)]
+        const d = WANDER_DIRS[Math.floor(Math.random() * 4)]
         const nx = npc.x + d.dx
         const ny = npc.y + d.dy
-        // Stay within wander radius of home
         const dist = Math.abs(nx - npc.homeX) + Math.abs(ny - npc.homeY)
-        if (dist <= npc.wander && canMove(map, nx, ny)) {
-          // Don't walk into player
-          if (nx !== playerX || ny !== playerY) {
-            // Don't walk into other NPCs
-            let blocked = false
-            for (const other of NPCS) {
-              if (other !== npc && other.x === nx && other.y === ny) { blocked = true; break }
-            }
-            if (!blocked) {
-              npc.direction = d.dir
-              npc.tx = nx
-              npc.ty = ny
-              npc.moving = true
-              npc.moveFrame = 0
-            }
-          }
+        if (dist <= npc.wander && canMove(map, nx, ny) &&
+            (nx !== playerX || ny !== playerY) &&
+            !NPCS.some(o => o !== npc && o.x === nx && o.y === ny)) {
+          npc.direction = d.dir
+          npc.tx = nx
+          npc.ty = ny
+          npc.moving = true
+          npc.moveFrame = 0
         }
         npc.wanderTimer = 60 + Math.floor(Math.random() * 120)
       }
@@ -299,6 +289,7 @@ function updateNPCs(map, playerX, playerY) {
   }
 }
 
+// ==================== MAP GENERATION ====================
 function seededRandom(seed) {
   let s = seed
   return () => {
@@ -311,8 +302,6 @@ function generateMap() {
   const rng = seededRandom(42)
   const map = Array.from({ length: ROWS }, () => Array(COLS).fill(T.GRASS))
 
-  // ============ NATURAL TERRAIN ============
-
   // Scattered flowers
   for (let i = 0; i < 80; i++) {
     const x = Math.floor(rng() * COLS)
@@ -320,7 +309,7 @@ function generateMap() {
     if (map[y][x] === T.GRASS) map[y][x] = T.FLOWER
   }
 
-  // Dark grass patches (variety)
+  // Dark grass patches
   for (const [cx, cy] of [[8, 20], [30, 5], [35, 22], [3, 8], [25, 28]]) {
     for (let dy = -2; dy <= 2; dy++) {
       for (let dx = -2; dx <= 2; dx++) {
@@ -345,8 +334,7 @@ function generateMap() {
     }
   }
 
-  // ============ DENSE FOREST BORDERS ============
-  // Two rows of trees on all edges
+  // Dense forest borders (2 rows on all edges)
   for (let x = 0; x < COLS; x++) {
     map[0][x] = T.TREE
     if (rng() > 0.15) map[1][x] = T.TREE
@@ -360,13 +348,8 @@ function generateMap() {
     if (rng() > 0.15) map[y][COLS - 2] = T.TREE
   }
 
-  // Interior forest clusters (scenic)
-  const forestClusters = [
-    [37, 4, 2], [2, 24, 2], [37, 26, 2], [14, 2, 1],
-    [26, 2, 1], [2, 10, 1], [37, 15, 1], [30, 20, 2],
-    [10, 26, 1], [33, 10, 1],
-  ]
-  for (const [fx, fy, rad] of forestClusters) {
+  // Interior forest clusters
+  for (const [fx, fy, rad] of [[37, 4, 2], [2, 24, 2], [37, 26, 2], [14, 2, 1], [26, 2, 1], [2, 10, 1], [37, 15, 1], [30, 20, 2], [10, 26, 1], [33, 10, 1]]) {
     for (let dy = -rad; dy <= rad; dy++) {
       for (let dx = -rad; dx <= rad; dx++) {
         const nx = fx + dx, ny = fy + dy
@@ -377,8 +360,7 @@ function generateMap() {
     }
   }
 
-  // ============ WATER: LAKE + RIVER ============
-  // Main lake (east side)
+  // Lake (east side)
   const lakeCX = 30, lakeCY = 14
   for (let dy = -3; dy <= 3; dy++) {
     for (let dx = -4; dx <= 4; dx++) {
@@ -389,27 +371,24 @@ function generateMap() {
     }
   }
 
-  // Small stream flowing south from lake
+  // Stream south from lake
   for (let y = 17; y <= 22; y++) {
     map[y][29] = T.WATER
     if (rng() > 0.4) map[y][30] = T.WATER
   }
-
-  // Small pond south
   for (const [wx, wy] of [[29, 23], [30, 23], [29, 24], [30, 24]]) {
     if (wy < ROWS - 2) map[wy][wx] = T.WATER
   }
 
-  // Bridge over stream (3 tiles wide for a real bridge feel)
+  // Bridge
   for (let bx = 28; bx <= 31; bx++) {
     if (map[19][bx] === T.WATER || map[19][bx] === T.SAND) map[19][bx] = T.BRIDGE
     if (map[18][bx] === T.WATER || map[18][bx] === T.SAND) map[18][bx] = T.BRIDGE
   }
-  // Fences as bridge railings
   map[17][28] = T.FENCE; map[17][31] = T.FENCE
   map[20][28] = T.FENCE; map[20][31] = T.FENCE
 
-  // Sand shores around all water
+  // Sand shores around water
   for (let y = 2; y < ROWS - 2; y++) {
     for (let x = 2; x < COLS - 2; x++) {
       if (map[y][x] !== T.WATER) continue
@@ -428,91 +407,58 @@ function generateMap() {
     }
   }
 
-  // ============ MOUNTAINS (north-east corner) ============
+  // Mountains (north-east)
   for (const [mx, my] of [[34, 4], [35, 4], [36, 5], [34, 5], [35, 5], [33, 5]]) {
     if (mx < COLS - 2 && my < ROWS - 2) map[my][mx] = T.MOUNTAIN
   }
 
-  // ============ VILLAGE PATH NETWORK ============
-  // Main crossroads at center (y=13, x=20)
-  // Horizontal main road
-  for (let x = 2; x < COLS - 2; x++) {
-    map[13][x] = T.PATH
-    map[14][x] = T.PATH
-  }
-  // Vertical main road
-  for (let y = 2; y < ROWS - 2; y++) {
-    map[y][19] = T.PATH
-    map[y][20] = T.PATH
-  }
+  // Path network
+  for (let x = 2; x < COLS - 2; x++) { map[13][x] = T.PATH; map[14][x] = T.PATH }
+  for (let y = 2; y < ROWS - 2; y++) { map[y][19] = T.PATH; map[y][20] = T.PATH }
 
   // Secondary paths to houses
   for (const zone of ZONES) {
     const doorX = zone.doorX
     const doorY = zone.doorY + 1
-
-    // Vertical path from door to horizontal main road
     const targetY = 13
-    const minY = Math.min(doorY, targetY)
-    const maxY = Math.max(doorY, targetY)
-    for (let y = minY; y <= maxY; y++) {
+    for (let y = Math.min(doorY, targetY); y <= Math.max(doorY, targetY); y++) {
       const t = map[y][doorX]
       if (t !== T.PATH && t !== T.WATER && t !== T.BRIDGE) map[y][doorX] = T.PATH
     }
-
-    // Horizontal path from door to vertical main road
-    const minX = Math.min(doorX, 19)
-    const maxX = Math.max(doorX, 20)
-    for (let x = minX; x <= maxX; x++) {
+    for (let x = Math.min(doorX, 19); x <= Math.max(doorX, 20); x++) {
       const t = map[doorY][x]
       if (t !== T.PATH && t !== T.WATER && t !== T.BRIDGE) map[doorY][x] = T.PATH
     }
   }
 
-  // Path to lake area
-  for (let x = 20; x <= 27; x++) { map[14][x] = T.PATH }
-  // Path to south area
-  for (let y = 14; y <= 26; y++) { map[y][20] = T.PATH }
-  // Circular village square path
+  // Extra paths
+  for (let x = 20; x <= 27; x++) map[14][x] = T.PATH
+  for (let y = 14; y <= 26; y++) map[y][20] = T.PATH
   for (let x = 16; x <= 23; x++) { map[11][x] = T.PATH; map[16][x] = T.PATH }
   for (let y = 11; y <= 16; y++) { map[y][16] = T.PATH; map[y][23] = T.PATH }
 
-  // ============ PLACE HOUSES ============
+  // Place houses
   for (const zone of ZONES) {
-    const hx = zone.houseX
-    const hy = zone.houseY
-
-    // Clear area around house
+    const hx = zone.houseX, hy = zone.houseY
+    // Clear area
     for (let dy = -1; dy <= 4; dy++) {
       for (let dx = -1; dx <= 3; dx++) {
         const nx = hx + dx, ny = hy + dy
-        if (nx >= 0 && ny >= 0 && nx < COLS && ny < ROWS) {
-          if (map[ny][nx] !== T.PATH) map[ny][nx] = T.GRASS
+        if (nx >= 0 && ny >= 0 && nx < COLS && ny < ROWS && map[ny][nx] !== T.PATH) {
+          map[ny][nx] = T.GRASS
         }
       }
     }
-
-    // House structure (3 wide x 4 tall)
-    map[hy][hx]     = T.HOUSE_ROOF_TL
-    map[hy][hx + 1] = T.HOUSE_ROOF_TC
-    map[hy][hx + 2] = T.HOUSE_ROOF_TR
-    map[hy + 1][hx]     = T.HOUSE_ROOF_ML
-    map[hy + 1][hx + 1] = T.HOUSE_ROOF_MC
-    map[hy + 1][hx + 2] = T.HOUSE_ROOF_MR
-    map[hy + 2][hx]     = T.HOUSE_WALL_L
-    map[hy + 2][hx + 1] = T.HOUSE_WALL_WIN
-    map[hy + 2][hx + 2] = T.HOUSE_WALL_R
-    map[hy + 3][hx]     = T.HOUSE_WALL_DL
-    map[hy + 3][hx + 1] = T.HOUSE_DOOR
-    map[hy + 3][hx + 2] = T.HOUSE_WALL_DR
-
-    // Path in front of door
+    // House structure 3x4
+    map[hy][hx] = T.HOUSE_ROOF_TL; map[hy][hx + 1] = T.HOUSE_ROOF_TC; map[hy][hx + 2] = T.HOUSE_ROOF_TR
+    map[hy + 1][hx] = T.HOUSE_ROOF_ML; map[hy + 1][hx + 1] = T.HOUSE_ROOF_MC; map[hy + 1][hx + 2] = T.HOUSE_ROOF_MR
+    map[hy + 2][hx] = T.HOUSE_WALL_L; map[hy + 2][hx + 1] = T.HOUSE_WALL_WIN; map[hy + 2][hx + 2] = T.HOUSE_WALL_R
+    map[hy + 3][hx] = T.HOUSE_WALL_DL; map[hy + 3][hx + 1] = T.HOUSE_DOOR; map[hy + 3][hx + 2] = T.HOUSE_WALL_DR
     map[hy + 4][hx + 1] = T.PATH
-    // Sign next to house
     if (hx + 3 < COLS) map[hy + 3][hx + 3] = T.SIGN
   }
 
-  // ============ GARDEN AREA (south-west) ============
+  // Garden (south-west)
   for (let y = 22; y <= 26; y++) {
     for (let x = 5; x <= 12; x++) {
       if (map[y][x] === T.GRASS || map[y][x] === T.DARK_GRASS) {
@@ -520,75 +466,54 @@ function generateMap() {
       }
     }
   }
-  // Garden fences
   for (let x = 4; x <= 13; x++) { map[21][x] = T.FENCE; map[27][x] = T.FENCE }
   for (let y = 21; y <= 27; y++) { map[y][4] = T.FENCE; map[y][13] = T.FENCE }
-  // Garden entrances
   map[21][8] = T.PATH; map[21][9] = T.PATH
   map[27][8] = T.PATH; map[27][9] = T.PATH
 
-  // ============ VILLAGE DECORATIONS ============
-  // Fences near village square
-  for (let x = 13; x <= 15; x++) { map[11][x] = T.FENCE }
-  for (let x = 24; x <= 26; x++) { map[11][x] = T.FENCE }
-
-  // Flower garden near crossroads
+  // Decorations
+  for (let x = 13; x <= 15; x++) map[11][x] = T.FENCE
+  for (let x = 24; x <= 26; x++) map[11][x] = T.FENCE
   for (const [fx, fy] of [[17, 12], [18, 12], [21, 12], [22, 12], [17, 15], [18, 15], [21, 15], [22, 15]]) {
     map[fy][fx] = T.FLOWER
   }
 
-  // ============ ENSURE WALKABILITY ============
+  // Ensure NPC tiles are walkable
   for (const npc of NPCS) {
-    if (npc.y < ROWS && npc.x < COLS) {
-      if (map[npc.y][npc.x] !== T.PATH) map[npc.y][npc.x] = T.PATH
+    if (npc.y < ROWS && npc.x < COLS && map[npc.y][npc.x] !== T.PATH) {
+      map[npc.y][npc.x] = T.PATH
     }
   }
 
   return map
 }
 
-// ============ ZONE/NPC LABELS ============
-
+// ==================== LABELS ====================
 function drawZoneLabel(ctx, zone, px, py, unlocked, completed) {
-  // px/py in screen-space. House is 3 tiles wide = 3*48 = 144px
   const tileScreen = TILE * 3
-  const cx = px + tileScreen * 1.5  // center of 3-tile-wide house
+  const cx = px + tileScreen * 1.5
   const bw = zone.name.length * 4.5 + 16
   const bx = cx - bw / 2
   const by = py - 12
 
   ctx.fillStyle = completed ? 'rgba(199,183,119,0.92)' : unlocked ? 'rgba(12,12,25,0.88)' : 'rgba(10,10,15,0.65)'
-  ctx.beginPath()
-  ctx.roundRect(bx, by, bw, 16, 4)
-  ctx.fill()
+  ctx.beginPath(); ctx.roundRect(bx, by, bw, 16, 4); ctx.fill()
 
   ctx.strokeStyle = completed ? '#e0d9a8' : unlocked ? '#c7b777' : '#444'
   ctx.lineWidth = 1
-  ctx.beginPath()
-  ctx.roundRect(bx, by, bw, 16, 4)
-  ctx.stroke()
+  ctx.beginPath(); ctx.roundRect(bx, by, bw, 16, 4); ctx.stroke()
 
   ctx.fillStyle = completed ? '#1a1a2a' : unlocked ? '#c7b777' : '#555'
   ctx.font = 'bold 7px monospace'
   ctx.textAlign = 'center'
   ctx.fillText(zone.name, cx, by + 11)
 
-  if (!unlocked) {
-    ctx.fillStyle = '#666'
-    ctx.font = '8px sans-serif'
-    ctx.fillText('\u{1F512}', cx, by - 2)
-  }
-  if (completed) {
-    ctx.fillStyle = '#2a6a1e'
-    ctx.font = 'bold 9px sans-serif'
-    ctx.fillText('\u2713', cx, by - 1)
-  }
+  if (!unlocked) { ctx.fillStyle = '#666'; ctx.font = '8px sans-serif'; ctx.fillText('\u{1F512}', cx, by - 2) }
+  if (completed) { ctx.fillStyle = '#2a6a1e'; ctx.font = 'bold 9px sans-serif'; ctx.fillText('\u2713', cx, by - 1) }
 }
 
 function drawNPCLabel(ctx, npc, px, py, tick) {
-  // px/py are in screen-space (npc.x * TILE * SCALE)
-  // Characters are 16x16 single-tile sprites (SCALE=3 → 48x48 on screen)
-  const tileScreen = TILE * 3  // 48px
+  const tileScreen = TILE * 3
   const cx = px + tileScreen / 2
   const bob = Math.sin(tick * 0.05) * 2
 
@@ -602,20 +527,25 @@ function drawNPCLabel(ctx, npc, px, py, tick) {
   const nameY = py - 16 + bob
 
   ctx.fillStyle = 'rgba(5,5,15,0.75)'
-  ctx.beginPath()
-  ctx.roundRect(nameX, nameY, nameW, 10, 3)
-  ctx.fill()
+  ctx.beginPath(); ctx.roundRect(nameX, nameY, nameW, 10, 3); ctx.fill()
 
   ctx.fillStyle = '#c7b777'
   ctx.font = '6px monospace'
   ctx.fillText(npc.name, cx, nameY + 7)
 }
 
-// ============ CAMERA & COLLISION ============
+// ==================== COLLISION & PROXIMITY ====================
+function canMove(map, x, y) {
+  if (x < 0 || y < 0 || x >= COLS || y >= ROWS) return false
+  if (SOLID.has(map[y][x])) return false
+  for (const npc of NPCS) {
+    if (npc.x === x && npc.y === y) return false
+  }
+  return true
+}
 
 function getAdjacentZone(tileX, tileY) {
   for (const zone of ZONES) {
-    // Check if player is near the door — generous detection zone
     const dx = Math.abs(tileX - zone.doorX)
     const dy = tileY - zone.doorY
     if (dx <= 1 && dy >= 0 && dy <= 2) return zone
@@ -625,29 +555,15 @@ function getAdjacentZone(tileX, tileY) {
 
 function getAdjacentNPC(tileX, tileY) {
   for (const npc of NPCS) {
-    const dx = Math.abs(tileX - npc.x)
-    const dy = Math.abs(tileY - npc.y)
-    if (dx <= 1 && dy <= 1) return npc
+    if (Math.abs(tileX - npc.x) <= 1 && Math.abs(tileY - npc.y) <= 1) return npc
   }
   return null
-}
-
-function canMove(map, x, y) {
-  if (x < 0 || y < 0 || x >= COLS || y >= ROWS) return false
-  const tile = map[y][x]
-  if (SOLID.has(tile)) return false
-  for (const npc of NPCS) {
-    if (npc.x === x && npc.y === y) return false
-  }
-  return true
 }
 
 function getAdjacentInteriorNPC(tileX, tileY, interiorNpcs) {
   if (!interiorNpcs) return null
   for (const npc of interiorNpcs) {
-    const dx = Math.abs(tileX - npc.x)
-    const dy = Math.abs(tileY - npc.y)
-    if (dx <= 1 && dy <= 1) return npc
+    if (Math.abs(tileX - npc.x) <= 1 && Math.abs(tileY - npc.y) <= 1) return npc
   }
   return null
 }
