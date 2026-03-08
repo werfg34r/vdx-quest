@@ -55,8 +55,8 @@ export default function RPGCanvas({ onOpenZone }) {
     // Game state
     const game = {
       // Player position
-      px: 8, py: 38,
-      tx: 8, ty: 38,
+      px: 14, py: 20,
+      tx: 14, ty: 20,
       ox: 0, oy: 0,
       moveFrame: 0,
       moving: false,
@@ -446,8 +446,8 @@ export default function RPGCanvas({ onOpenZone }) {
       // Labels
       const wp = wpRef.current
       for (const zone of ZONES) {
-        if (zone.x >= startCol - 3 && zone.x <= endCol + 3 && zone.y >= startRow - 3 && zone.y <= endRow + 3) {
-          drawZoneLabel(ctx, zone, zone.x * TILE * SCALE, (zone.y - 2) * TILE * SCALE, wp[zone.id]?.unlocked, wp[zone.id]?.completed)
+        if (zone.houseX >= startCol - 3 && zone.houseX <= endCol + 3 && zone.houseY >= startRow - 3 && zone.houseY <= endRow + 3) {
+          drawZoneLabel(ctx, zone, zone.houseX * TILE * SCALE, zone.houseY * TILE * SCALE, wp[zone.id]?.unlocked, wp[zone.id]?.completed)
         }
       }
       for (const npc of NPCS) {

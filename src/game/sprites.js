@@ -44,19 +44,23 @@ const TILE_COORDS = {
   bridge: { x: 34, y: 2, needsBase: 'water' },
   fence: { x: 6, y: 3, needsBase: 'grass' },
 
-  // Stone castle building tiles (cols 26-28, rows 23-26)
-  stoneRoofL:  { x: 26, y: 23, needsBase: 'grass' },
-  stoneRoofC:  { x: 27, y: 23, needsBase: 'grass' },
-  stoneRoofR:  { x: 28, y: 23, needsBase: 'grass' },
-  stoneWallL:  { x: 26, y: 24 },
-  stoneWallC:  { x: 27, y: 24 },
-  stoneWallR:  { x: 28, y: 24 },
-  stoneWall2L: { x: 26, y: 25 },
-  stoneWall2C: { x: 27, y: 25 },
-  stoneWall2R: { x: 28, y: 25 },
-  stoneDoorL:  { x: 26, y: 26 },
-  stoneDoorC:  { x: 27, y: 26 },
-  stoneDoorR:  { x: 28, y: 26 },
+  // Wooden house tiles from the large house in tileset
+  // Row 0 of house: Roof top (cols 3-5 of the big house, rows 0-1)
+  houseRoofTL:  { x: 3, y: 0 },
+  houseRoofTC:  { x: 4, y: 0 },
+  houseRoofTR:  { x: 5, y: 0 },
+  // Row 1: Roof middle
+  houseRoofML:  { x: 3, y: 1 },
+  houseRoofMC:  { x: 4, y: 1 },
+  houseRoofMR:  { x: 5, y: 1 },
+  // Row 2: Wall with windows
+  houseWallL:   { x: 3, y: 2 },
+  houseWallWin: { x: 4, y: 2 },
+  houseWallR:   { x: 5, y: 2 },
+  // Row 3: Wall with door
+  houseWallDL:  { x: 3, y: 3 },
+  houseDoor:    { x: 4, y: 3 },
+  houseWallDR:  { x: 5, y: 3 },
 
   sign: { x: 30, y: 0, needsBase: 'path' },
   sand: [
@@ -165,30 +169,42 @@ export function drawSpriteTile(ctx, atlas, tileType, px, py, tick) {
       blitTile(ctx, img, tc.fence, px, py)
       break
 
-    // Stone building tiles
-    case 11: // ROOF (center)
-      drawBase(ctx, img, 'grass', px, py)
-      blitTile(ctx, img, tc.stoneRoofC, px, py)
+    // House tiles (wooden house from tileset)
+    case 30: // HOUSE_ROOF_TL
+      blitTile(ctx, img, tc.houseRoofTL, px, py)
       break
-    case 20: // ROOF_L
-      drawBase(ctx, img, 'grass', px, py)
-      blitTile(ctx, img, tc.stoneRoofL, px, py)
+    case 31: // HOUSE_ROOF_TC
+      blitTile(ctx, img, tc.houseRoofTC, px, py)
       break
-    case 21: // ROOF_R
-      drawBase(ctx, img, 'grass', px, py)
-      blitTile(ctx, img, tc.stoneRoofR, px, py)
+    case 32: // HOUSE_ROOF_TR
+      blitTile(ctx, img, tc.houseRoofTR, px, py)
       break
-    case 12: // WALL (center)
-      blitTile(ctx, img, tc.stoneWallC, px, py)
+    case 33: // HOUSE_ROOF_ML
+      blitTile(ctx, img, tc.houseRoofML, px, py)
       break
-    case 22: // WALL_L
-      blitTile(ctx, img, tc.stoneWallL, px, py)
+    case 34: // HOUSE_ROOF_MC
+      blitTile(ctx, img, tc.houseRoofMC, px, py)
       break
-    case 23: // WALL_R
-      blitTile(ctx, img, tc.stoneWallR, px, py)
+    case 35: // HOUSE_ROOF_MR
+      blitTile(ctx, img, tc.houseRoofMR, px, py)
       break
-    case 13: // DOOR (dark stone entrance)
-      blitTile(ctx, img, tc.stoneDoorC, px, py)
+    case 36: // HOUSE_WALL_L
+      blitTile(ctx, img, tc.houseWallL, px, py)
+      break
+    case 37: // HOUSE_WALL_WIN
+      blitTile(ctx, img, tc.houseWallWin, px, py)
+      break
+    case 38: // HOUSE_WALL_R
+      blitTile(ctx, img, tc.houseWallR, px, py)
+      break
+    case 39: // HOUSE_WALL_DL
+      blitTile(ctx, img, tc.houseWallDL, px, py)
+      break
+    case 40: // HOUSE_DOOR
+      blitTile(ctx, img, tc.houseDoor, px, py)
+      break
+    case 41: // HOUSE_WALL_DR
+      blitTile(ctx, img, tc.houseWallDR, px, py)
       break
 
     case 14: // SIGN
