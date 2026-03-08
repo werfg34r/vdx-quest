@@ -215,194 +215,157 @@ export function drawNPCSprite(ctx, atlas, spriteType, px, py, tick, direction) {
 }
 
 // ==================== INTERIOR TILES ====================
-// Now using Sunnyside tileset for interior rendering too
+// Uses Sunnyside tileset for interior rendering with animated overlays
 
-export function drawInteriorTile(ctx, tileType, px, py, tick) {
-  // We need access to the tileset for interior rendering
-  // This function is called from RPGCanvas which has the atlas
-  // For interior tiles, we'll use a mix of tileset blitting and procedural effects
+// Interior tile coordinates in tileset (row 4-5)
+const ITC = {
+  floor:     [{ x: 0, y: 4 }, { x: 1, y: 4 }, { x: 2, y: 4 }],
+  wall:      [{ x: 3, y: 4 }, { x: 4, y: 4 }, { x: 5, y: 4 }],
+  table:     { x: 6, y: 4 },
+  table2:    { x: 7, y: 4 },
+  chair:     { x: 8, y: 4 },
+  bookshelf: { x: 9, y: 4 },
+  bookshelf2:{ x: 10, y: 4 },
+  barrel:    { x: 11, y: 4 },
+  chest:     { x: 12, y: 4 },
+  bed:       { x: 13, y: 4 },
+  pot:       { x: 14, y: 4 },
+  carpet:    { x: 15, y: 4 },
+  torch:     { x: 0, y: 5 },
+  doormat:   { x: 1, y: 5 },
+  altar:     { x: 2, y: 5 },
+}
 
+export function drawInteriorTile(ctx, atlas, tileType, px, py, tick) {
+  const ts = atlas && atlas.tileset
   const T = S
-  switch (tileType) {
-    case 50: { // FLOOR — procedural with warm wood tone (matching Sunnyside palette)
+
+  // Helper: draw floor background + tileset overlay
+  function floorBg() {
+    if (ts) {
+      blitVariant(ctx, ts, ITC.floor, px, py)
+    } else {
       const h = tileHash(px, py)
       ctx.fillStyle = h % 3 === 0 ? '#C08A64' : '#B88060'
       ctx.fillRect(px, py, T, T)
-      ctx.strokeStyle = '#A07050'
-      ctx.lineWidth = 0.4
-      ctx.beginPath()
-      ctx.moveTo(px, py + 4); ctx.lineTo(px + T, py + 4)
-      ctx.moveTo(px, py + 10); ctx.lineTo(px + T, py + 10)
-      ctx.stroke()
-      ctx.fillStyle = '#D0A078'
-      ctx.globalAlpha = 0.25
-      ctx.fillRect(px, py, T, 1)
-      ctx.fillRect(px, py + 5, T, 1)
-      ctx.fillRect(px, py + 11, T, 1)
-      ctx.globalAlpha = 1
-      break
     }
+  }
 
-    case 51: { // WALL — stone with Sunnyside warm tones
-      ctx.fillStyle = '#786A5E'
-      ctx.fillRect(px, py, T, T)
-      ctx.fillStyle = '#8A7C6E'
-      ctx.fillRect(px, py, T, 6)
-      ctx.fillStyle = '#96887A'
-      ctx.fillRect(px, py, T, 1)
-      ctx.strokeStyle = '#6A5C50'
-      ctx.lineWidth = 0.4
-      ctx.beginPath()
-      ctx.moveTo(px, py + 6); ctx.lineTo(px + T, py + 6)
-      ctx.moveTo(px, py + 11); ctx.lineTo(px + T, py + 11)
-      ctx.moveTo(px + 5, py); ctx.lineTo(px + 5, py + 6)
-      ctx.moveTo(px + 11, py); ctx.lineTo(px + 11, py + 6)
-      ctx.moveTo(px + 3, py + 6); ctx.lineTo(px + 3, py + 11)
-      ctx.moveTo(px + 8, py + 6); ctx.lineTo(px + 8, py + 11)
-      ctx.moveTo(px + 13, py + 6); ctx.lineTo(px + 13, py + 11)
-      ctx.moveTo(px + 6, py + 11); ctx.lineTo(px + 6, py + T)
-      ctx.moveTo(px + 11, py + 11); ctx.lineTo(px + 11, py + T)
-      ctx.stroke()
-      ctx.fillStyle = 'rgba(0,0,0,0.12)'
-      ctx.fillRect(px, py + T - 1, T, 1)
+  switch (tileType) {
+    case 50: // FLOOR
+      floorBg()
       break
-    }
 
-    case 52: { // TABLE
-      ctx.fillStyle = '#B88060'; ctx.fillRect(px, py, T, T)
-      ctx.fillStyle = 'rgba(0,0,0,0.15)'; ctx.fillRect(px + 3, py + 13, 12, 2)
-      ctx.fillStyle = '#7A4E2A'; ctx.fillRect(px + 2, py + 11, 2, 4); ctx.fillRect(px + 12, py + 11, 2, 4)
-      ctx.fillStyle = '#8B5E36'; ctx.fillRect(px + 1, py + 3, 14, 9)
-      ctx.fillStyle = '#9B6E46'; ctx.fillRect(px + 1, py + 3, 14, 2)
-      ctx.strokeStyle = '#7A4E2A'; ctx.lineWidth = 0.3; ctx.beginPath()
-      ctx.moveTo(px + 3, py + 6); ctx.lineTo(px + 13, py + 6)
-      ctx.moveTo(px + 3, py + 9); ctx.lineTo(px + 13, py + 9); ctx.stroke()
+    case 51: // WALL
+      if (ts) {
+        blitVariant(ctx, ts, ITC.wall, px, py)
+      } else {
+        ctx.fillStyle = '#786A5E'
+        ctx.fillRect(px, py, T, T)
+      }
       break
-    }
 
-    case 53: { // CHAIR
-      ctx.fillStyle = '#B88060'; ctx.fillRect(px, py, T, T)
-      ctx.fillStyle = 'rgba(0,0,0,0.12)'; ctx.fillRect(px + 5, py + 13, 8, 2)
-      ctx.fillStyle = '#7A4E2A'; ctx.fillRect(px + 4, py + 12, 2, 3); ctx.fillRect(px + 10, py + 12, 2, 3)
-      ctx.fillStyle = '#9B6E46'; ctx.fillRect(px + 4, py + 5, 8, 7)
-      ctx.fillStyle = '#AB7E56'; ctx.fillRect(px + 3, py + 2, 10, 3)
+    case 52: // TABLE
+      floorBg()
+      if (ts) { blit(ctx, ts, ITC.table, px, py) }
       break
-    }
 
-    case 54: { // BOOKSHELF
-      ctx.fillStyle = '#786A5E'; ctx.fillRect(px, py, T, T)
-      ctx.fillStyle = '#8B5E36'; ctx.fillRect(px + 1, py + 1, 14, 14)
-      ctx.fillStyle = '#9B6E46'; ctx.fillRect(px + 1, py + 1, 14, 1)
-      ctx.fillStyle = '#7A5230'; ctx.fillRect(px + 1, py + 5, 14, 1); ctx.fillRect(px + 1, py + 10, 14, 1)
-      const books = ['#C0392B', '#2E86C1', '#27AE60', '#8E44AD', '#D4A850']
-      ctx.fillStyle = books[0]; ctx.fillRect(px + 2, py + 2, 2, 3)
-      ctx.fillStyle = books[1]; ctx.fillRect(px + 4, py + 3, 2, 2)
-      ctx.fillStyle = books[2]; ctx.fillRect(px + 7, py + 2, 3, 3)
-      ctx.fillStyle = books[3]; ctx.fillRect(px + 11, py + 2, 2, 3)
-      ctx.fillStyle = books[2]; ctx.fillRect(px + 2, py + 6, 3, 4)
-      ctx.fillStyle = books[0]; ctx.fillRect(px + 6, py + 7, 2, 3)
-      ctx.fillStyle = books[4]; ctx.fillRect(px + 9, py + 6, 2, 4)
-      ctx.fillStyle = books[1]; ctx.fillRect(px + 12, py + 7, 2, 3)
-      ctx.fillStyle = books[3]; ctx.fillRect(px + 2, py + 11, 2, 3)
-      ctx.fillStyle = books[0]; ctx.fillRect(px + 5, py + 12, 3, 2)
-      ctx.fillStyle = books[4]; ctx.fillRect(px + 9, py + 11, 4, 3)
+    case 53: // CHAIR
+      floorBg()
+      if (ts) { blit(ctx, ts, ITC.chair, px, py) }
       break
-    }
 
-    case 55: { // CARPET
-      ctx.fillStyle = '#B88060'; ctx.fillRect(px, py, T, T)
-      ctx.fillStyle = '#8B2252'; ctx.fillRect(px + 1, py + 1, 14, 14)
-      ctx.fillStyle = '#6B1A42'
-      ctx.fillRect(px + 1, py + 1, 14, 1); ctx.fillRect(px + 1, py + 14, 14, 1)
-      ctx.fillRect(px + 1, py + 1, 1, 14); ctx.fillRect(px + 14, py + 1, 1, 14)
-      ctx.fillStyle = '#A0284E'; ctx.fillRect(px + 3, py + 3, 10, 10)
-      ctx.fillStyle = '#D4A850'; ctx.fillRect(px + 7, py + 7, 2, 2)
+    case 54: // BOOKSHELF
+      if (ts) {
+        blitVariant(ctx, ts, ITC.wall, px, py)
+        blit(ctx, ts, tileHash(px, py) % 2 === 0 ? ITC.bookshelf : ITC.bookshelf2, px, py)
+      } else {
+        ctx.fillStyle = '#786A5E'
+        ctx.fillRect(px, py, T, T)
+      }
       break
-    }
+
+    case 55: // CARPET
+      floorBg()
+      if (ts) { blit(ctx, ts, ITC.carpet, px, py) }
+      break
 
     case 56: { // QUEST ALTAR — animated glow
-      ctx.fillStyle = '#B88060'; ctx.fillRect(px, py, T, T)
+      floorBg()
+      if (ts) { blit(ctx, ts, ITC.altar, px, py) }
       const glow = 0.5 + Math.sin(tick * 0.08) * 0.3
-      ctx.save(); ctx.globalAlpha = glow * 0.25; ctx.fillStyle = '#FFE0A0'
-      ctx.beginPath(); ctx.arc(px + T / 2, py + T / 2, T * 0.7, 0, Math.PI * 2); ctx.fill(); ctx.restore()
-      ctx.fillStyle = '#888'; ctx.fillRect(px + 2, py + 10, 12, 5)
-      ctx.fillStyle = '#AAA'; ctx.fillRect(px + 3, py + 5, 10, 6)
-      ctx.fillStyle = '#BBB'; ctx.fillRect(px + 3, py + 5, 10, 1)
-      ctx.fillStyle = '#FFE0A0'; ctx.fillRect(px + 4, py + 2, 8, 5)
-      ctx.fillStyle = '#D4A850'; ctx.fillRect(px + 5, py + 3, 6, 3)
+      ctx.save()
+      ctx.globalAlpha = glow * 0.3
+      ctx.fillStyle = '#FFE0A0'
+      ctx.beginPath()
+      ctx.arc(px + T / 2, py + T / 2, T * 0.7, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.restore()
       const spark = Math.sin(tick * 0.12) > 0.3
-      if (spark) { ctx.fillStyle = '#fff'; ctx.fillRect(px + 3, py + 1, 1, 1); ctx.fillRect(px + 11, py + 2, 1, 1) }
+      if (spark) {
+        ctx.fillStyle = '#fff'
+        ctx.fillRect(px + 3, py + 1, 1, 1)
+        ctx.fillRect(px + 11, py + 2, 1, 1)
+      }
       break
     }
 
-    case 57: { // BARREL
-      ctx.fillStyle = '#B88060'; ctx.fillRect(px, py, T, T)
-      ctx.fillStyle = 'rgba(0,0,0,0.12)'; ctx.beginPath()
-      ctx.ellipse(px + 8, py + 14, 5, 2, 0, 0, Math.PI * 2); ctx.fill()
-      ctx.fillStyle = '#9B7848'; ctx.fillRect(px + 4, py + 2, 8, 12); ctx.fillRect(px + 3, py + 5, 10, 6)
-      ctx.fillStyle = '#AB8858'; ctx.fillRect(px + 4, py + 2, 3, 12)
-      ctx.fillStyle = '#666'; ctx.fillRect(px + 3, py + 4, 10, 1); ctx.fillRect(px + 3, py + 8, 10, 1); ctx.fillRect(px + 3, py + 12, 10, 1)
+    case 57: // BARREL
+      floorBg()
+      if (ts) { blit(ctx, ts, ITC.barrel, px, py) }
       break
-    }
 
-    case 58: { // BED
-      ctx.fillStyle = '#B88060'; ctx.fillRect(px, py, T, T)
-      ctx.fillStyle = '#8B5E36'; ctx.fillRect(px + 1, py + 1, 14, 14)
-      ctx.fillStyle = '#C8B8A0'; ctx.fillRect(px + 3, py + 2, 10, 4)
-      ctx.fillStyle = '#2B6AAA'; ctx.fillRect(px + 2, py + 6, 12, 8)
-      ctx.fillStyle = '#3B7ABB'; ctx.fillRect(px + 2, py + 6, 12, 2)
+    case 58: // BED
+      floorBg()
+      if (ts) { blit(ctx, ts, ITC.bed, px, py) }
       break
-    }
 
-    case 59: { // DOOR MAT
-      ctx.fillStyle = '#B88060'; ctx.fillRect(px, py, T, T)
-      ctx.fillStyle = '#772222'; ctx.fillRect(px + 1, py + 3, 14, 10)
-      ctx.fillStyle = '#993333'; ctx.fillRect(px + 2, py + 4, 12, 8)
-      ctx.fillStyle = '#AA4444'; ctx.fillRect(px + 3, py + 5, 10, 6)
+    case 59: // DOOR MAT
+      floorBg()
+      if (ts) { blit(ctx, ts, ITC.doormat, px, py) }
       break
-    }
 
-    case 60: { // TORCH — animated flame
-      ctx.fillStyle = '#786A5E'; ctx.fillRect(px, py, T, T)
-      ctx.fillStyle = '#8A7C6E'; ctx.fillRect(px, py, T, 6)
-      ctx.fillStyle = '#96887A'; ctx.fillRect(px, py, T, 1)
+    case 60: { // TORCH — animated flame overlay
+      if (ts) {
+        blitVariant(ctx, ts, ITC.wall, px, py)
+        blit(ctx, ts, ITC.torch, px, py)
+      } else {
+        ctx.fillStyle = '#786A5E'
+        ctx.fillRect(px, py, T, T)
+      }
+      // Animated flame glow
       ctx.save()
       const pulse = 0.3 + Math.sin(tick * 0.1 + px) * 0.1
       ctx.globalAlpha = pulse
       const g = ctx.createRadialGradient(px + 8, py + 5, 0, px + 8, py + 5, 10)
-      g.addColorStop(0, '#FF882244'); g.addColorStop(1, 'rgba(255,136,34,0)')
-      ctx.fillStyle = g; ctx.fillRect(px - 4, py - 4, T + 8, T + 8); ctx.restore()
-      ctx.fillStyle = '#666'; ctx.fillRect(px + 6, py + 7, 4, 6)
+      g.addColorStop(0, '#FF882244')
+      g.addColorStop(1, 'rgba(255,136,34,0)')
+      ctx.fillStyle = g
+      ctx.fillRect(px - 4, py - 4, T + 8, T + 8)
+      ctx.restore()
+      // Flame tip
       const fl = Math.sin(tick * 0.15 + px) * 0.8
-      ctx.fillStyle = '#FF4400'; ctx.fillRect(px + 5 + fl, py + 3, 6, 5)
-      ctx.fillStyle = '#FF8833'; ctx.fillRect(px + 6, py + 3, 4, 4)
-      ctx.fillStyle = '#FFDD44'; ctx.fillRect(px + 7, py + 4, 2, 2)
+      ctx.fillStyle = '#FF4400'
+      ctx.fillRect(px + 5 + fl, py + 3, 6, 5)
+      ctx.fillStyle = '#FF8833'
+      ctx.fillRect(px + 6, py + 3, 4, 4)
+      ctx.fillStyle = '#FFDD44'
+      ctx.fillRect(px + 7, py + 4, 2, 2)
       break
     }
 
-    case 61: { // POT
-      ctx.fillStyle = '#B88060'; ctx.fillRect(px, py, T, T)
-      ctx.fillStyle = 'rgba(0,0,0,0.12)'; ctx.beginPath()
-      ctx.ellipse(px + 8, py + 14, 4, 1.5, 0, 0, Math.PI * 2); ctx.fill()
-      ctx.fillStyle = '#AA7744'; ctx.fillRect(px + 4, py + 6, 8, 8); ctx.fillRect(px + 5, py + 4, 6, 3)
-      ctx.fillStyle = '#BB8855'; ctx.fillRect(px + 4, py + 4, 8, 1)
-      ctx.fillStyle = '#CC9965'; ctx.fillRect(px + 5, py + 6, 2, 6)
+    case 61: // POT
+      floorBg()
+      if (ts) { blit(ctx, ts, ITC.pot, px, py) }
       break
-    }
 
-    case 62: { // CHEST
-      ctx.fillStyle = '#B88060'; ctx.fillRect(px, py, T, T)
-      ctx.fillStyle = 'rgba(0,0,0,0.15)'; ctx.fillRect(px + 3, py + 14, 11, 1)
-      ctx.fillStyle = '#DAA520'; ctx.fillRect(px + 2, py + 5, 12, 9)
-      ctx.fillStyle = '#EAB530'; ctx.fillRect(px + 2, py + 5, 12, 2)
-      ctx.fillStyle = '#8B6914'; ctx.fillRect(px + 2, py + 8, 12, 1); ctx.fillRect(px + 7, py + 5, 2, 9)
-      ctx.fillStyle = '#FFD700'; ctx.fillRect(px + 7, py + 9, 2, 2)
+    case 62: // CHEST
+      floorBg()
+      if (ts) { blit(ctx, ts, ITC.chest, px, py) }
       break
-    }
 
     default:
-      ctx.fillStyle = '#B88060'
-      ctx.fillRect(px, py, T, T)
+      floorBg()
   }
 }
 

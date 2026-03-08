@@ -751,7 +751,7 @@ export default function RPGCanvas({ onOpenZone }) {
       // Draw interior tiles
       for (let row = 0; row < interior.height; row++) {
         for (let col = 0; col < interior.width; col++) {
-          drawInteriorTile(ctx, interior.map[row][col], col * TILE, row * TILE, game.tick)
+          drawInteriorTile(ctx, atlas, interior.map[row][col], col * TILE, row * TILE, game.tick)
         }
       }
 
