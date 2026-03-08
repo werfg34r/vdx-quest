@@ -177,14 +177,13 @@ export default function RPGCanvas({ onOpenZone }) {
 
     // ==================== BUILD WORLD ====================
     const map = generateMap()
-    const worldObjects = buildScene(scene, map, ZONES)
+    let worldObjects = { water: null, buildings: null, labels: null, particles: null }
 
-    // ==================== PLAYER ====================
+    // Player and NPCs are created immediately (sync)
     const playerMesh = createCharacter(0xE53935, 0xFFCC80)
     playerMesh.position.set(8 + 0.5, 0, 38 + 0.5)
     scene.add(playerMesh)
 
-    // ==================== NPCs ====================
     const npcMeshes = NPCS.map(npc => {
       const bodyColor = NPC_BODY_COLORS[npc.sprite] || 0x666666
       const mesh = createCharacter(bodyColor, 0xFFCC80)
@@ -195,7 +194,6 @@ export default function RPGCanvas({ onOpenZone }) {
       label.position.set(npc.x + 0.5, 1.5, npc.y + 0.5)
       scene.add(label)
 
-      // Exclamation mark
       const excl = createTextSprite('!', {
         fontSize: 36, bgColor: 'rgba(199,183,119,0.95)', textColor: '#0a0a0f',
       })
@@ -203,6 +201,15 @@ export default function RPGCanvas({ onOpenZone }) {
       scene.add(excl)
 
       return { mesh, label, excl }
+    })
+
+    // Load GLTF models async (scene renders progressively)
+    buildScene(scene, map, ZONES).then(objects => {
+      worldObjects = objects
+      setLoading(false)
+    }).catch(err => {
+      console.error('Failed to load 3D models:', err)
+      setLoading(false)
     })
 
     // ==================== GAME STATE ====================
@@ -220,8 +227,6 @@ export default function RPGCanvas({ onOpenZone }) {
       introCharIdx: 0,
     }
     gameRef.current = game
-
-    setLoading(false)
 
     // ==================== INPUT ====================
     function onKeyDown(e) {
@@ -412,6 +417,15 @@ export default function RPGCanvas({ onOpenZone }) {
       // Sun follows player for proper shadows
       sun.position.set(game.px + 15, 30, game.pz + 10)
       sun.target.position.set(game.px, 0, game.pz)
+
+      // Animate clouds (slow drift)
+      if (worldObjects.clouds) {
+        worldObjects.clouds.forEach((cloud, i) => {
+          cloud.position.x += 0.003 * (1 + i * 0.1)
+          if (cloud.position.x > 55) cloud.position.x = -5
+          cloud.position.y += Math.sin(game.tick * 0.005 + i) * 0.002
+        })
+      }
 
       // Animate particles
       if (worldObjects.particles) {

@@ -1,5 +1,6 @@
-// 3D World Builder for VDX Quest - Enhanced with procedural details
+// 3D World Builder for VDX Quest - Enhanced with GLTF models
 import * as THREE from 'three'
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 
 // ==================== COLOR PALETTE ====================
 const C = {
@@ -170,8 +171,36 @@ export function buildGrassBlades(scene, map) {
   scene.add(mesh)
 }
 
-// ==================== TREES (mixed types) ====================
-export function buildTrees(scene, map) {
+// ==================== GLTF MODEL CACHE ====================
+const modelCache = {}
+const loader = new GLTFLoader()
+
+function loadModel(path) {
+  if (modelCache[path]) return modelCache[path]
+  modelCache[path] = new Promise((resolve, reject) => {
+    loader.load(path, gltf => resolve(gltf.scene), undefined, reject)
+  })
+  return modelCache[path]
+}
+
+// Building model assignments per zone index
+const BUILDING_MODELS = [
+  'building_tavern_blue',
+  'building_home_A_blue',
+  'building_church_blue',
+  'building_blacksmith_blue',
+  'building_castle_blue',
+  'building_market_blue',
+  'building_tower_A_blue',
+  'building_home_A_blue',
+  'building_tavern_blue',
+  'building_castle_blue',
+  'building_church_blue',
+  'building_blacksmith_blue',
+]
+
+// ==================== TREES (GLTF models) ====================
+export async function buildTrees(scene, map) {
   const treePos = []
   for (let z = 0; z < map.length; z++)
     for (let x = 0; x < map[0].length; x++)
@@ -179,67 +208,65 @@ export function buildTrees(scene, map) {
 
   if (!treePos.length) return
 
-  // Deciduous trees (round canopy)
+  // Load both tree models
+  let treeA, treeB
+  try {
+    [treeA, treeB] = await Promise.all([
+      loadModel('/assets/models/nature/tree_single_A.gltf'),
+      loadModel('/assets/models/nature/tree_single_B.gltf'),
+    ])
+  } catch {
+    // Fallback to procedural if models fail
+    buildTreesFallback(scene, treePos)
+    return
+  }
+
+  treePos.forEach(([x, z], i) => {
+    const template = i % 3 === 0 ? treeB : treeA
+    const tree = template.clone()
+    const s = 1.8 + Math.sin(x * 3.7 + z * 2.1) * 0.6
+    tree.scale.set(s, s, s)
+    tree.position.set(x, 0, z)
+    tree.rotation.y = Math.sin(x * 5 + z * 7) * Math.PI
+    tree.traverse(child => {
+      if (child.isMesh) {
+        child.castShadow = true
+        child.receiveShadow = true
+      }
+    })
+    scene.add(tree)
+  })
+}
+
+function buildTreesFallback(scene, treePos) {
   const trunkGeo = new THREE.CylinderGeometry(0.05, 0.1, 0.6, 6)
   const trunkMat = new THREE.MeshStandardMaterial({ color: C.trunk, roughness: 0.95 })
-
   const canopyGeo = new THREE.IcosahedronGeometry(0.4, 1)
   const canopyMat = new THREE.MeshStandardMaterial({ color: C.foliage, roughness: 0.85, flatShading: true })
 
-  // Pine trees (cone)
-  const pineGeo = new THREE.ConeGeometry(0.35, 0.9, 6)
-  const pineMat = new THREE.MeshStandardMaterial({ color: C.pine, roughness: 0.85, flatShading: true })
-
-  const deciduous = treePos.filter((_, i) => i % 3 !== 0)
-  const pines = treePos.filter((_, i) => i % 3 === 0)
-
-  // Deciduous trees
-  const dTrunks = new THREE.InstancedMesh(trunkGeo, trunkMat, deciduous.length)
-  const dCanopies = new THREE.InstancedMesh(canopyGeo, canopyMat, deciduous.length)
+  const trunks = new THREE.InstancedMesh(trunkGeo, trunkMat, treePos.length)
+  const canopies = new THREE.InstancedMesh(canopyGeo, canopyMat, treePos.length)
   const m = new THREE.Matrix4()
   const q = new THREE.Quaternion()
 
-  deciduous.forEach(([x, z], i) => {
+  treePos.forEach(([x, z], i) => {
     const s = 0.8 + (Math.sin(x * 3.7 + z * 2.1) * 0.5 + 0.5) * 0.6
     m.compose(new THREE.Vector3(x, 0.3 * s, z), q, new THREE.Vector3(s, s, s))
-    dTrunks.setMatrixAt(i, m)
-    const c = [C.foliage, C.foliage2, C.foliage3][i % 3]
-    dCanopies.setColorAt(i, new THREE.Color(c))
+    trunks.setMatrixAt(i, m)
+    canopies.setColorAt(i, new THREE.Color([C.foliage, C.foliage2, C.foliage3][i % 3]))
     m.compose(new THREE.Vector3(x, 0.7 * s, z), q, new THREE.Vector3(s * 0.95, s * 0.85, s * 0.95))
-    dCanopies.setMatrixAt(i, m)
+    canopies.setMatrixAt(i, m)
   })
 
-  dTrunks.castShadow = true
-  dCanopies.castShadow = true
-  if (dCanopies.instanceColor) dCanopies.instanceColor.needsUpdate = true
-  scene.add(dTrunks)
-  scene.add(dCanopies)
-
-  // Pine trees
-  if (pines.length) {
-    const pTrunks = new THREE.InstancedMesh(trunkGeo, trunkMat, pines.length)
-    const pCanopies = new THREE.InstancedMesh(pineGeo, pineMat, pines.length)
-
-    pines.forEach(([x, z], i) => {
-      const s = 0.9 + Math.sin(x * 5.1 + z * 3.3) * 0.3
-      m.compose(new THREE.Vector3(x, 0.3 * s, z), q, new THREE.Vector3(s * 0.7, s, s * 0.7))
-      pTrunks.setMatrixAt(i, m)
-      const pc = i % 2 === 0 ? C.pine : C.foliage3
-      pCanopies.setColorAt(i, new THREE.Color(pc))
-      m.compose(new THREE.Vector3(x, 0.8 * s, z), q, new THREE.Vector3(s, s, s))
-      pCanopies.setMatrixAt(i, m)
-    })
-
-    pTrunks.castShadow = true
-    pCanopies.castShadow = true
-    if (pCanopies.instanceColor) pCanopies.instanceColor.needsUpdate = true
-    scene.add(pTrunks)
-    scene.add(pCanopies)
-  }
+  trunks.castShadow = true
+  canopies.castShadow = true
+  if (canopies.instanceColor) canopies.instanceColor.needsUpdate = true
+  scene.add(trunks)
+  scene.add(canopies)
 }
 
-// ==================== MOUNTAINS (craggy rocks) ====================
-export function buildMountains(scene, map) {
+// ==================== MOUNTAINS (GLTF + fallback) ====================
+export async function buildMountains(scene, map) {
   const positions = []
   for (let z = 0; z < map.length; z++)
     for (let x = 0; x < map[0].length; x++)
@@ -247,30 +274,85 @@ export function buildMountains(scene, map) {
 
   if (!positions.length) return
 
-  // Use dodecahedron for more organic rock shape
+  let mountainModel
+  try {
+    mountainModel = await loadModel('/assets/models/nature/mountain_A_grass_trees.gltf')
+  } catch {
+    // Fallback to procedural
+  }
+
+  if (mountainModel) {
+    // Group adjacent mountain tiles and place one model per cluster center
+    const visited = new Set()
+    const clusters = []
+    for (const [x, z] of positions) {
+      const key = `${x},${z}`
+      if (visited.has(key)) continue
+      visited.add(key)
+      clusters.push([x, z])
+    }
+
+    // Place mountain model every few tiles to avoid too many instances
+    clusters.filter((_, i) => i % 4 === 0).forEach(([x, z], i) => {
+      const mt = mountainModel.clone()
+      const s = 3.0 + Math.sin(x * 2.3 + z * 1.7) * 1.0
+      mt.scale.set(s, s * 1.2, s)
+      mt.position.set(x, -0.2, z)
+      mt.rotation.y = Math.sin(x * 3 + z * 5) * Math.PI
+      mt.traverse(child => {
+        if (child.isMesh) { child.castShadow = true; child.receiveShadow = true }
+      })
+      scene.add(mt)
+    })
+
+    // Fill remaining with rocks
+    let rockModels
+    try {
+      const [rA, rB, rC] = await Promise.all([
+        loadModel('/assets/models/nature/rock_single_A.gltf'),
+        loadModel('/assets/models/nature/rock_single_B.gltf'),
+        loadModel('/assets/models/nature/rock_single_C.gltf'),
+      ])
+      rockModels = [rA, rB, rC]
+    } catch { /* ignore */ }
+
+    if (rockModels) {
+      clusters.filter((_, i) => i % 4 !== 0).forEach(([x, z], i) => {
+        const template = rockModels[i % 3]
+        const rock = template.clone()
+        const s = 4.0 + Math.sin(x * 5 + z * 3) * 1.5
+        rock.scale.set(s, s * 1.5, s)
+        rock.position.set(x, 0, z)
+        rock.rotation.y = Math.sin(x * 7 + z * 3) * Math.PI
+        rock.traverse(child => {
+          if (child.isMesh) { child.castShadow = true; child.receiveShadow = true }
+        })
+        scene.add(rock)
+      })
+    }
+    return
+  }
+
+  // Procedural fallback
   const rockGeo = new THREE.DodecahedronGeometry(0.6, 0)
   const rockMat = new THREE.MeshStandardMaterial({
     color: C.mountain, roughness: 0.9, flatShading: true,
   })
   const mesh = new THREE.InstancedMesh(rockGeo, rockMat, positions.length)
-
   const m = new THREE.Matrix4()
   const q = new THREE.Quaternion()
   const euler = new THREE.Euler()
 
   positions.forEach(([x, z], i) => {
     const h = 0.6 + (Math.sin(x * 2.3 + z * 1.7) * 0.5 + 0.5) * 1.0
-    const rotY = Math.sin(x * 3 + z * 5) * 0.5
-    euler.set(0, rotY, 0)
+    euler.set(0, Math.sin(x * 3 + z * 5) * 0.5, 0)
     q.setFromEuler(euler)
     m.compose(new THREE.Vector3(x, h * 0.4, z), q, new THREE.Vector3(0.8, h, 0.8))
     mesh.setMatrixAt(i, m)
-    // Snow on tall mountains
     const isSnowy = h > 1.2
     const shade = isSnowy ? 0.85 : (0.45 + Math.sin(x + z) * 0.1)
     mesh.setColorAt(i, new THREE.Color(shade, shade, shade + (isSnowy ? 0 : 0.03)))
   })
-
   mesh.castShadow = true
   mesh.receiveShadow = true
   mesh.instanceColor.needsUpdate = true
@@ -354,113 +436,94 @@ export function buildFences(scene, map) {
   scene.add(rails)
 }
 
-// ==================== BUILDINGS (enhanced) ====================
-export function buildBuildings(scene, zones) {
+// ==================== BUILDINGS (GLTF models) ====================
+export async function buildBuildings(scene, zones) {
   const buildings = []
 
-  for (const zone of zones) {
+  // Try to load all building models
+  const modelNames = [...new Set(BUILDING_MODELS)]
+  const loadedModels = {}
+
+  try {
+    const results = await Promise.all(
+      modelNames.map(name =>
+        loadModel(`/assets/models/buildings/${name}.gltf`)
+          .catch(() => null)
+      )
+    )
+    modelNames.forEach((name, i) => {
+      if (results[i]) loadedModels[name] = results[i]
+    })
+  } catch { /* continue with whatever loaded */ }
+
+  // Also try loading decoration models
+  let torchModel = null
+  let barrelModel = null
+  try {
+    [torchModel, barrelModel] = await Promise.all([
+      loadModel('/assets/models/buildings/torch_lit.glb').catch(() => null),
+      loadModel('/assets/models/buildings/barrel_large.glb').catch(() => null),
+    ])
+  } catch { /* ignore */ }
+
+  for (let zi = 0; zi < zones.length; zi++) {
+    const zone = zones[zi]
     const group = new THREE.Group()
     const cx = zone.x + 0.5
     const cz = zone.y - 0.5
 
-    // Stone base
-    const baseGeo = new THREE.BoxGeometry(4.6, 0.4, 4.6)
-    const baseMat = new THREE.MeshStandardMaterial({ color: C.stoneD, roughness: 0.95 })
-    const base = new THREE.Mesh(baseGeo, baseMat)
-    base.position.set(cx, 0.2, cz)
-    base.receiveShadow = true
-    group.add(base)
+    const modelName = BUILDING_MODELS[zi % BUILDING_MODELS.length]
+    const template = loadedModels[modelName]
 
-    // Main walls
-    const wallGeo = new THREE.BoxGeometry(4, 3, 4)
-    const wallMat = new THREE.MeshStandardMaterial({ color: C.stone, roughness: 0.8 })
-    const walls = new THREE.Mesh(wallGeo, wallMat)
-    walls.position.set(cx, 1.9, cz)
-    walls.castShadow = true
-    walls.receiveShadow = true
-    group.add(walls)
+    if (template) {
+      // Use GLTF model
+      const building = template.clone()
+      // Scale model to fit ~4 tile width (models are ~0.8-1.4 units)
+      const s = 3.8
+      building.scale.set(s, s, s)
+      building.position.set(cx, 0, cz)
+      // Face the building toward the player path (front facing +Z)
+      building.rotation.y = Math.PI
+      building.traverse(child => {
+        if (child.isMesh) {
+          child.castShadow = true
+          child.receiveShadow = true
+        }
+      })
+      group.add(building)
 
-    // Timber frame details (cross beams)
-    const beamMat = new THREE.MeshStandardMaterial({ color: C.wood, roughness: 0.9 })
-    const hBeamGeo = new THREE.BoxGeometry(4.1, 0.12, 0.12)
-    const vBeamGeo = new THREE.BoxGeometry(0.12, 3.1, 0.12)
-    for (const bz of [cz + 2.01, cz - 2.01]) {
-      // Horizontal beams
-      const hb1 = new THREE.Mesh(hBeamGeo, beamMat)
-      hb1.position.set(cx, 1.2, bz)
-      group.add(hb1)
-      const hb2 = new THREE.Mesh(hBeamGeo, beamMat)
-      hb2.position.set(cx, 2.5, bz)
-      group.add(hb2)
-      // Vertical beams
-      for (const bx of [cx - 1.5, cx, cx + 1.5]) {
-        const vb = new THREE.Mesh(vBeamGeo, beamMat)
-        vb.position.set(bx, 1.9, bz)
-        group.add(vb)
+      // Add decorations around the building
+      if (torchModel) {
+        for (const dx of [-2.2, 2.2]) {
+          const torch = torchModel.clone()
+          torch.scale.set(2.5, 2.5, 2.5)
+          torch.position.set(cx + dx, 0, cz + 2.2)
+          torch.traverse(child => { if (child.isMesh) child.castShadow = true })
+          group.add(torch)
+
+          // Torch light
+          const tLight = new THREE.PointLight(0xFF8833, 0.5, 4)
+          tLight.position.set(cx + dx, 1.8, cz + 2.3)
+          group.add(tLight)
+        }
       }
+
+      if (barrelModel && zi % 3 === 0) {
+        for (let bi = 0; bi < 2; bi++) {
+          const barrel = barrelModel.clone()
+          barrel.scale.set(2.0, 2.0, 2.0)
+          barrel.position.set(cx + 2.5, 0, cz - 1 + bi * 0.8)
+          barrel.rotation.y = Math.sin(zi + bi) * 0.5
+          barrel.traverse(child => { if (child.isMesh) child.castShadow = true })
+          group.add(barrel)
+        }
+      }
+    } else {
+      // Fallback to procedural building
+      buildProceduralBuilding(group, cx, cz, zone)
     }
 
-    // Roof (pyramid)
-    const roofColor = zone.region === 1 ? C.roofR1 : zone.region === 2 ? C.roofR2 : C.roofR3
-    const roofGeo = new THREE.ConeGeometry(3.3, 2.2, 4)
-    const roofMat = new THREE.MeshStandardMaterial({ color: roofColor, roughness: 0.75, flatShading: true })
-    const roof = new THREE.Mesh(roofGeo, roofMat)
-    roof.position.set(cx, 4.5, cz)
-    roof.rotation.y = Math.PI / 4
-    roof.castShadow = true
-    group.add(roof)
-
-    // Roof overhang (slightly larger flat ring)
-    const overhangGeo = new THREE.BoxGeometry(4.6, 0.12, 4.6)
-    const overhangMat = new THREE.MeshStandardMaterial({ color: C.woodDark || C.wood })
-    const overhang = new THREE.Mesh(overhangGeo, overhangMat)
-    overhang.position.set(cx, 3.4, cz)
-    group.add(overhang)
-
-    // Door (arched)
-    const doorGeo = new THREE.BoxGeometry(0.85, 1.7, 0.15)
-    const doorMat = new THREE.MeshStandardMaterial({ color: C.door })
-    const door = new THREE.Mesh(doorGeo, doorMat)
-    door.position.set(cx, 1.25, cz + 2.04)
-    group.add(door)
-
-    // Door arch
-    const archGeo = new THREE.TorusGeometry(0.43, 0.08, 6, 8, Math.PI)
-    const archMat = new THREE.MeshStandardMaterial({ color: C.stoneDark })
-    const arch = new THREE.Mesh(archGeo, archMat)
-    arch.position.set(cx, 2.1, cz + 2.03)
-    arch.rotation.x = -Math.PI / 2
-    arch.rotation.z = Math.PI
-    group.add(arch)
-
-    // Windows (with glow)
-    const winGeo = new THREE.BoxGeometry(0.5, 0.55, 0.15)
-    const winMat = new THREE.MeshStandardMaterial({
-      color: 0xFFE0A0, emissive: 0xFFAA33, emissiveIntensity: 0.4,
-    })
-    for (const dx of [-1.2, 1.2]) {
-      const win = new THREE.Mesh(winGeo, winMat)
-      win.position.set(cx + dx, 2.0, cz + 2.04)
-      group.add(win)
-      // Window frame
-      const frameMat = new THREE.MeshStandardMaterial({ color: C.wood })
-      const fh = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.06, 0.16), frameMat)
-      fh.position.set(cx + dx, 2.0, cz + 2.05)
-      group.add(fh)
-      const fv = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.6, 0.16), frameMat)
-      fv.position.set(cx + dx, 2.0, cz + 2.05)
-      group.add(fv)
-    }
-
-    // Chimney
-    const chimGeo = new THREE.BoxGeometry(0.4, 1.2, 0.4)
-    const chimMat = new THREE.MeshStandardMaterial({ color: C.stoneD })
-    const chimney = new THREE.Mesh(chimGeo, chimMat)
-    chimney.position.set(cx + 1.2, 4.5, cz - 0.8)
-    chimney.castShadow = true
-    group.add(chimney)
-
-    // Window point light (warm glow)
+    // Window point light (warm glow) - always add for ambiance
     const light = new THREE.PointLight(0xFFAA33, 0.6, 5)
     light.position.set(cx, 2.0, cz + 2.5)
     group.add(light)
@@ -472,13 +535,44 @@ export function buildBuildings(scene, zones) {
   return buildings
 }
 
-// ==================== DECORATIVE ROCKS ====================
-export function buildRocks(scene, map) {
+function buildProceduralBuilding(group, cx, cz, zone) {
+  const baseGeo = new THREE.BoxGeometry(4.6, 0.4, 4.6)
+  const baseMat = new THREE.MeshStandardMaterial({ color: C.stoneD, roughness: 0.95 })
+  const base = new THREE.Mesh(baseGeo, baseMat)
+  base.position.set(cx, 0.2, cz)
+  base.receiveShadow = true
+  group.add(base)
+
+  const wallGeo = new THREE.BoxGeometry(4, 3, 4)
+  const wallMat = new THREE.MeshStandardMaterial({ color: C.stone, roughness: 0.8 })
+  const walls = new THREE.Mesh(wallGeo, wallMat)
+  walls.position.set(cx, 1.9, cz)
+  walls.castShadow = true
+  walls.receiveShadow = true
+  group.add(walls)
+
+  const roofColor = zone.region === 1 ? C.roofR1 : zone.region === 2 ? C.roofR2 : C.roofR3
+  const roofGeo = new THREE.ConeGeometry(3.3, 2.2, 4)
+  const roofMat = new THREE.MeshStandardMaterial({ color: roofColor, roughness: 0.75, flatShading: true })
+  const roof = new THREE.Mesh(roofGeo, roofMat)
+  roof.position.set(cx, 4.5, cz)
+  roof.rotation.y = Math.PI / 4
+  roof.castShadow = true
+  group.add(roof)
+
+  const doorGeo = new THREE.BoxGeometry(0.85, 1.7, 0.15)
+  const doorMat = new THREE.MeshStandardMaterial({ color: C.door })
+  const door = new THREE.Mesh(doorGeo, doorMat)
+  door.position.set(cx, 1.25, cz + 2.04)
+  group.add(door)
+}
+
+// ==================== DECORATIVE ROCKS (GLTF) ====================
+export async function buildRocks(scene, map) {
   const positions = []
   for (let z = 0; z < map.length; z++)
     for (let x = 0; x < map[0].length; x++) {
       const t = map[z][x]
-      // Scatter rocks near paths and sand
       if ((t === 1 || t === 10) && Math.sin(x * 13.7 + z * 7.3) > 0.85) {
         positions.push([x + 0.3 + Math.sin(x*5)*0.4, z + 0.3 + Math.cos(z*5)*0.4])
       }
@@ -486,10 +580,36 @@ export function buildRocks(scene, map) {
 
   if (!positions.length) return
 
+  let rockModels
+  try {
+    const [rA, rB, rC] = await Promise.all([
+      loadModel('/assets/models/nature/rock_single_A.gltf'),
+      loadModel('/assets/models/nature/rock_single_B.gltf'),
+      loadModel('/assets/models/nature/rock_single_C.gltf'),
+    ])
+    rockModels = [rA, rB, rC]
+  } catch { /* fallback */ }
+
+  if (rockModels) {
+    positions.forEach(([x, z], i) => {
+      const template = rockModels[i % 3]
+      const rock = template.clone()
+      const s = 2.0 + Math.sin(x * 11 + z * 7) * 1.0
+      rock.scale.set(s, s * 0.8, s)
+      rock.position.set(x, 0, z)
+      rock.rotation.y = Math.sin(x * 7 + z * 3) * Math.PI
+      rock.traverse(child => {
+        if (child.isMesh) child.receiveShadow = true
+      })
+      scene.add(rock)
+    })
+    return
+  }
+
+  // Procedural fallback
   const geo = new THREE.DodecahedronGeometry(0.08, 0)
   const mat = new THREE.MeshStandardMaterial({ color: 0x888580, roughness: 0.95, flatShading: true })
   const mesh = new THREE.InstancedMesh(geo, mat, positions.length)
-
   const m = new THREE.Matrix4()
   const q = new THREE.Quaternion()
   const euler = new THREE.Euler()
@@ -605,16 +725,48 @@ export function createParticles(scene) {
   return particles
 }
 
+// ==================== CLOUDS (GLTF) ====================
+async function buildClouds(scene) {
+  let cloudModel
+  try {
+    cloudModel = await loadModel('/assets/models/nature/cloud_big.gltf')
+  } catch { return [] }
+
+  const clouds = []
+  for (let i = 0; i < 8; i++) {
+    const cloud = cloudModel.clone()
+    const s = 2.5 + Math.sin(i * 7.3) * 1.5
+    cloud.scale.set(s, s * 0.6, s)
+    cloud.position.set(
+      Math.sin(i * 4.7) * 25 + 25,
+      12 + Math.sin(i * 2.3) * 3,
+      Math.cos(i * 3.1) * 20 + 20
+    )
+    cloud.rotation.y = Math.sin(i * 5.1) * Math.PI
+    // Make clouds semi-transparent white
+    cloud.traverse(child => {
+      if (child.isMesh) {
+        child.material = new THREE.MeshStandardMaterial({
+          color: 0xffffff,
+          transparent: true,
+          opacity: 0.7,
+          roughness: 1.0,
+        })
+      }
+    })
+    scene.add(cloud)
+    clouds.push(cloud)
+  }
+  return clouds
+}
+
 // ==================== BUILD FULL SCENE ====================
-export function buildScene(scene, map, zones) {
+export async function buildScene(scene, map, zones) {
+  // Build synchronous elements first (terrain appears immediately)
   const { water } = buildTerrain(scene, map)
   buildGrassBlades(scene, map)
-  buildTrees(scene, map)
-  buildMountains(scene, map)
   buildFlowers(scene, map)
   buildFences(scene, map)
-  buildRocks(scene, map)
-  const buildings = buildBuildings(scene, zones)
   const particles = createParticles(scene)
 
   // Zone labels
@@ -625,5 +777,14 @@ export function buildScene(scene, map, zones) {
     return label
   })
 
-  return { water, buildings, labels, particles }
+  // Load GLTF models in parallel
+  const [buildings, , , , clouds] = await Promise.all([
+    buildBuildings(scene, zones),
+    buildTrees(scene, map),
+    buildMountains(scene, map),
+    buildRocks(scene, map),
+    buildClouds(scene),
+  ])
+
+  return { water, buildings, labels, particles, clouds }
 }
