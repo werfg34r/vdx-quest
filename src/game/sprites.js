@@ -284,9 +284,25 @@ export function drawSpriteTile(ctx, atlas, tileType, px, py, tick) {
     case 6: // FLOWER
       blitTile(ctx, img, pickCoord(tc.flower, px, py), px, py)
       break
-    case 7: // BRIDGE
+    case 7: // BRIDGE (wooden planks over water)
       drawBase(ctx, img, 'water', px, py)
-      blitTile(ctx, img, tc.bridge, px, py)
+      // Draw wooden planks procedurally for a clear bridge
+      ctx.fillStyle = '#8B6E4E'
+      ctx.fillRect(Math.floor(px) + 1, Math.floor(py), 14, 16)
+      ctx.fillStyle = '#A0825E'
+      ctx.fillRect(Math.floor(px) + 2, Math.floor(py) + 1, 12, 3)
+      ctx.fillRect(Math.floor(px) + 2, Math.floor(py) + 5, 12, 3)
+      ctx.fillRect(Math.floor(px) + 2, Math.floor(py) + 9, 12, 3)
+      ctx.fillRect(Math.floor(px) + 2, Math.floor(py) + 13, 12, 3)
+      // Plank gaps
+      ctx.fillStyle = '#6B5030'
+      ctx.fillRect(Math.floor(px) + 1, Math.floor(py) + 4, 14, 1)
+      ctx.fillRect(Math.floor(px) + 1, Math.floor(py) + 8, 14, 1)
+      ctx.fillRect(Math.floor(px) + 1, Math.floor(py) + 12, 14, 1)
+      // Side rails
+      ctx.fillStyle = '#5B3E1E'
+      ctx.fillRect(Math.floor(px), Math.floor(py), 2, 16)
+      ctx.fillRect(Math.floor(px) + 14, Math.floor(py), 2, 16)
       break
     case 8: // FENCE
       drawBase(ctx, img, 'grass', px, py)
@@ -329,13 +345,13 @@ export function drawPlayerSprite(ctx, atlas, direction, frame, px, py) {
 export function drawNPCSprite(ctx, atlas, spriteType, px, py, tick, direction) {
   const charDef = NPC_CHARS[spriteType]
   if (!charDef) {
-    drawPlayerSprite(ctx, atlas, direction || 'down', 0, px, py)
+    drawPlayerSprite(ctx, atlas, direction || 'down', 1, px, py)
     return
   }
 
   const img = atlas.character
-  // NPCs stand still (frame 0 only) - no walk animation
-  const frameIdx = 0
+  // NPCs use frame 1 (standing/neutral pose), with subtle idle sway
+  const frameIdx = 1
 
   const sx = (charDef.startCol + frameIdx) * S
   const dirOffset = DIR_ROWS[direction || 'down'] || 0

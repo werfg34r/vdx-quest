@@ -31,9 +31,11 @@ const INTRO_TEXTS = [
 export default function RPGCanvas({ onOpenZone }) {
   const canvasRef = useRef(null)
   const gameRef = useRef(null)
-  const { weekProgress } = useGameState()
+  const { weekProgress, questProgress } = useGameState()
   const wpRef = useRef(weekProgress)
+  const qpRef = useRef(questProgress)
   useEffect(() => { wpRef.current = weekProgress }, [weekProgress])
+  useEffect(() => { qpRef.current = questProgress }, [questProgress])
 
   const [promptText, setPromptText] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -85,6 +87,9 @@ export default function RPGCanvas({ onOpenZone }) {
       interior: null,
       interiorZone: null,
       savedPos: null,
+      // Guardian
+      guardianActive: false,
+      guardianDismissed: false,
       // Dialog
       dialog: null,
       intro: true,
@@ -131,8 +136,30 @@ export default function RPGCanvas({ onOpenZone }) {
       game.transitionCallback = callback
     }
 
-    // Enter a building
+    // Enter a building (with quest locking check)
     function enterBuilding(zone) {
+      // Check if this house requires a previous quest to be completed
+      if (zone.requiredQuest) {
+        const qp = qpRef.current
+        if (!qp[zone.requiredQuest]) {
+          // Find the name of the required zone
+          const reqZone = ZONES.find(z => z.questId === zone.requiredQuest)
+          const reqName = reqZone ? reqZone.name : 'la maison precedente'
+          game.dialog = {
+            speaker: '',
+            lines: [
+              'Cette maison est encore verrouillee.',
+              `Tu dois d'abord completer la mission de "${reqName}".`,
+              'Termine l\'epreuve precedente, puis reviens ici.',
+            ],
+            lineIdx: 0,
+            charIdx: 0,
+          }
+          setShowDialog(true)
+          return
+        }
+      }
+
       startTransition('in', () => {
         // Save overworld position
         game.savedPos = { px: game.px, py: game.py, direction: game.direction }
@@ -146,6 +173,9 @@ export default function RPGCanvas({ onOpenZone }) {
         game.direction = 'up'
         game.moving = false
         game.ox = 0; game.oy = 0
+        // Reset guardian state
+        game.guardianActive = false
+        game.guardianDismissed = false
         game.scene = 'transition'
         game.transitionDir = 'out'
         game.transitionFrame = 0
@@ -226,6 +256,14 @@ export default function RPGCanvas({ onOpenZone }) {
                 const wid = zone.weekId || zone.id
                 if (wp[wid]?.unlocked) {
                   onOpenZone(wid)
+                  // After opening quest dialog, check if quest will be completed
+                  // Guardian activates when player returns from quest dialog
+                  setTimeout(() => {
+                    const qp = qpRef.current
+                    if (zone.questId && qp[zone.questId] && !game.guardianDismissed) {
+                      game.guardianActive = true
+                    }
+                  }, 500)
                 } else {
                   game.dialog = {
                     speaker: '', lines: ['Cette epreuve est encore verrouillee.'],
@@ -238,8 +276,35 @@ export default function RPGCanvas({ onOpenZone }) {
             }
           }
         }
-        // Check if at door mat (exit)
+
+        // Check if at door mat — guardian blocks exit if active
         if (im[py]?.[px] === IT.DOOR_MAT) {
+          if (game.guardianActive && !game.guardianDismissed && zone.guardian) {
+            // Guardian blocks the exit — must talk first
+            game.dialog = {
+              speaker: zone.guardian.name,
+              lines: zone.guardian.dialog,
+              lineIdx: 0,
+              charIdx: 0,
+            }
+            setShowDialog(true)
+            game.guardianDismissed = true
+            return
+          }
+          // Check if quest just completed but guardian not yet shown
+          const qp = qpRef.current
+          if (zone.questId && qp[zone.questId] && !game.guardianDismissed && zone.guardian) {
+            game.guardianActive = true
+            game.dialog = {
+              speaker: zone.guardian.name,
+              lines: zone.guardian.dialog,
+              lineIdx: 0,
+              charIdx: 0,
+            }
+            setShowDialog(true)
+            game.guardianDismissed = true
+            return
+          }
           exitBuilding()
         }
         return
@@ -316,9 +381,18 @@ export default function RPGCanvas({ onOpenZone }) {
 
           if (dx || dy) {
             const ntx = game.px + dx, nty = game.py + dy
-            const canMoveHere = game.scene === 'interior'
-              ? canMoveInterior(game.interior.map, ntx, nty, game.interiorZone?.interiorNpcs)
-              : canMove(map, ntx, nty)
+            let canMoveHere
+            if (game.scene === 'interior') {
+              canMoveHere = canMoveInterior(game.interior.map, ntx, nty, game.interiorZone?.interiorNpcs)
+              // Guardian blocks the door exit tile
+              if (canMoveHere && game.guardianActive && !game.guardianDismissed && game.interiorZone?.guardian) {
+                const gx = game.interior.spawnX
+                const gy = game.interior.height - 2
+                if (ntx === gx && nty === gy) canMoveHere = false
+              }
+            } else {
+              canMoveHere = canMove(map, ntx, nty)
+            }
             if (canMoveHere) {
               game.tx = ntx
               game.ty = nty
@@ -335,7 +409,9 @@ export default function RPGCanvas({ onOpenZone }) {
           const zone = getAdjacentZone(game.px, game.py)
           const npc = getAdjacentNPC(game.px, game.py)
           if (zone) {
-            setPromptText('[ ESPACE ] Entrer')
+            const qpNow = qpRef.current
+            const isLocked = zone.requiredQuest && !qpNow[zone.requiredQuest]
+            setPromptText(isLocked ? '[ ESPACE ] Verrouillee' : '[ ESPACE ] Entrer')
           } else if (npc) {
             setPromptText('[ ESPACE ] Parler')
           } else {
@@ -355,7 +431,11 @@ export default function RPGCanvas({ onOpenZone }) {
             }
           }
           if (im[game.py]?.[game.px] === IT.DOOR_MAT) {
-            setPromptText('[ ESPACE ] Sortir')
+            if (game.guardianActive && !game.guardianDismissed && game.interiorZone?.guardian) {
+              setPromptText('[ ESPACE ] Parler au Gardien')
+            } else {
+              setPromptText('[ ESPACE ] Sortir')
+            }
           } else if (intNpc) {
             setPromptText('[ ESPACE ] Parler')
           } else if (nearAltar) {
@@ -363,6 +443,15 @@ export default function RPGCanvas({ onOpenZone }) {
           } else {
             setPromptText(null)
           }
+        }
+      }
+
+      // Check if quest just completed inside a house — activate guardian
+      if (game.scene === 'interior' && game.interiorZone && !game.guardianActive && !game.guardianDismissed) {
+        const qp = qpRef.current
+        const zone = game.interiorZone
+        if (zone.questId && qp[zone.questId] && zone.guardian) {
+          game.guardianActive = true
         }
       }
 
@@ -552,10 +641,16 @@ export default function RPGCanvas({ onOpenZone }) {
 
       // Labels
       const wp = wpRef.current
+      const qp = qpRef.current
       for (const zone of ZONES) {
         if (zone.houseX >= startCol - 3 && zone.houseX <= endCol + 3 && zone.houseY >= startRow - 3 && zone.houseY <= endRow + 3) {
           const wid = zone.weekId || zone.id
-          drawZoneLabel(ctx, zone, zone.houseX * TILE * SCALE, zone.houseY * TILE * SCALE, wp[wid]?.unlocked, wp[wid]?.completed)
+          // A zone is unlocked if the week is unlocked AND the required quest is done (or no requirement)
+          const weekUnlocked = wp[wid]?.unlocked
+          const questUnlocked = !zone.requiredQuest || qp[zone.requiredQuest]
+          const isUnlocked = weekUnlocked && questUnlocked
+          const isCompleted = zone.questId ? qp[zone.questId] : wp[wid]?.completed
+          drawZoneLabel(ctx, zone, zone.houseX * TILE * SCALE, zone.houseY * TILE * SCALE, isUnlocked, isCompleted)
         }
       }
       for (const npc of NPCS) {
@@ -617,6 +712,13 @@ export default function RPGCanvas({ onOpenZone }) {
         }
       }
 
+      // Draw guardian NPC at door if active
+      if (game.guardianActive && !game.guardianDismissed && zone.guardian) {
+        const gx = interior.spawnX
+        const gy = interior.height - 2
+        drawNPCSprite(ctx, atlas, zone.guardian.sprite, gx * TILE, gy * TILE, game.tick, 'up')
+      }
+
       // Draw player
       const pDrawX = game.px * TILE + game.ox / SCALE
       const pDrawY = game.py * TILE + game.oy / SCALE
@@ -651,6 +753,32 @@ export default function RPGCanvas({ onOpenZone }) {
           ctx.font = '8px monospace'
           ctx.fillText(npc.name, npx + TILE * SCALE / 2, nameY + 9)
         }
+      }
+
+      // Guardian name label
+      if (game.guardianActive && !game.guardianDismissed && zone.guardian) {
+        const gx = interior.spawnX * TILE * SCALE
+        const gy = (interior.height - 2) * TILE * SCALE
+        const bob = Math.sin(game.tick * 0.06) * 2
+
+        // Exclamation mark
+        ctx.fillStyle = '#FFD700'
+        ctx.font = 'bold 12px sans-serif'
+        ctx.textAlign = 'center'
+        ctx.fillText('!', gx + TILE * SCALE / 2, gy - 6 + bob)
+
+        // Name
+        const gname = zone.guardian.name
+        const gnameW = gname.length * 5 + 12
+        const gnameX = gx + TILE * SCALE / 2 - gnameW / 2
+        const gnameY = gy - 20 + bob
+        ctx.fillStyle = 'rgba(5,5,15,0.85)'
+        ctx.beginPath()
+        ctx.roundRect(gnameX, gnameY, gnameW, 12, 3)
+        ctx.fill()
+        ctx.fillStyle = '#FFD700'
+        ctx.font = 'bold 8px monospace'
+        ctx.fillText(gname, gx + TILE * SCALE / 2, gnameY + 9)
       }
 
       // Zone name header

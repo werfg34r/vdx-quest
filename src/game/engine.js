@@ -27,8 +27,21 @@ const SOLID = new Set([
 
 // Semaine 1 village: 3 missions (zones) — each house = 1 action non negociable
 const ZONES = [
-  { id: 1, weekId: 1, houseX: 6, houseY: 5, name: 'Cabane de la Verite', region: 1,
+  { id: 1, weekId: 1, questId: 'w1q1', requiredQuest: null,
+    houseX: 6, houseY: 5, name: 'Cabane de la Verite', region: 1,
     desc: 'Ecrire noir sur blanc : ta raison profonde.',
+    guardian: {
+      sprite: 'old', name: 'Gardien Alain',
+      dialog: [
+        'Felicitations, aventurier !',
+        'Tu as ecrit ta verite. Ce texte, c\'est ton ancre.',
+        'Quand le doute arrivera — et il arrivera — relis ce que tu as ecrit.',
+        'Voici ton Badge de Verite. +100 XP. Tu peux maintenant acceder a la prochaine maison.',
+        'Continue. La clarte est un muscle. Plus tu ecris, plus tu vois.',
+      ],
+      badge: 'Badge de Verite',
+      xpReward: 100,
+    },
     interiorNpcs: [
       { id: 'h1_sage', x: 4, y: 7, sprite: 'sage', name: 'Maeva', dialog: [
         'Bienvenue dans la Cabane de la Verite.',
@@ -53,8 +66,21 @@ const ZONES = [
       ]},
     ],
   },
-  { id: 2, weekId: 1, houseX: 24, houseY: 5, name: 'Tour de l\'Inventaire', region: 1,
+  { id: 2, weekId: 1, questId: 'w1q2', requiredQuest: 'w1q1',
+    houseX: 24, houseY: 5, name: 'Tour de l\'Inventaire', region: 1,
     desc: 'Inventaire honnete : ce que tu sais faire.',
+    guardian: {
+      sprite: 'trader', name: 'Gardien Selma',
+      dialog: [
+        'Bravo ! Tu as fait l\'inventaire de tes competences.',
+        'Tu sais maintenant ce que tu SAIS faire. Pas ce que tu imagines.',
+        'Cette lucidite, c\'est ton arme. Elle te protege du syndrome de l\'imposteur.',
+        'Voici ton Badge d\'Inventaire. +100 XP.',
+        'La prochaine maison t\'attend. Le silence va te reveler des choses.',
+      ],
+      badge: 'Badge d\'Inventaire',
+      xpReward: 100,
+    },
     interiorNpcs: [
       { id: 'h2_sage', x: 4, y: 7, sprite: 'sage', name: 'Raphael', dialog: [
         'Bienvenue dans la Tour de l\'Inventaire.',
@@ -78,8 +104,22 @@ const ZONES = [
       ]},
     ],
   },
-  { id: 3, weekId: 1, houseX: 6, houseY: 17, name: 'Forge du Silence', region: 1,
+  { id: 3, weekId: 1, questId: 'w1q3', requiredQuest: 'w1q2',
+    houseX: 6, houseY: 17, name: 'Forge du Silence', region: 1,
     desc: '7 jours sans surconsommation.',
+    guardian: {
+      sprite: 'sage', name: 'Gardien Yuki',
+      dialog: [
+        'Impressionnant. 7 jours de silence. Tu as recupere ton attention.',
+        'La plupart des gens ne tiennent pas 24 heures. Toi, tu as tenu une semaine.',
+        'Ton esprit est plus clair maintenant. Tu peux sentir la difference.',
+        'Voici ton Badge du Silence. +100 XP.',
+        'La Semaine 1 est terminee. Tu as prouve que tu peux agir.',
+        'Prepare-toi pour la suite : choisir un probleme reel a resoudre.',
+      ],
+      badge: 'Badge du Silence',
+      xpReward: 100,
+    },
     interiorNpcs: [
       { id: 'h3_sage', x: 4, y: 7, sprite: 'sage', name: 'Eliane', dialog: [
         'Bienvenue dans la Forge du Silence.',
@@ -285,9 +325,14 @@ function generateMap() {
     if (wy < ROWS - 2) map[wy][wx] = T.WATER
   }
 
-  // Bridge over stream
-  map[19][29] = T.BRIDGE
-  if (map[19][30] === T.WATER) map[19][30] = T.BRIDGE
+  // Bridge over stream (3 tiles wide for a real bridge feel)
+  for (let bx = 28; bx <= 31; bx++) {
+    if (map[19][bx] === T.WATER || map[19][bx] === T.SAND) map[19][bx] = T.BRIDGE
+    if (map[18][bx] === T.WATER || map[18][bx] === T.SAND) map[18][bx] = T.BRIDGE
+  }
+  // Fences as bridge railings
+  map[17][28] = T.FENCE; map[17][31] = T.FENCE
+  map[20][28] = T.FENCE; map[20][31] = T.FENCE
 
   // Sand shores around all water
   for (let y = 2; y < ROWS - 2; y++) {
