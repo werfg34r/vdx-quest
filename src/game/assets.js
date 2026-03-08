@@ -1,63 +1,82 @@
-// Asset loader for Sunnyside World
+// ═══════════════════════════════════════════════════════
+// ASSET LOADER
+// ═══════════════════════════════════════════════════════
 import spriteMeta from '../data/sprite_meta.json';
 import { NPCS } from './constants.js';
 
 const images = {};
 let loaded = false;
 
-// Core tilesets
 const CORE_ASSETS = {
   tileset: '/assets/spr_tileset_sunnysideworld_16px.png',
   forest:  '/assets/spr_tileset_sunnysideworld_forest_32px.png',
 };
 
-// Sprites needed at startup (not ALL 482!)
 function getRequiredSprites() {
   const needed = new Set();
 
   // Player sprites
-  needed.add('spr_idle');
-  needed.add('spr_walking');
-  needed.add('spr_run');
-  needed.add('spr_axe');
-  needed.add('spr_attack');
-  needed.add('spr_casting');
-  needed.add('spr_carry');
-  needed.add('spr_dig');
-  needed.add('spr_doing');
+  const playerSprites = [
+    'spr_idle', 'spr_walking', 'spr_run', 'spr_axe', 'spr_attack',
+    'spr_casting', 'spr_carry', 'spr_dig', 'spr_doing', 'spr_mining',
+    'spr_watering', 'spr_hurt', 'spr_death',
+  ];
+  for (const s of playerSprites) needed.add(s);
 
-  // NPC sprites (idle + walking for each hairstyle)
+  // NPC sprites
   for (const npc of NPCS) {
     needed.add(`${npc.hair}_idle_strip9`);
     needed.add(`${npc.hair}_walk_strip8`);
     if (npc.expression) needed.add(npc.expression);
   }
 
-  // Items
-  needed.add('wood');
-  needed.add('rock');
-  needed.add('fish');
-  needed.add('egg');
-  needed.add('milk');
-  needed.add('seeds_generic');
-  needed.add('axe');
-  needed.add('hammer');
-  needed.add('sword');
+  // Skeleton enemy
+  const skelSprites = [
+    'skeleton_idle_strip6', 'skeleton_walk_strip8', 'skeleton_attack_strip7',
+    'skeleton_hurt_strip7', 'skeleton_death_strip10',
+  ];
+  for (const s of skelSprites) needed.add(s);
 
-  // UI elements
-  needed.add('happiness_01');
-  needed.add('happiness_03');
+  // Items & tools
+  const items = [
+    'wood', 'rock', 'fish', 'egg', 'milk', 'seeds_generic',
+    'axe', 'hammer', 'sword', 'pickaxe', 'shovel', 'rod', 'water', 'plant',
+  ];
+  for (const s of items) needed.add(s);
 
-  // Decorations that are placed in room_assets.json
-  // These are loaded from sprite_meta keys that exist
+  // Crops (all stages)
+  const crops = ['wheat', 'beetroot', 'carrot', 'pumpkin', 'cabbage', 'sunflower', 'potato'];
+  for (const crop of crops) {
+    for (let i = 0; i <= 5; i++) needed.add(`${crop}_0${i}`);
+  }
+
+  // Soil
+  needed.add('soil_00'); needed.add('soil_01'); needed.add('soil_03'); needed.add('soil_04');
+
+  // Health/stamina bars
+  for (let i = 0; i <= 6; i++) needed.add(`greenbar_0${i}`);
+  for (let i = 0; i <= 5; i++) needed.add(`bluebar_0${i}`);
+
+  // UI
+  needed.add('happiness_01'); needed.add('happiness_03');
+
+  // Expression icons
+  const exprs = [
+    'expression_alerted', 'expression_attack', 'expression_chat',
+    'expression_love', 'expression_stress', 'expression_working',
+    'expression_confused',
+  ];
+  for (const e of exprs) needed.add(e);
+
+  // Decoration sprites placed in room
   const roomSprites = Object.keys(spriteMeta).filter(k =>
-    k.startsWith('spr_deco_') || k.startsWith('chimneysmoke_') ||
-    k.startsWith('npc') || k.startsWith('expression_') ||
-    k.startsWith('skeleton_') ||
-    ['beetroot_00', 'cabbage_05', 'cauliflower_05', 'kale_05',
-     'parsnip_03', 'pumpkin_05'].includes(k)
+    k.startsWith('spr_deco_') || k.startsWith('chimneysmoke_')
   );
   for (const s of roomSprites) needed.add(s);
+
+  // Dust VFX
+  needed.add('dust_general_strip8');
+  needed.add('leaves_hit');
 
   return [...needed].filter(name => name in spriteMeta);
 }
@@ -67,7 +86,6 @@ export function loadAssets() {
 
   const promises = [];
 
-  // Load core tilesets
   for (const [key, src] of Object.entries(CORE_ASSETS)) {
     promises.push(new Promise((resolve) => {
       const img = new Image();
@@ -77,7 +95,6 @@ export function loadAssets() {
     }));
   }
 
-  // Load required sprite PNGs
   const required = getRequiredSprites();
   for (const name of required) {
     promises.push(new Promise((resolve) => {
@@ -90,17 +107,9 @@ export function loadAssets() {
 
   return Promise.all(promises).then(() => {
     loaded = true;
-    console.log(`Loaded ${Object.keys(images).length} images (${required.length} sprites)`);
+    console.log(`Loaded ${Object.keys(images).length} assets`);
     return images;
   });
-}
-
-// Lazy load a sprite on demand
-export function lazyLoad(name) {
-  if (images[name] || !(name in spriteMeta)) return;
-  const img = new Image();
-  img.onload = () => { images[name] = img; };
-  img.src = `/assets/sprites/${name}.png`;
 }
 
 export function getImg(key) {
