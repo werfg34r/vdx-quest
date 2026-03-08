@@ -7,25 +7,12 @@ import {
 } from './maps.js';
 
 // ════════════════════════════════════════════════════════
-// Serene Village tileset mapping (304x720, 16px grid = 19 cols x 45 rows)
+// Sunny Side World tileset (1024x1024, 16px grid = 64 cols x 64 rows)
+// - Grass: top-left (0,0)
+// - Bridges: left side rows 3-4
+// - Trees: top-right area + individual sprites
 //
-// Looking at the tileset image carefully:
-// Row 0: grass(0,0) grass-dirt transitions
-// Row 1: more terrain transitions, dirt
-// Row 2: path/cobblestone, sand
-// Row 3: water, pool edges
-// Row 4: bridges, water
-// Row 5: terrain variations
-// Rows 6-8: platform/elevated terrain with bench
-// Rows 9-10: bushes, hedges, flowers, deco objects
-// Rows 11-12: rocks, signs, lamp posts, mailbox, trees start
-// Rows 13-14: large trees (32x32 each)
-// Rows 15-18: more trees, items
-// Rows 19-24: RED houses (small & large variants)
-// Rows 25-30: GREEN houses
-// Rows 31-36: GREEN variant houses
-// Rows 37-42: BLUE houses
-// Rows 43-44: remaining blue house parts
+// Serene Village tileset (304x720, 16px) - used for houses
 // ════════════════════════════════════════════════════════
 
 // Draw a tile from the village tileset
@@ -38,9 +25,9 @@ function vTile(ctx, sx, sy, dx, dy, tw = 1, th = 1) {
   );
 }
 
-// Draw tile from outdoors tileset (960x800, 16px = 60 cols x 50 rows)
-function oTile(ctx, sx, sy, dx, dy, tw = 1, th = 1) {
-  const img = getImg('outdoors');
+// Draw tile from Sunny Side World tileset (1024x1024, 16px = 64 cols x 64 rows)
+function sTile(ctx, sx, sy, dx, dy, tw = 1, th = 1) {
+  const img = getImg('sunnyside');
   if (!img) return;
   ctx.drawImage(img,
     sx * TILE, sy * TILE, TILE * tw, TILE * th,
@@ -49,16 +36,9 @@ function oTile(ctx, sx, sy, dx, dy, tw = 1, th = 1) {
 }
 
 // ── GRASS ──
-// Outdoors tileset rows 6-7 have grass tiles
-// Row 6 col 0 = solid green grass, col 1 = slight variation
+// Sunny Side World tileset: grass at top-left (0,0)
 function drawGrass(ctx, x, y, col, row) {
-  // Use the outdoors tileset grass at row 6 (y=96px area)
-  const v = (col * 7 + row * 13) % 6;
-  if (v === 0) {
-    oTile(ctx, 1, 6, x, y); // grass variant
-  } else {
-    oTile(ctx, 0, 6, x, y); // main grass
-  }
+  sTile(ctx, 0, 0, x, y);
 }
 
 // ── WATER ──
@@ -81,13 +61,12 @@ function drawWater(ctx, x, y, col, row, frame) {
 
 // ── WATER EDGE ──
 function drawWaterEdge(ctx, x, y, col, row, frame) {
-  // Draw grass base then water with shore blend
   drawGrass(ctx, x, y, col, row);
-  // Semi-transparent water overlay on right side
-  ctx.fillStyle = 'rgba(60, 140, 200, 0.6)';
-  ctx.fillRect(x + RS * 0.3, y, RS * 0.7, RS);
-  ctx.fillStyle = 'rgba(60, 140, 200, 0.3)';
-  ctx.fillRect(x + RS * 0.15, y, RS * 0.15, RS);
+  // Shore blend toward water
+  ctx.fillStyle = 'rgba(60, 140, 200, 0.5)';
+  ctx.fillRect(x + RS * 0.4, y, RS * 0.6, RS);
+  ctx.fillStyle = 'rgba(60, 140, 200, 0.25)';
+  ctx.fillRect(x + RS * 0.2, y, RS * 0.2, RS);
 }
 
 // ── PATH / DIRT ──
@@ -103,21 +82,30 @@ function drawPath(ctx, x, y, col, row) {
 }
 
 // ── TREE ──
-// Outdoors tileset: round Pokemon-style trees at top
-// Each tree is 2x2 tiles (32x32px) starting at (0,0)
-// Row 0-1, cols 0-1: green round tree
-// Row 0-1, cols 2-3: another green tree
-// Row 3-4: second row of trees
-function drawTree(ctx, x, y) {
-  // Draw a 2x2 round tree from the outdoors tileset
-  // Source: 32x32 pixels from (0,0) in the tileset
-  // Rendered: 2 tiles wide x 2 tiles tall, centered on this tile
-  const img = getImg('outdoors');
+// spr_deco_tree_01_strip4.png = 128x34, 4 frames of 32x34 each (round tree)
+// spr_deco_tree_02_strip4.png = 112x43, 4 frames of 28x43 each (pine tree)
+const TREE_ROUND_FW = 32;  // frame width
+const TREE_ROUND_FH = 34;  // frame height
+const TREE_PINE_FW = 28;
+const TREE_PINE_FH = 43;
+
+function drawTree(ctx, x, y, col, row) {
+  // Use the round tree sprite (frame 0)
+  const img = getImg('treeRound');
   if (img) {
+    // Scale: 2x native size → 64x68 (fills 1 tile width, slightly taller)
+    const dw = TREE_ROUND_FW * SCALE / 2;  // 64px = RS
+    const dh = TREE_ROUND_FH * SCALE / 2;  // 68px
     ctx.drawImage(img,
-      0, 0, 32, 32,                           // source: 2x2 tiles from top-left
-      x - RS * 0.5, y - RS * 0.5, RS * 2, RS * 2  // dest: centered, overlapping neighbors
+      0, 0, TREE_ROUND_FW, TREE_ROUND_FH,  // frame 0
+      x, y - (dh - RS), dw, dh  // bottom-aligned to tile
     );
+  } else {
+    // Fallback: simple green circle
+    ctx.fillStyle = '#2d7a2d';
+    ctx.beginPath(); ctx.arc(x + RS / 2, y + RS * 0.35, RS * 0.4, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#5a3018';
+    ctx.fillRect(x + RS * 0.4, y + RS * 0.6, RS * 0.2, RS * 0.4);
   }
 }
 
@@ -151,11 +139,23 @@ function drawFlower(ctx, x, y, col, row) {
 }
 
 // ── BRIDGE ──
-// Village tileset: bridge/pier area at rows 3-5
+// Sunny Side World tileset: wooden bridge planks at left side, around rows 3-4
 function drawBridge(ctx, x, y) {
-  // Try to use the village tileset bridge tile
-  // The bridge planks appear around (5, 3) area
-  vTile(ctx, 5, 4, x, y);
+  // Use Sunny Side World bridge plank tile
+  const img = getImg('sunnyside');
+  if (img) {
+    // Bridge plank tiles at row 3, cols 0-3 area in the tileset
+    sTile(ctx, 1, 3, x, y);
+  } else {
+    // Fallback: simple wooden planks
+    ctx.fillStyle = '#a0784c';
+    ctx.fillRect(x, y, RS, RS);
+    ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+    ctx.lineWidth = 1;
+    for (let py = 4; py < RS; py += 10) {
+      ctx.beginPath(); ctx.moveTo(x + 2, y + py); ctx.lineTo(x + RS - 2, y + py); ctx.stroke();
+    }
+  }
 }
 
 // ── HOUSE (using pre-rendered house images) ──
@@ -307,7 +307,7 @@ export function renderVillage(ctx, canvas, player, frame) {
   for (let row = sr; row < er; row++) {
     for (let col = sc; col < ec; col++) {
       if (villageMap[row]?.[col] === T) {
-        drawTree(ctx, col * RS - camX, row * RS - camY);
+        drawTree(ctx, col * RS - camX, row * RS - camY, col, row);
       }
     }
   }
