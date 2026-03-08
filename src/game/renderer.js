@@ -7,112 +7,144 @@ import {
 } from './maps.js';
 
 // ════════════════════════════════════════════════════════
-// Sunny Side World tileset (1024x1024, 16px grid = 64 cols x 64 rows)
-// - Grass: top-left (0,0)
-// - Bridges: left side rows 3-4
-// - Trees: top-right area + individual sprites
+// TILE COORDINATE MAP (from GameMaker source analysis)
 //
-// Serene Village tileset (304x720, 16px) - used for houses
+// Sunny Side World tileset (1024x1024, 16px grid = 64 cols x 64 rows)
+// Tile IDs: id = row * 64 + col
+//
+// Land (grass) autotile:  tiles 193-200, 257-264  (rows 3-4, cols 1-8)
+//   → Center fill (pure grass) = tile 193 = (col 1, row 3)
+//
+// Path 01 (dirt) autotile: tiles 449-456, 513-519  (row 7, cols 1-8)
+//   → Center fill (dirt path)  = tile 449 = (col 1, row 7)
+//
+// Path 02 (wood) autotile: tiles 460-467, 524-530  (row 7, cols 12-19)
+//   → Center fill (wood plank) = tile 460 = (col 12, row 7)
+//
+// River autotile: tiles 470-477, 534-540  (row 7, cols 22-29)
+//   → Center fill (water)      = tile 470 = (col 22, row 7)
+//
+// Forest tileset (320x576, 32px grid = 10 cols x 18 rows)
+//   → Autotile center fill = tile 11 = (col 1, row 1)
+//
+// Tree sprites: spr_deco_tree_01_strip4.png (128x34, 4 frames of 32x34)
+//               spr_deco_tree_02_strip4.png (112x43, 4 frames of 28x43)
+//
+// Indoor tileset (960x496, 16px grid = 60 cols x 31 rows)
+//   → Wood floors at top-left, furniture at right side
 // ════════════════════════════════════════════════════════
 
-// Draw a tile from the village tileset
-function vTile(ctx, sx, sy, dx, dy, tw = 1, th = 1) {
-  const img = getImg('village');
-  if (!img) return;
-  ctx.drawImage(img,
-    sx * TILE, sy * TILE, TILE * tw, TILE * th,
-    dx, dy, RS * tw, RS * th
-  );
-}
-
-// Draw tile from Sunny Side World tileset (1024x1024, 16px = 64 cols x 64 rows)
+// Draw a tile from the Sunny Side World tileset (16px grid)
 function sTile(ctx, sx, sy, dx, dy, tw = 1, th = 1) {
   const img = getImg('sunnyside');
-  if (!img) return;
+  if (!img) return false;
   ctx.drawImage(img,
     sx * TILE, sy * TILE, TILE * tw, TILE * th,
     dx, dy, RS * tw, RS * th
   );
+  return true;
+}
+
+// Draw a tile from the forest tileset (32px grid)
+function fTile(ctx, sx, sy, dx, dy, tw = 1, th = 1) {
+  const img = getImg('forest');
+  if (!img) return false;
+  const TS = 32;
+  ctx.drawImage(img,
+    sx * TS, sy * TS, TS * tw, TS * th,
+    dx, dy, RS * tw, RS * th
+  );
+  return true;
+}
+
+// Draw a tile from the indoor tileset (16px grid)
+function iTile(ctx, sx, sy, dx, dy, tw = 1, th = 1) {
+  const img = getImg('indoor');
+  if (!img) return false;
+  ctx.drawImage(img,
+    sx * TILE, sy * TILE, TILE * tw, TILE * th,
+    dx, dy, RS * tw, RS * th
+  );
+  return true;
+}
+
+// Draw a tile from the village tileset (16px grid, for houses)
+function vTile(ctx, sx, sy, dx, dy, tw = 1, th = 1) {
+  const img = getImg('village');
+  if (!img) return false;
+  ctx.drawImage(img,
+    sx * TILE, sy * TILE, TILE * tw, TILE * th,
+    dx, dy, RS * tw, RS * th
+  );
+  return true;
 }
 
 // ── GRASS ──
-// Sunny Side World tileset: grass at top-left (0,0)
-function drawGrass(ctx, x, y, col, row) {
-  sTile(ctx, 0, 0, x, y);
+// Tile 193 = (col 1, row 3) = Land autotile center fill = pure grass
+function drawGrass(ctx, x, y) {
+  sTile(ctx, 1, 3, x, y);
 }
 
 // ── WATER ──
-function drawWater(ctx, x, y, col, row, frame) {
-  // Water tiles in Serene Village - around row 3-4, col 4-6 area
-  // Use animated water strip if available
+// Tile 470 = (col 22, row 7) = River autotile center fill
+function drawWater(ctx, x, y, frame) {
   const waterImg = getImg('water');
   if (waterImg) {
-    // water_anim.png is 224x16 = 14 frames of 16x16
+    // water_anim.png = 224x16 = 14 frames of 16x16
     const animFrame = Math.floor(frame / 10) % 14;
     ctx.drawImage(waterImg,
       animFrame * TILE, 0, TILE, TILE,
       x, y, RS, RS
     );
   } else {
-    // Fallback: use tileset water
-    vTile(ctx, 4, 3, x, y);
+    sTile(ctx, 22, 7, x, y);
   }
 }
 
 // ── WATER EDGE ──
-function drawWaterEdge(ctx, x, y, col, row, frame) {
-  drawGrass(ctx, x, y, col, row);
-  // Shore blend toward water
-  ctx.fillStyle = 'rgba(60, 140, 200, 0.5)';
-  ctx.fillRect(x + RS * 0.4, y, RS * 0.6, RS);
-  ctx.fillStyle = 'rgba(60, 140, 200, 0.25)';
-  ctx.fillRect(x + RS * 0.2, y, RS * 0.2, RS);
+// Use Land autotile edge tiles for grass-water transition
+// Tile 196 = (col 4, row 3) = right edge grass
+function drawWaterEdge(ctx, x, y) {
+  // Right-side land edge tile from Land autotile
+  if (!sTile(ctx, 4, 3, x, y)) {
+    drawGrass(ctx, x, y);
+    ctx.fillStyle = 'rgba(60, 140, 200, 0.4)';
+    ctx.fillRect(x + RS * 0.5, y, RS * 0.5, RS);
+  }
 }
 
 // ── PATH / DIRT ──
-function drawPath(ctx, x, y, col, row) {
-  // Draw a simple dirt path
-  ctx.fillStyle = '#c4a96e';
-  ctx.fillRect(x, y, RS, RS);
-  // Subtle texture
-  ctx.fillStyle = 'rgba(0,0,0,0.04)';
-  const seed = (col * 31 + row * 17) % 5;
-  ctx.fillRect(x + seed * 6, y + 4, 8, 4);
-  ctx.fillRect(x + 12 + seed * 3, y + RS - 8, 6, 3);
+// Tile 449 = (col 1, row 7) = Path 01 autotile center fill = dirt path
+function drawPath(ctx, x, y) {
+  sTile(ctx, 1, 7, x, y);
 }
 
 // ── TREE ──
-// spr_deco_tree_01_strip4.png = 128x34, 4 frames of 32x34 each (round tree)
-// spr_deco_tree_02_strip4.png = 112x43, 4 frames of 28x43 each (pine tree)
-const TREE_ROUND_FW = 32;  // frame width
-const TREE_ROUND_FH = 34;  // frame height
-const TREE_PINE_FW = 28;
-const TREE_PINE_FH = 43;
+// spr_deco_tree_01_strip4.png = 128x34, 4 frames of 32x34 each
+const TREE_FW = 32;
+const TREE_FH = 34;
 
-function drawTree(ctx, x, y, col, row) {
-  // Use the round tree sprite (frame 0)
+function drawTree(ctx, x, y) {
   const img = getImg('treeRound');
   if (img) {
-    // Scale: 2x native size → 64x68 (fills 1 tile width, slightly taller)
-    const dw = TREE_ROUND_FW * SCALE / 2;  // 64px = RS
-    const dh = TREE_ROUND_FH * SCALE / 2;  // 68px
+    // Draw at 2x native = 64x68, bottom-aligned to tile
+    const dw = RS;
+    const dh = Math.round(TREE_FH * (RS / TREE_FW));
     ctx.drawImage(img,
-      0, 0, TREE_ROUND_FW, TREE_ROUND_FH,  // frame 0
-      x, y - (dh - RS), dw, dh  // bottom-aligned to tile
+      0, 0, TREE_FW, TREE_FH,
+      x, y - (dh - RS), dw, dh
     );
   } else {
-    // Fallback: simple green circle
-    ctx.fillStyle = '#2d7a2d';
-    ctx.beginPath(); ctx.arc(x + RS / 2, y + RS * 0.35, RS * 0.4, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#5a3018';
-    ctx.fillRect(x + RS * 0.4, y + RS * 0.6, RS * 0.2, RS * 0.4);
+    // Fallback: use forest tileset center tile
+    fTile(ctx, 1, 1, x, y);
   }
 }
 
 // ── ROCK ──
-function drawRock(ctx, x, y, col, row) {
-  drawGrass(ctx, x, y, col, row);
-  // Draw a small rock on grass
+// Use a rock from the Sunnyside tileset (right side, items area)
+function drawRock(ctx, x, y) {
+  drawGrass(ctx, x, y);
+  // Small rock overlay
   ctx.fillStyle = '#8a8a7a';
   ctx.beginPath();
   ctx.ellipse(x + RS / 2, y + RS * 0.6, RS * 0.3, RS * 0.2, 0, 0, Math.PI * 2);
@@ -125,8 +157,7 @@ function drawRock(ctx, x, y, col, row) {
 
 // ── FLOWER ──
 function drawFlower(ctx, x, y, col, row) {
-  drawGrass(ctx, x, y, col, row);
-  // Small pixel flowers on grass
+  drawGrass(ctx, x, y);
   const colors = ['#e74c3c', '#f1c40f', '#e8e0ff', '#ff69b4'];
   const seed = (col * 7 + row * 11) % 4;
   ctx.fillStyle = colors[seed];
@@ -139,55 +170,31 @@ function drawFlower(ctx, x, y, col, row) {
 }
 
 // ── BRIDGE ──
-// Sunny Side World tileset: wooden bridge planks at left side, around rows 3-4
+// Tile 460 = (col 12, row 7) = Path 02 autotile center fill = wooden planks
 function drawBridge(ctx, x, y) {
-  // Use Sunny Side World bridge plank tile
-  const img = getImg('sunnyside');
-  if (img) {
-    // Bridge plank tiles at row 3, cols 0-3 area in the tileset
-    sTile(ctx, 1, 3, x, y);
-  } else {
-    // Fallback: simple wooden planks
-    ctx.fillStyle = '#a0784c';
-    ctx.fillRect(x, y, RS, RS);
-    ctx.strokeStyle = 'rgba(0,0,0,0.15)';
-    ctx.lineWidth = 1;
-    for (let py = 4; py < RS; py += 10) {
-      ctx.beginPath(); ctx.moveTo(x + 2, y + py); ctx.lineTo(x + RS - 2, y + py); ctx.stroke();
-    }
-  }
+  // Draw water underneath first
+  drawWater(ctx, x, y, 0);
+  // Wooden plank overlay from Path 02
+  sTile(ctx, 12, 7, x, y);
 }
 
-// ── HOUSE (using pre-rendered house images) ──
+// ── HOUSE ──
 function drawHouse(ctx, house, camX, camY) {
   const dx = house.mapX * RS - camX;
   const dy = house.mapY * RS - camY;
-
   const houseW = house.w * RS;
   const houseH = house.h * RS;
 
-  // Choose the right house image based on style
   let img;
-  if (house.style === 'red') {
-    img = getImg('houseR');
-  } else if (house.style === 'green') {
-    img = getImg('houseG');
-  } else {
-    // Blue house - use tileset rows 37-42
-    img = getImg('houseG'); // fallback
-  }
+  if (house.style === 'red') img = getImg('houseR');
+  else if (house.style === 'green') img = getImg('houseG');
+  else img = getImg('houseG');
 
   if (img) {
-    // Scale the house image to fit the allocated tile space
     const scale = Math.min(houseW / img.width, houseH / img.height) * 1.1;
     const sw = img.width * scale;
     const sh = img.height * scale;
     ctx.drawImage(img, dx + (houseW - sw) / 2, dy + (houseH - sh), sw, sh);
-  } else {
-    // Fallback: draw from tileset
-    // Red houses start around row 19 in Serene Village tileset
-    const tileRow = house.style === 'red' ? 19 : house.style === 'green' ? 25 : 37;
-    vTile(ctx, 0, tileRow, dx, dy, 5, 4);
   }
 
   // House name label
@@ -209,21 +216,12 @@ function drawHouse(ctx, house, camX, camY) {
 // ════════════════════════════════════════════════════════
 // PLAYER SPRITE
 // player_char.png (Bea) is 256x256
-// Clean 4x4 grid: 4 columns x 4 rows of 64x64 each
-// Row 0: Walk DOWN  (4 frames)
-// Row 1: Walk LEFT  (4 frames)
-// Row 2: Walk RIGHT (4 frames)
-// Row 3: Walk UP    (4 frames)
+// 4x4 grid: 4 columns x 4 rows of 64x64 each
+// Row 0: Walk DOWN, Row 1: LEFT, Row 2: RIGHT, Row 3: UP
 // ════════════════════════════════════════════════════════
 
-const PF = 64; // frame size in spritesheet
-
-const PLAYER_ROW = {
-  down:  0,
-  left:  1,
-  right: 2,
-  up:    3,
-};
+const PF = 64;
+const PLAYER_ROW = { down: 0, left: 1, right: 2, up: 3 };
 
 export function renderPlayer(ctx, player, camX, camY, mode, intOffset, frame) {
   const img = getImg('player');
@@ -239,16 +237,15 @@ export function renderPlayer(ctx, player, camX, camY, mode, intOffset, frame) {
   }
 
   const row = PLAYER_ROW[player.direction] ?? 0;
-  // Frame 0 = idle, frames 1-3 = walk cycle
   const animFrame = player.moving ? (Math.floor(frame / 8) % 3) + 1 : 0;
 
-  // Draw shadow
+  // Shadow
   ctx.fillStyle = 'rgba(0,0,0,0.2)';
   ctx.beginPath();
   ctx.ellipse(sx + RS / 2, sy + RS - 2, RS * 0.3, RS * 0.08, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Draw player sprite - slightly taller than one tile for Pokemon feel
+  // Player sprite
   const drawH = RS * 1.25;
   ctx.drawImage(img,
     animFrame * PF, row * PF, PF, PF,
@@ -270,8 +267,8 @@ export function renderVillage(ctx, canvas, player, frame) {
     MAP_H * RS - canvas.height
   ));
 
-  // Clear with grass green
-  ctx.fillStyle = '#5a9e3e';
+  // Clear
+  ctx.fillStyle = '#4a8e2e';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   // Visible range
@@ -280,7 +277,7 @@ export function renderVillage(ctx, canvas, player, frame) {
   const ec = Math.min(MAP_W, Math.ceil((camX + canvas.width) / RS) + 1);
   const er = Math.min(MAP_H, Math.ceil((camY + canvas.height) / RS) + 1);
 
-  // Pass 1: Ground tiles (everything except trees)
+  // Pass 1: Ground tiles
   for (let row = sr; row < er; row++) {
     for (let col = sc; col < ec; col++) {
       const tile = villageMap[row]?.[col];
@@ -289,25 +286,25 @@ export function renderVillage(ctx, canvas, player, frame) {
       if (tile === undefined) continue;
 
       switch (tile) {
-        case _:  case G2: drawGrass(ctx, x, y, col, row); break;
-        case W:            drawWater(ctx, x, y, col, row, frame); break;
-        case WE:           drawWaterEdge(ctx, x, y, col, row, frame); break;
-        case P:            drawPath(ctx, x, y, col, row); break;
-        case T:            drawGrass(ctx, x, y, col, row); break; // grass under trees
+        case _:  case G2: drawGrass(ctx, x, y); break;
+        case W:            drawWater(ctx, x, y, frame); break;
+        case WE:           drawWaterEdge(ctx, x, y); break;
+        case P:            drawPath(ctx, x, y); break;
+        case T:            drawGrass(ctx, x, y); break;
         case FL:           drawFlower(ctx, x, y, col, row); break;
         case B:            drawBridge(ctx, x, y); break;
-        case R:            drawRock(ctx, x, y, col, row); break;
-        case H:            drawGrass(ctx, x, y, col, row); break;
-        default:           drawGrass(ctx, x, y, col, row);
+        case R:            drawRock(ctx, x, y); break;
+        case H:            drawGrass(ctx, x, y); break;
+        default:           drawGrass(ctx, x, y);
       }
     }
   }
 
-  // Pass 2: Trees (drawn on top so they overlap neighbors properly)
+  // Pass 2: Trees (overlap neighbors)
   for (let row = sr; row < er; row++) {
     for (let col = sc; col < ec; col++) {
       if (villageMap[row]?.[col] === T) {
-        drawTree(ctx, col * RS - camX, row * RS - camY, col, row);
+        drawTree(ctx, col * RS - camX, row * RS - camY);
       }
     }
   }
@@ -333,56 +330,36 @@ export function renderVillage(ctx, canvas, player, frame) {
 
 // ════════════════════════════════════════════════════════
 // INTERIOR RENDER
-// Uses IndoorTileset.png (960x496) for furniture and floors
+// Indoor tileset (960x496, 16px = 60 cols x 31 rows)
+// Top-left: floor tiles (wood, tile, carpet)
+// Right side: furniture (beds, tables, chairs, bookshelves, etc.)
 // ════════════════════════════════════════════════════════
 
-// Draw from indoor tileset
-function iTile(ctx, sx, sy, dx, dy, tw = 1, th = 1) {
-  const img = getImg('indoor');
-  if (!img) return;
-  ctx.drawImage(img,
-    sx * TILE, sy * TILE, TILE * tw, TILE * th,
-    dx, dy, RS * tw, RS * th
-  );
-}
-
-function drawWallTile(ctx, x, y, row, col, house) {
-  const colors = {
-    red:   { base: '#8a4040', light: '#a05050' },
-    green: { base: '#3a6a3a', light: '#4a8a4a' },
-    blue:  { base: '#3a5a8a', light: '#4a6fa5' },
-  };
-  const c = colors[house?.style] || colors.red;
-
-  ctx.fillStyle = row === 0 ? c.base : c.light;
-  ctx.fillRect(x, y, RS, RS);
-
-  // Stone pattern
-  ctx.strokeStyle = 'rgba(0,0,0,0.12)';
-  ctx.lineWidth = 1;
-  const off = row % 2 === 0 ? 0 : RS / 2;
-  for (let by = 0; by < RS; by += 14) {
-    for (let bx = -RS / 2; bx < RS; bx += RS / 2) {
-      ctx.strokeRect(x + bx + off + 1, y + by + 1, RS / 2 - 3, 12);
-    }
+// Wood floor from indoor tileset - tile at approximately (1, 2) area
+function drawWoodFloor(ctx, x, y, col, row) {
+  // Use indoor tileset wood floor
+  if (!iTile(ctx, 1, 2, x, y)) {
+    ctx.fillStyle = (col + row) % 2 === 0 ? '#c9a96e' : '#bfa060';
+    ctx.fillRect(x, y, RS, RS);
   }
 }
 
-function drawWoodFloor(ctx, x, y, col, row) {
-  // Try using indoor tileset floor tiles
-  // Floor tiles in IndoorTileset.png - top-left area around (0,0)
-  // The tileset shows: floors at very top-left, various wood patterns
-  ctx.fillStyle = (col + row) % 2 === 0 ? '#c9a96e' : '#bfa060';
-  ctx.fillRect(x, y, RS, RS);
-  ctx.strokeStyle = 'rgba(0,0,0,0.06)';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(x, y + RS / 3); ctx.lineTo(x + RS, y + RS / 3);
-  ctx.moveTo(x, y + RS * 2 / 3); ctx.lineTo(x + RS, y + RS * 2 / 3);
-  ctx.stroke();
+function drawWallTile(ctx, x, y, row, col, house) {
+  // Use indoor tileset wall - top rows have wall tiles
+  if (!iTile(ctx, 3, 0, x, y)) {
+    const colors = {
+      red:   { base: '#8a4040', light: '#a05050' },
+      green: { base: '#3a6a3a', light: '#4a8a4a' },
+      blue:  { base: '#3a5a8a', light: '#4a6fa5' },
+    };
+    const c = colors[house?.style] || colors.red;
+    ctx.fillStyle = row === 0 ? c.base : c.light;
+    ctx.fillRect(x, y, RS, RS);
+  }
 }
 
 function drawInteriorTable(ctx, x, y) {
+  drawWoodFloor(ctx, x, y, 0, 0);
   ctx.fillStyle = '#8B5E3C';
   ctx.fillRect(x + 3, y + 6, RS - 6, RS * 0.45);
   ctx.fillStyle = '#9e6e4c';
@@ -393,6 +370,7 @@ function drawInteriorTable(ctx, x, y) {
 }
 
 function drawInteriorChair(ctx, x, y) {
+  drawWoodFloor(ctx, x, y, 0, 0);
   ctx.fillStyle = '#7a5230';
   ctx.fillRect(x + 10, y + 2, RS - 20, 10);
   ctx.fillStyle = '#8a6240';
@@ -403,6 +381,7 @@ function drawInteriorChair(ctx, x, y) {
 }
 
 function drawInteriorBed(ctx, x, y, col) {
+  drawWoodFloor(ctx, x, y, 0, 0);
   ctx.fillStyle = '#6B3E1C';
   ctx.fillRect(x + 2, y + 4, RS - 4, RS - 6);
   ctx.fillStyle = '#f0ead0';
@@ -416,6 +395,7 @@ function drawInteriorBed(ctx, x, y, col) {
 }
 
 function drawInteriorBookshelf(ctx, x, y) {
+  drawWoodFloor(ctx, x, y, 0, 0);
   ctx.fillStyle = '#5a3018';
   ctx.fillRect(x + 2, y + 2, RS - 4, RS - 4);
   ctx.fillStyle = '#6B3E1C';
@@ -431,6 +411,7 @@ function drawInteriorBookshelf(ctx, x, y) {
 }
 
 function drawInteriorChest(ctx, x, y) {
+  drawWoodFloor(ctx, x, y, 0, 0);
   ctx.fillStyle = '#7a4e28';
   ctx.fillRect(x + 6, y + 12, RS - 12, RS - 16);
   ctx.fillStyle = '#8B5E3C';
@@ -455,6 +436,7 @@ function drawInteriorDoor(ctx, x, y) {
 }
 
 function drawInteriorRug(ctx, x, y, house) {
+  drawWoodFloor(ctx, x, y, 0, 0);
   const colors = { red: '#a05050', green: '#4a9a5a', blue: '#4a7fbf' };
   ctx.fillStyle = colors[house?.style] || '#8B4513';
   ctx.fillRect(x + 2, y + 2, RS - 4, RS - 4);
@@ -466,6 +448,7 @@ function drawInteriorRug(ctx, x, y, house) {
 }
 
 function drawInteriorFireplace(ctx, x, y, frame) {
+  drawWoodFloor(ctx, x, y, 0, 0);
   ctx.fillStyle = '#555';
   ctx.fillRect(x + 2, y + 2, RS - 4, RS - 4);
   ctx.fillStyle = '#333';
@@ -480,6 +463,7 @@ function drawInteriorFireplace(ctx, x, y, frame) {
 }
 
 function drawInteriorBarrel(ctx, x, y) {
+  drawWoodFloor(ctx, x, y, 0, 0);
   ctx.fillStyle = '#7a4e28';
   ctx.fillRect(x + 8, y + 4, RS - 16, RS - 8);
   ctx.fillStyle = '#8B5E3C';
@@ -490,6 +474,7 @@ function drawInteriorBarrel(ctx, x, y) {
 }
 
 function drawInteriorPlant(ctx, x, y) {
+  drawWoodFloor(ctx, x, y, 0, 0);
   ctx.fillStyle = '#8a6a4a';
   ctx.beginPath();
   ctx.moveTo(x + 14, y + 14); ctx.lineTo(x + RS - 14, y + 14);
@@ -517,16 +502,16 @@ export function renderInterior(ctx, canvas, player, house, frame) {
       switch (tile) {
         case IW: drawWallTile(ctx, x, y, row, col, house); break;
         case IF: drawWoodFloor(ctx, x, y, col, row); break;
-        case IT: drawWoodFloor(ctx, x, y, col, row); drawInteriorTable(ctx, x, y); break;
-        case IC: drawWoodFloor(ctx, x, y, col, row); drawInteriorChair(ctx, x, y); break;
-        case IB: drawWoodFloor(ctx, x, y, col, row); drawInteriorBed(ctx, x, y, col); break;
-        case IK: drawWoodFloor(ctx, x, y, col, row); drawInteriorBookshelf(ctx, x, y); break;
-        case IX: drawWoodFloor(ctx, x, y, col, row); drawInteriorChest(ctx, x, y); break;
+        case IT: drawInteriorTable(ctx, x, y); break;
+        case IC: drawInteriorChair(ctx, x, y); break;
+        case IB: drawInteriorBed(ctx, x, y, col); break;
+        case IK: drawInteriorBookshelf(ctx, x, y); break;
+        case IX: drawInteriorChest(ctx, x, y); break;
         case ID: drawInteriorDoor(ctx, x, y); break;
-        case IR: drawWoodFloor(ctx, x, y, col, row); drawInteriorRug(ctx, x, y, house); break;
-        case IP: drawWoodFloor(ctx, x, y, col, row); drawInteriorFireplace(ctx, x, y, frame); break;
-        case IL: drawWoodFloor(ctx, x, y, col, row); drawInteriorBarrel(ctx, x, y); break;
-        case IQ: drawWoodFloor(ctx, x, y, col, row); drawInteriorPlant(ctx, x, y); break;
+        case IR: drawInteriorRug(ctx, x, y, house); break;
+        case IP: drawInteriorFireplace(ctx, x, y, frame); break;
+        case IL: drawInteriorBarrel(ctx, x, y); break;
+        case IQ: drawInteriorPlant(ctx, x, y); break;
         default: drawWoodFloor(ctx, x, y, col, row);
       }
     }
