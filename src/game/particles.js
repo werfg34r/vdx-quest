@@ -133,21 +133,81 @@ export class ParticleSystem {
     this.addScreenEffect('flash', 15)
   }
 
-  // Spawn ambient floating particles (overworld)
-  spawnAmbient(viewX, viewY, viewW, viewH) {
+  // Spawn ambient floating particles (overworld) — changes based on time of day
+  spawnAmbient(viewX, viewY, viewW, viewH, timeOfDay) {
     if (this.particles.filter(p => p.type === 'ambient').length > 20) return
     const x = viewX + Math.random() * viewW
     const y = viewY + Math.random() * viewH
+
+    const isNight = timeOfDay === 'Nuit' || timeOfDay === 'Crepuscule'
+
+    if (isNight) {
+      // Fireflies at night — warm yellow/green pulsing dots
+      this.spawn({
+        x, y,
+        vx: (Math.random() - 0.5) * 0.2,
+        vy: (Math.random() - 0.5) * 0.15,
+        life: 150 + Math.random() * 150,
+        size: 1 + Math.random() * 1.5,
+        color: Math.random() > 0.4 ? '#ccff44' : '#ffee66',
+        type: 'ambient',
+        shrink: false,
+        alpha: 0.5 + Math.random() * 0.4,
+        glow: true,
+        glowSize: 5 + Math.random() * 3,
+      })
+    } else {
+      // Daytime — pollen/dust motes
+      this.spawn({
+        x, y,
+        vx: (Math.random() - 0.5) * 0.15,
+        vy: -0.05 - Math.random() * 0.1,
+        life: 120 + Math.random() * 120,
+        size: 0.8 + Math.random() * 1.2,
+        color: Math.random() > 0.5 ? '#c7b777' : '#88aa55',
+        type: 'ambient',
+        shrink: false,
+        alpha: 0.3 + Math.random() * 0.3,
+      })
+    }
+  }
+
+  // Chimney smoke rising from houses
+  spawnChimneySmoke(tileX, tileY, tileSize) {
+    const cx = tileX + tileSize * 1.5 // center of 3-wide house
+    const cy = tileY - 2
+
+    this.spawn({
+      x: cx + (Math.random() - 0.5) * 3,
+      y: cy,
+      vx: 0.1 + Math.random() * 0.15,
+      vy: -0.3 - Math.random() * 0.3,
+      life: 60 + Math.random() * 40,
+      size: 1.5 + Math.random() * 1.5,
+      color: '#888888',
+      type: 'smoke',
+      shrink: false,
+      alpha: 0.2 + Math.random() * 0.15,
+      gravity: -0.005,
+      friction: 0.99,
+    })
+  }
+
+  // Water shimmer sparkles on water tiles
+  spawnWaterShimmer(tileX, tileY, tileSize, lightLevel) {
+    if (lightLevel < 0.3) return // no shimmer at night
+    const x = tileX + Math.random() * tileSize
+    const y = tileY + Math.random() * tileSize
+
     this.spawn({
       x, y,
-      vx: (Math.random() - 0.5) * 0.15,
-      vy: -0.05 - Math.random() * 0.1,
-      life: 120 + Math.random() * 120,
-      size: 0.8 + Math.random() * 1.2,
-      color: Math.random() > 0.5 ? '#c7b777' : '#88aa55',
-      type: 'ambient',
+      vx: 0, vy: 0,
+      life: 8 + Math.random() * 8,
+      size: 0.5 + Math.random() * 0.5,
+      color: '#ffffff',
+      type: 'shimmer',
       shrink: false,
-      alpha: 0.3 + Math.random() * 0.3,
+      alpha: 0.4 * lightLevel,
     })
   }
 
@@ -363,6 +423,19 @@ export class ParticleSystem {
   }
 }
 
+// Vignette overlay — darkens edges for cinematic feel
+export function renderVignette(ctx, viewW, viewH, intensity) {
+  const cx = viewW / 2
+  const cy = viewH / 2
+  const radius = Math.max(viewW, viewH) * 0.7
+  const grad = ctx.createRadialGradient(cx, cy, radius * 0.4, cx, cy, radius)
+  grad.addColorStop(0, 'rgba(0,0,0,0)')
+  grad.addColorStop(0.7, 'rgba(0,0,0,0)')
+  grad.addColorStop(1, `rgba(0,0,0,${intensity || 0.4})`)
+  ctx.fillStyle = grad
+  ctx.fillRect(0, 0, viewW, viewH)
+}
+
 // Day/Night cycle system
 export class DayNightCycle {
   constructor() {
@@ -408,12 +481,23 @@ export class DayNightCycle {
     return { r: 10, g: 10, b: 40, a: 0.35 * nightProgress }
   }
 
-  // Render the day/night overlay
+  // Render the day/night overlay with gradient for sky feel
   render(ctx, viewW, viewH) {
     const overlay = this.getOverlay()
     if (overlay.a <= 0) return
+
+    // Base overlay
     ctx.fillStyle = `rgba(${overlay.r},${overlay.g},${overlay.b},${overlay.a})`
     ctx.fillRect(0, 0, viewW, viewH)
+
+    // Add subtle gradient (darker at top = sky, lighter at bottom = reflected light)
+    if (overlay.a > 0.1) {
+      const grad = ctx.createLinearGradient(0, 0, 0, viewH)
+      grad.addColorStop(0, `rgba(${overlay.r},${overlay.g},${overlay.b},${overlay.a * 0.3})`)
+      grad.addColorStop(1, 'rgba(0,0,0,0)')
+      ctx.fillStyle = grad
+      ctx.fillRect(0, 0, viewW, viewH)
+    }
   }
 
   // Get time label

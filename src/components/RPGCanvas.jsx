@@ -7,9 +7,10 @@ import {
 import {
   loadSpriteAtlas, drawSpriteTile, drawPlayerSprite, drawNPCSprite,
   drawInteriorTile, generateInterior, canMoveInterior, IT,
+  drawCharacterShadow, drawTreeShadow, drawHouseShadow, drawWindowGlow,
 } from '../game/sprites'
 import {
-  ParticleSystem, DayNightCycle, Minimap, MINIMAP_TILE_COLORS,
+  ParticleSystem, DayNightCycle, Minimap, MINIMAP_TILE_COLORS, renderVignette,
 } from '../game/particles'
 import { useGameState } from '../hooks/useGameState'
 
@@ -488,12 +489,20 @@ export default function RPGCanvas({ onOpenZone }) {
       if (game.scene === 'overworld' || game.scene === 'interior') {
         if (game.tick % 3 === 0) {
           if (game.scene === 'overworld') {
-            // Spawn ambient particles
+            const timePeriod = dayNight.getTimePeriod()
+            // Spawn ambient particles (fireflies at night, pollen by day)
             particles.spawnAmbient(
               game.camX / SCALE, game.camY / SCALE,
-              viewW / SCALE, viewH / SCALE
+              viewW / SCALE, viewH / SCALE,
+              timePeriod
             )
-            // Water ripples near visible water tiles
+            // Chimney smoke from houses
+            if (game.tick % 8 === 0) {
+              for (const zone of ZONES) {
+                particles.spawnChimneySmoke(zone.houseX * TILE, zone.houseY * TILE, TILE)
+              }
+            }
+            // Water ripples + shimmer near visible water tiles
             if (game.tick % 12 === 0) {
               const cx = Math.floor(game.px)
               const cy = Math.floor(game.py)
@@ -503,6 +512,9 @@ export default function RPGCanvas({ onOpenZone }) {
                   if (wx >= 0 && wy >= 0 && wx < COLS && wy < ROWS && map[wy][wx] === 2) {
                     if (Math.random() > 0.7) {
                       particles.spawnWaterRipple(wx * TILE, wy * TILE, TILE)
+                    }
+                    if (Math.random() > 0.85) {
+                      particles.spawnWaterShimmer(wx * TILE, wy * TILE, TILE, dayNight.getLightLevel())
                     }
                   }
                 }
@@ -560,6 +572,12 @@ export default function RPGCanvas({ onOpenZone }) {
         dayNight.render(ctx, viewW, viewH)
       }
 
+      // Vignette effect (cinematic darkened edges)
+      if (game.scene === 'overworld' || game.scene === 'interior') {
+        const vignetteIntensity = game.scene === 'interior' ? 0.5 : 0.3
+        renderVignette(ctx, viewW, viewH, vignetteIntensity)
+      }
+
       // Weather overlay
       if (game.scene === 'overworld') {
         particles.renderWeather(ctx, viewW, viewH)
@@ -568,12 +586,21 @@ export default function RPGCanvas({ onOpenZone }) {
       // Screen effects (flash etc)
       particles.renderScreenEffects(ctx, viewW, viewH)
 
-      // Transition overlay
+      // Transition overlay — iris wipe (Pokemon-style circle transition)
       if (game.scene === 'transition') {
         const progress = Math.min(game.transitionFrame / TRANSITION_FRAMES, 1)
-        const alpha = game.transitionDir === 'in' ? progress : (1 - progress)
-        ctx.fillStyle = `rgba(0,0,0,${alpha})`
-        ctx.fillRect(0, 0, viewW, viewH)
+        const t = game.transitionDir === 'in' ? progress : (1 - progress)
+        const maxRadius = Math.sqrt(viewW * viewW + viewH * viewH) / 2
+        const radius = maxRadius * (1 - t)
+
+        ctx.save()
+        ctx.fillStyle = '#000'
+        ctx.beginPath()
+        ctx.rect(0, 0, viewW, viewH)
+        // Cut out a circle
+        ctx.arc(viewW / 2, viewH / 2, Math.max(0, radius), 0, Math.PI * 2, true)
+        ctx.fill()
+        ctx.restore()
       }
 
       // Minimap (overworld only, not during dialog/intro)
@@ -607,16 +634,49 @@ export default function RPGCanvas({ onOpenZone }) {
       ctx.save()
       ctx.scale(SCALE, SCALE)
 
-      // Draw tiles
+      // Draw tiles + tree/house shadows in a second pass
       for (let row = startRow; row < endRow; row++) {
         for (let col = startCol; col < endCol; col++) {
           drawSpriteTile(ctx, atlas, map[row][col], col * TILE, row * TILE, game.tick)
         }
       }
 
-      // Draw NPCs (standing still, facing player direction when close)
+      // Draw tree shadows (subtle, directional)
+      for (let row = startRow; row < endRow; row++) {
+        for (let col = startCol; col < endCol; col++) {
+          if (map[row][col] === 3) { // TREE
+            drawTreeShadow(ctx, col * TILE, row * TILE)
+          }
+        }
+      }
+
+      // Draw house shadows
+      for (const zone of ZONES) {
+        if (zone.houseX >= startCol - 3 && zone.houseX <= endCol + 3 &&
+            zone.houseY >= startRow - 3 && zone.houseY <= endRow + 3) {
+          drawHouseShadow(ctx, zone.houseX, zone.houseY)
+        }
+      }
+
+      // Draw window glow at night
+      const nightIntensity = dayNight.getTimePeriod() === 'Nuit' ? 1 :
+                             dayNight.getTimePeriod() === 'Crepuscule' ? 0.5 : 0
+      if (nightIntensity > 0) {
+        for (const zone of ZONES) {
+          if (zone.houseX >= startCol - 3 && zone.houseX <= endCol + 3) {
+            // Window tile glow
+            drawWindowGlow(ctx, (zone.houseX + 1) * TILE, (zone.houseY + 2) * TILE, nightIntensity)
+            // Door glow
+            drawWindowGlow(ctx, (zone.houseX + 1) * TILE, (zone.houseY + 3) * TILE, nightIntensity * 0.4)
+          }
+        }
+      }
+
+      // Draw NPC shadows + NPCs (standing still, facing player direction when close)
       for (const npc of NPCS) {
         if (npc.x >= startCol - 1 && npc.x <= endCol + 1 && npc.y >= startRow - 1 && npc.y <= endRow + 1) {
+          // Shadow under NPC
+          drawCharacterShadow(ctx, npc.x * TILE, npc.y * TILE, 10, 0.2)
           // Face toward player if nearby
           let dir = 'down'
           const dx = game.px - npc.x
@@ -632,9 +692,10 @@ export default function RPGCanvas({ onOpenZone }) {
       // Overworld particles (in tile-space, scaled)
       particles.render(ctx, true)
 
-      // Draw player
+      // Draw player shadow + player
       const pDrawX = game.px * TILE + game.ox / SCALE
       const pDrawY = game.py * TILE + game.oy / SCALE
+      drawCharacterShadow(ctx, pDrawX, pDrawY, 12, 0.25)
       drawPlayerSprite(ctx, atlas, game.direction, game.walkFrame, pDrawX, pDrawY)
 
       ctx.restore() // undo scale
@@ -697,9 +758,10 @@ export default function RPGCanvas({ onOpenZone }) {
       // Interior particles (torch flames, altar glow - in tile space)
       particles.render(ctx, true)
 
-      // Draw interior NPCs
+      // Draw interior NPCs with shadows
       if (zone.interiorNpcs) {
         for (const npc of zone.interiorNpcs) {
+          drawCharacterShadow(ctx, npc.x * TILE, npc.y * TILE, 10, 0.2)
           // Face toward player if nearby
           let dir = 'down'
           const dx = game.px - npc.x
@@ -712,16 +774,18 @@ export default function RPGCanvas({ onOpenZone }) {
         }
       }
 
-      // Draw guardian NPC at door if active
+      // Draw guardian NPC at door if active (with shadow)
       if (game.guardianActive && !game.guardianDismissed && zone.guardian) {
         const gx = interior.spawnX
         const gy = interior.height - 2
+        drawCharacterShadow(ctx, gx * TILE, gy * TILE, 10, 0.2)
         drawNPCSprite(ctx, atlas, zone.guardian.sprite, gx * TILE, gy * TILE, game.tick, 'up')
       }
 
-      // Draw player
+      // Draw player with shadow
       const pDrawX = game.px * TILE + game.ox / SCALE
       const pDrawY = game.py * TILE + game.oy / SCALE
+      drawCharacterShadow(ctx, pDrawX, pDrawY, 12, 0.25)
       drawPlayerSprite(ctx, atlas, game.direction, game.walkFrame, pDrawX, pDrawY)
 
       ctx.restore() // undo scale
@@ -828,50 +892,62 @@ export default function RPGCanvas({ onOpenZone }) {
         </div>
       )}
 
-      {/* HUD */}
-      <div className="absolute top-3 left-3 bg-black/80 border border-[#c7b777]/50 rounded-lg px-4 py-2 z-10">
-        <div className="text-[#c7b777] font-mono text-sm font-bold">VDX N0
-          <span className="text-[#c7b777]/60 text-xs ml-2">Niv. 0</span>
-        </div>
-        <div className="flex items-center gap-2 mt-1">
-          <div className="w-20 h-2 bg-black/60 rounded-full border border-[#c7b777]/30">
-            <div className="h-full bg-[#c7b777] rounded-full" style={{ width: '30%' }} />
+      {/* HUD — polished RPG style */}
+      <div className="absolute top-3 left-3 z-10">
+        <div className="bg-gradient-to-b from-[#1a1a2e]/95 to-[#0a0a1a]/95 border border-[#c7b777]/60 rounded-lg px-4 py-2.5 shadow-lg shadow-black/50 backdrop-blur-sm">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#c7b777] to-[#a89a5e] flex items-center justify-center text-[#0a0a0f] text-xs font-bold shadow-inner">V</div>
+            <div>
+              <div className="text-[#c7b777] font-mono text-sm font-bold tracking-wide">VDX Quest
+                <span className="text-[#c7b777]/50 text-xs ml-1.5 font-normal">Niv.0</span>
+              </div>
+            </div>
           </div>
-          <span className="text-[#c7b777]/70 text-xs">300 XP</span>
+          <div className="flex items-center gap-2 mt-1.5">
+            <span className="text-[#c7b777]/60 text-xs font-mono">XP</span>
+            <div className="w-24 h-2.5 bg-black/60 rounded-full border border-[#c7b777]/20 overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-[#c7b777] to-[#e0d9a8] rounded-full transition-all duration-500 shadow-sm shadow-[#c7b777]/30" style={{ width: '30%' }} />
+            </div>
+            <span className="text-[#c7b777]/50 text-xs font-mono">300</span>
+          </div>
         </div>
       </div>
 
-      {/* Prompt */}
+      {/* Prompt — floating action indicator */}
       {promptText && !showDialog && !showIntro && (
-        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 bg-black/85 border-2 border-[#c7b777] rounded-xl px-6 py-2 z-20">
-          <span className="text-[#c7b777] font-mono font-bold text-sm">{promptText}</span>
-        </div>
-      )}
-
-      {/* Dialog */}
-      {showDialog && (
-        <div className="absolute bottom-4 left-4 right-4 max-w-2xl mx-auto z-30">
-          <div className="bg-[#0a0a19]/95 border-2 border-[#c7b777] rounded-xl p-5 backdrop-blur-sm">
-            <div className="bg-gradient-to-r from-[#c7b777] to-[#d4c888] text-[#0a0a0f] font-mono font-bold px-3 py-1 rounded-md inline-block -mt-9 mb-3 text-sm">
-              <span ref={dialogSpeakerRef}>...</span>
-            </div>
-            <p ref={dialogTextRef} className="text-white font-mono text-sm leading-relaxed min-h-[3em]" />
-            <div className="text-[#c7b777]/50 text-xs mt-2 text-right font-mono">ESPACE pour continuer</div>
+        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-20 animate-bounce">
+          <div className="bg-gradient-to-b from-[#1a1a2e]/95 to-[#0a0a1a]/95 border border-[#c7b777]/70 rounded-lg px-5 py-2 shadow-lg shadow-[#c7b777]/10 backdrop-blur-sm">
+            <span className="text-[#c7b777] font-mono font-bold text-sm">{promptText}</span>
           </div>
         </div>
       )}
 
-      {/* Intro */}
+      {/* Dialog — polished RPG dialog box */}
+      {showDialog && (
+        <div className="absolute bottom-4 left-4 right-4 max-w-2xl mx-auto z-30">
+          <div className="bg-gradient-to-b from-[#12122a]/97 to-[#0a0a1a]/97 border-2 border-[#c7b777]/80 rounded-xl p-5 backdrop-blur-sm shadow-2xl shadow-black/60">
+            <div className="bg-gradient-to-r from-[#c7b777] to-[#d4c888] text-[#0a0a0f] font-mono font-bold px-3 py-1 rounded-md inline-block -mt-9 mb-3 text-sm shadow-md shadow-[#c7b777]/30">
+              <span ref={dialogSpeakerRef}>...</span>
+            </div>
+            <p ref={dialogTextRef} className="text-white/90 font-mono text-sm leading-relaxed min-h-[3em]" />
+            <div className="text-[#c7b777]/40 text-xs mt-2 text-right font-mono animate-pulse">ESPACE ...</div>
+          </div>
+        </div>
+      )}
+
+      {/* Intro — cinematic title screen */}
       {showIntro && (
-        <div className="absolute inset-0 bg-black/75 flex flex-col items-center justify-center z-40">
-          <h1 className="text-[#c7b777] font-mono text-4xl font-bold mb-2 tracking-wider">VDX QUEST</h1>
-          <p className="text-[#a89a5e] font-mono text-sm mb-12">Vendeur d'Exception - Niveau 0</p>
-          <div className="bg-[#0a0a19]/95 border-2 border-[#c7b777] rounded-xl p-5 max-w-lg w-full mx-4 backdrop-blur-sm">
-            <div className="bg-gradient-to-r from-[#c7b777] to-[#d4c888] text-[#0a0a0f] font-mono font-bold px-3 py-1 rounded-md inline-block -mt-9 mb-3 text-sm">
+        <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-[#0a0a1a]/85 to-black/80 flex flex-col items-center justify-center z-40">
+          <div className="mb-1 text-[#c7b777]/30 font-mono text-xs tracking-[0.3em] uppercase">Bienvenue dans</div>
+          <h1 className="text-[#c7b777] font-mono text-5xl font-bold mb-1 tracking-wider drop-shadow-[0_0_20px_rgba(199,183,119,0.3)]">VDX QUEST</h1>
+          <div className="w-32 h-px bg-gradient-to-r from-transparent via-[#c7b777]/60 to-transparent mb-2" />
+          <p className="text-[#a89a5e]/80 font-mono text-sm mb-10 tracking-wide">Vendeur d'Exception - Niveau 0</p>
+          <div className="bg-gradient-to-b from-[#12122a]/97 to-[#0a0a1a]/97 border-2 border-[#c7b777]/80 rounded-xl p-5 max-w-lg w-full mx-4 backdrop-blur-sm shadow-2xl shadow-black/60">
+            <div className="bg-gradient-to-r from-[#c7b777] to-[#d4c888] text-[#0a0a0f] font-mono font-bold px-3 py-1 rounded-md inline-block -mt-9 mb-3 text-sm shadow-md shadow-[#c7b777]/30">
               VDX
             </div>
-            <p ref={introTextRef} className="text-white font-mono text-sm leading-relaxed min-h-[2em]" />
-            <div className="text-[#c7b777]/50 text-xs mt-3 text-right font-mono">ESPACE pour continuer</div>
+            <p ref={introTextRef} className="text-white/90 font-mono text-sm leading-relaxed min-h-[2em]" />
+            <div className="text-[#c7b777]/40 text-xs mt-3 text-right font-mono animate-pulse">ESPACE ...</div>
           </div>
         </div>
       )}
@@ -883,9 +959,9 @@ export default function RPGCanvas({ onOpenZone }) {
 }
 
 function MobileControls({ pressKey, onAction }) {
-  const btn = (key, label, extra) => (
+  const btn = (key, label) => (
     <button
-      className={`w-14 h-14 bg-black/70 border-2 border-[#c7b777]/50 rounded-xl text-[#c7b777] text-xl font-bold active:bg-[#c7b777]/30 select-none touch-none ${extra || ''}`}
+      className="w-14 h-14 bg-gradient-to-b from-[#1a1a2e]/90 to-[#0a0a1a]/90 border border-[#c7b777]/40 rounded-xl text-[#c7b777]/80 text-xl font-bold active:bg-[#c7b777]/20 active:border-[#c7b777]/70 select-none touch-none shadow-md shadow-black/30 transition-colors"
       onTouchStart={e => { e.preventDefault(); pressKey(key, true) }}
       onTouchEnd={e => { e.preventDefault(); pressKey(key, false) }}
       onMouseDown={() => pressKey(key, true)}
@@ -909,7 +985,7 @@ function MobileControls({ pressKey, onAction }) {
       </div>
       <div className="flex items-center pointer-events-auto">
         <button
-          className="w-16 h-16 bg-[#c7b777]/80 border-2 border-[#c7b777] rounded-full text-[#0a0a0f] text-sm font-bold active:bg-[#c7b777] select-none touch-none shadow-lg shadow-[#c7b777]/30"
+          className="w-16 h-16 bg-gradient-to-b from-[#c7b777] to-[#a89a5e] border-2 border-[#e0d9a8] rounded-full text-[#0a0a0f] text-sm font-bold active:from-[#e0d9a8] active:to-[#c7b777] select-none touch-none shadow-lg shadow-[#c7b777]/40 transition-all"
           onTouchStart={e => { e.preventDefault(); onAction() }}
           onClick={onAction}
         >A</button>

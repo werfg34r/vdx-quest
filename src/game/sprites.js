@@ -244,6 +244,62 @@ export function drawSpriteTile(ctx, atlas, tileType, px, py, tick) {
 const CHAR_DRAW = 22 // destination size in tile-space (22px = 66px on screen at SCALE=3)
 const CHAR_OFF = (CHAR_DRAW - S) / 2 // centering offset
 
+// Draw a blob shadow under a character
+export function drawCharacterShadow(ctx, px, py, width, alpha) {
+  const w = width || 12
+  const h = w * 0.4
+  const cx = Math.floor(px) + S / 2
+  const cy = Math.floor(py) + S - 1
+  ctx.save()
+  ctx.globalAlpha = alpha || 0.3
+  ctx.fillStyle = '#000'
+  ctx.beginPath()
+  ctx.ellipse(cx, cy, w / 2, h / 2, 0, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.restore()
+}
+
+// Draw tree shadow (directional, cast to the right)
+export function drawTreeShadow(ctx, px, py) {
+  ctx.save()
+  ctx.globalAlpha = 0.15
+  ctx.fillStyle = '#000'
+  ctx.beginPath()
+  ctx.ellipse(Math.floor(px) + S + 2, Math.floor(py) + S - 2, 6, 3, 0.3, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.restore()
+}
+
+// Draw house shadow (cast to the right and below)
+export function drawHouseShadow(ctx, houseX, houseY) {
+  const px = houseX * S
+  const py = houseY * S
+  ctx.save()
+  ctx.globalAlpha = 0.12
+  ctx.fillStyle = '#000'
+  // Shadow behind right side of house
+  ctx.fillRect(px + S * 3, py + S, 4, S * 3)
+  // Shadow below house
+  ctx.fillRect(px + 2, py + S * 4, S * 3 + 2, 3)
+  ctx.restore()
+}
+
+// Draw window glow for houses at night
+export function drawWindowGlow(ctx, px, py, intensity) {
+  if (intensity <= 0) return
+  ctx.save()
+  ctx.globalAlpha = intensity * 0.6
+  const cx = Math.floor(px) + S / 2
+  const cy = Math.floor(py) + S / 2
+  const grad = ctx.createRadialGradient(cx, cy, 1, cx, cy, S * 0.8)
+  grad.addColorStop(0, '#ffcc44')
+  grad.addColorStop(0.5, 'rgba(255,200,60,0.3)')
+  grad.addColorStop(1, 'rgba(255,200,60,0)')
+  ctx.fillStyle = grad
+  ctx.fillRect(px - 4, py - 4, S + 8, S + 8)
+  ctx.restore()
+}
+
 // Draw player (16x16 chibi sprite, cols 0-2 of character.png)
 export function drawPlayerSprite(ctx, atlas, direction, frame, px, py) {
   const img = atlas.character
@@ -283,30 +339,41 @@ export function drawNPCSprite(ctx, atlas, spriteType, px, py, tick, direction) {
 const INTERIOR_COLORS = {
   floor:     '#8B7355',
   floorDark: '#7A6548',
+  floorLight:'#9A8265',
   wall:      '#5C5040',
   wallTop:   '#6B5E4E',
+  wallHighlight: '#7A6E5E',
   carpet:    '#8B2252',
   carpetB:   '#A0284E',
+  carpetBorder: '#6B1A42',
   table:     '#6B4226',
   tableLeg:  '#5B3216',
+  tableHighlight: '#7B5236',
   chair:     '#8B6E4E',
+  chairHighlight: '#9B7E5E',
   shelf:     '#6B4226',
   shelfItem: '#C7B777',
   book1:     '#C0392B',
   book2:     '#2E86C1',
   book3:     '#27AE60',
+  book4:     '#8E44AD',
   barrel:    '#8B6848',
   barrelBand:'#555',
+  barrelHighlight: '#9B7858',
   bed:       '#C8B8A0',
   bedBlanket:'#2B6AAA',
+  bedBlanketHighlight: '#3B7ABB',
   torch:     '#FF8833',
   torchBase: '#555',
   chest:     '#DAA520',
   chestBand: '#8B6914',
+  chestHighlight: '#EAB530',
   altar:     '#C7B777',
   altarGlow: '#FFE0A0',
   pot:       '#AA7744',
+  potHighlight: '#BB8855',
   rug:       '#993333',
+  rugBorder: '#772222',
 }
 
 export function drawInteriorTile(ctx, tileType, px, py, tick) {
@@ -314,182 +381,423 @@ export function drawInteriorTile(ctx, tileType, px, py, tick) {
   const T = S
 
   switch (tileType) {
-    case 50: // FLOOR
+    case 50: { // FLOOR — wooden planks with grain
       ctx.fillStyle = IC.floor
       ctx.fillRect(px, py, T, T)
-      // Plank lines
+      // Plank lines with slight color variation
+      const h = tileHash(px, py)
+      ctx.fillStyle = h % 3 === 0 ? IC.floorLight : IC.floor
+      ctx.fillRect(px, py, T, T)
       ctx.strokeStyle = IC.floorDark
-      ctx.lineWidth = 0.3
+      ctx.lineWidth = 0.4
       ctx.beginPath()
       ctx.moveTo(px, py + 4); ctx.lineTo(px + T, py + 4)
       ctx.moveTo(px, py + 10); ctx.lineTo(px + T, py + 10)
       ctx.stroke()
+      // Wood grain dots
+      ctx.fillStyle = IC.floorDark
+      if (h % 5 === 0) ctx.fillRect(px + 3, py + 2, 1, 1)
+      if (h % 7 === 0) ctx.fillRect(px + 10, py + 7, 1, 1)
+      if (h % 11 === 0) ctx.fillRect(px + 6, py + 12, 1, 1)
+      // Subtle highlight on top edge of each plank
+      ctx.fillStyle = IC.floorLight
+      ctx.globalAlpha = 0.3
+      ctx.fillRect(px, py, T, 1)
+      ctx.fillRect(px, py + 5, T, 1)
+      ctx.fillRect(px, py + 11, T, 1)
+      ctx.globalAlpha = 1
       break
+    }
 
-    case 51: // WALL
+    case 51: { // WALL — stone blocks with mortar and depth
       ctx.fillStyle = IC.wall
       ctx.fillRect(px, py, T, T)
+      // Top section lighter (capstone)
       ctx.fillStyle = IC.wallTop
       ctx.fillRect(px, py, T, 6)
-      // Stone lines
+      // Highlight along very top
+      ctx.fillStyle = IC.wallHighlight
+      ctx.fillRect(px, py, T, 1)
+      // Stone block lines (mortar)
       ctx.strokeStyle = '#4A4035'
-      ctx.lineWidth = 0.3
+      ctx.lineWidth = 0.4
       ctx.beginPath()
-      ctx.moveTo(px + 8, py); ctx.lineTo(px + 8, py + 6)
-      ctx.moveTo(px + 4, py + 6); ctx.lineTo(px + 4, py + T)
-      ctx.moveTo(px + 12, py + 6); ctx.lineTo(px + 12, py + T)
+      // Horizontal mortar lines
+      ctx.moveTo(px, py + 6); ctx.lineTo(px + T, py + 6)
+      ctx.moveTo(px, py + 11); ctx.lineTo(px + T, py + 11)
+      // Vertical mortar lines (offset pattern like bricks)
+      ctx.moveTo(px + 5, py); ctx.lineTo(px + 5, py + 6)
+      ctx.moveTo(px + 11, py); ctx.lineTo(px + 11, py + 6)
+      ctx.moveTo(px + 3, py + 6); ctx.lineTo(px + 3, py + 11)
+      ctx.moveTo(px + 8, py + 6); ctx.lineTo(px + 8, py + 11)
+      ctx.moveTo(px + 13, py + 6); ctx.lineTo(px + 13, py + 11)
+      ctx.moveTo(px + 6, py + 11); ctx.lineTo(px + 6, py + T)
+      ctx.moveTo(px + 11, py + 11); ctx.lineTo(px + 11, py + T)
       ctx.stroke()
+      // Shadow at bottom
+      ctx.fillStyle = 'rgba(0,0,0,0.15)'
+      ctx.fillRect(px, py + T - 1, T, 1)
       break
+    }
 
-    case 52: // TABLE
+    case 52: { // TABLE — with shadow and wood grain
       ctx.fillStyle = IC.floor
       ctx.fillRect(px, py, T, T)
-      // Table top
-      ctx.fillStyle = IC.table
-      ctx.fillRect(px + 1, py + 3, 14, 10)
+      // Floor detail
+      ctx.strokeStyle = IC.floorDark; ctx.lineWidth = 0.3
+      ctx.beginPath(); ctx.moveTo(px, py + 4); ctx.lineTo(px + T, py + 4); ctx.stroke()
+      // Table shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.15)'
+      ctx.fillRect(px + 3, py + 13, 12, 2)
       // Legs
       ctx.fillStyle = IC.tableLeg
-      ctx.fillRect(px + 2, py + 12, 2, 3)
-      ctx.fillRect(px + 12, py + 12, 2, 3)
+      ctx.fillRect(px + 2, py + 11, 2, 4)
+      ctx.fillRect(px + 12, py + 11, 2, 4)
+      // Table top
+      ctx.fillStyle = IC.table
+      ctx.fillRect(px + 1, py + 3, 14, 9)
+      // Table top highlight
+      ctx.fillStyle = IC.tableHighlight
+      ctx.fillRect(px + 1, py + 3, 14, 2)
+      // Wood grain
+      ctx.strokeStyle = IC.tableLeg
+      ctx.lineWidth = 0.3
+      ctx.beginPath()
+      ctx.moveTo(px + 3, py + 6); ctx.lineTo(px + 13, py + 6)
+      ctx.moveTo(px + 3, py + 9); ctx.lineTo(px + 13, py + 9)
+      ctx.stroke()
       break
+    }
 
-    case 53: // CHAIR
+    case 53: { // CHAIR — with shadow and depth
       ctx.fillStyle = IC.floor
       ctx.fillRect(px, py, T, T)
-      ctx.fillStyle = IC.chair
-      ctx.fillRect(px + 3, py + 2, 10, 3) // back
-      ctx.fillRect(px + 4, py + 5, 8, 7)  // seat
-      ctx.fillRect(px + 4, py + 12, 2, 3) // legs
+      ctx.strokeStyle = IC.floorDark; ctx.lineWidth = 0.3
+      ctx.beginPath(); ctx.moveTo(px, py + 4); ctx.lineTo(px + T, py + 4); ctx.stroke()
+      // Shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.12)'
+      ctx.fillRect(px + 5, py + 13, 8, 2)
+      // Legs
+      ctx.fillStyle = IC.tableLeg
+      ctx.fillRect(px + 4, py + 12, 2, 3)
       ctx.fillRect(px + 10, py + 12, 2, 3)
+      // Seat
+      ctx.fillStyle = IC.chair
+      ctx.fillRect(px + 4, py + 5, 8, 7)
+      // Back
+      ctx.fillStyle = IC.chairHighlight
+      ctx.fillRect(px + 3, py + 2, 10, 3)
+      // Back detail (slats)
+      ctx.fillStyle = IC.chair
+      ctx.fillRect(px + 5, py + 2, 1, 3)
+      ctx.fillRect(px + 8, py + 2, 1, 3)
+      ctx.fillRect(px + 11, py + 2, 1, 3)
       break
+    }
 
-    case 54: // BOOKSHELF
+    case 54: { // BOOKSHELF — with more books and better detail
       ctx.fillStyle = IC.wall
       ctx.fillRect(px, py, T, T)
+      // Shelf body
       ctx.fillStyle = IC.shelf
       ctx.fillRect(px + 1, py + 1, 14, 14)
-      // Shelves
+      // Shelf highlight
+      ctx.fillStyle = IC.tableHighlight
+      ctx.fillRect(px + 1, py + 1, 14, 1)
+      // Shelf dividers
       ctx.fillStyle = IC.floorDark
       ctx.fillRect(px + 1, py + 5, 14, 1)
       ctx.fillRect(px + 1, py + 10, 14, 1)
-      // Books
-      ctx.fillStyle = IC.book1; ctx.fillRect(px + 2, py + 2, 3, 3)
-      ctx.fillStyle = IC.book2; ctx.fillRect(px + 6, py + 2, 3, 3)
-      ctx.fillStyle = IC.book3; ctx.fillRect(px + 10, py + 2, 3, 3)
-      ctx.fillStyle = IC.book2; ctx.fillRect(px + 2, py + 6, 4, 4)
-      ctx.fillStyle = IC.book1; ctx.fillRect(px + 7, py + 6, 3, 4)
-      ctx.fillStyle = IC.book3; ctx.fillRect(px + 3, py + 11, 3, 3)
-      ctx.fillStyle = IC.shelfItem; ctx.fillRect(px + 8, py + 11, 4, 3)
+      // Books (varied heights and colors)
+      const books = [IC.book1, IC.book2, IC.book3, IC.book4, IC.shelfItem]
+      // Top shelf
+      ctx.fillStyle = books[0]; ctx.fillRect(px + 2, py + 2, 2, 3)
+      ctx.fillStyle = books[1]; ctx.fillRect(px + 4, py + 3, 2, 2)
+      ctx.fillStyle = books[2]; ctx.fillRect(px + 7, py + 2, 3, 3)
+      ctx.fillStyle = books[3]; ctx.fillRect(px + 11, py + 2, 2, 3)
+      // Middle shelf
+      ctx.fillStyle = books[2]; ctx.fillRect(px + 2, py + 6, 3, 4)
+      ctx.fillStyle = books[0]; ctx.fillRect(px + 6, py + 7, 2, 3)
+      ctx.fillStyle = books[4]; ctx.fillRect(px + 9, py + 6, 2, 4)
+      ctx.fillStyle = books[1]; ctx.fillRect(px + 12, py + 7, 2, 3)
+      // Bottom shelf
+      ctx.fillStyle = books[3]; ctx.fillRect(px + 2, py + 11, 2, 3)
+      ctx.fillStyle = books[0]; ctx.fillRect(px + 5, py + 12, 3, 2)
+      ctx.fillStyle = IC.shelfItem; ctx.fillRect(px + 9, py + 11, 4, 3)
+      // Side shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.2)'
+      ctx.fillRect(px + 14, py + 1, 1, 14)
       break
+    }
 
-    case 55: // CARPET
+    case 55: { // CARPET — ornate with border pattern
       ctx.fillStyle = IC.floor
       ctx.fillRect(px, py, T, T)
+      // Carpet base
       ctx.fillStyle = IC.carpet
       ctx.fillRect(px + 1, py + 1, 14, 14)
+      // Inner border
+      ctx.fillStyle = IC.carpetBorder
+      ctx.fillRect(px + 1, py + 1, 14, 1)
+      ctx.fillRect(px + 1, py + 14, 14, 1)
+      ctx.fillRect(px + 1, py + 1, 1, 14)
+      ctx.fillRect(px + 14, py + 1, 1, 14)
+      // Inner area
       ctx.fillStyle = IC.carpetB
       ctx.fillRect(px + 3, py + 3, 10, 10)
-      // Pattern
+      // Ornate diamond pattern
       ctx.fillStyle = IC.carpet
-      ctx.fillRect(px + 6, py + 4, 4, 8)
-      ctx.fillRect(px + 4, py + 6, 8, 4)
+      ctx.fillRect(px + 7, py + 4, 2, 2)
+      ctx.fillRect(px + 6, py + 5, 4, 2)
+      ctx.fillRect(px + 5, py + 6, 6, 2)
+      ctx.fillRect(px + 6, py + 8, 4, 2)
+      ctx.fillRect(px + 7, py + 10, 2, 2)
+      // Gold thread accents
+      ctx.fillStyle = '#C7A755'
+      ctx.fillRect(px + 8, py + 7, 1, 1)
+      ctx.fillRect(px + 7, py + 8, 1, 1)
       break
+    }
 
-    case 56: // QUEST_ALTAR (glowing interaction point)
+    case 56: { // QUEST_ALTAR — glowing pedestal with magical aura
       ctx.fillStyle = IC.floor
       ctx.fillRect(px, py, T, T)
-      // Glow effect
+      // Pulsing glow aura
       const glow = 0.5 + Math.sin(tick * 0.08) * 0.3
-      ctx.fillStyle = `rgba(199,183,119,${glow * 0.3})`
-      ctx.fillRect(px - 2, py - 2, T + 4, T + 4)
-      // Pedestal
-      ctx.fillStyle = '#888'
-      ctx.fillRect(px + 2, py + 8, 12, 7)
+      const auraSize = 2 + Math.sin(tick * 0.06) * 1
+      ctx.save()
+      ctx.globalAlpha = glow * 0.25
+      ctx.fillStyle = '#FFE0A0'
+      ctx.beginPath()
+      ctx.arc(px + T / 2, py + T / 2, T * 0.7 + auraSize, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.restore()
+      // Floor glow circle
+      ctx.save()
+      ctx.globalAlpha = glow * 0.15
+      const floorGrad = ctx.createRadialGradient(px + T / 2, py + T - 2, 0, px + T / 2, py + T - 2, T * 0.8)
+      floorGrad.addColorStop(0, '#FFE0A0')
+      floorGrad.addColorStop(1, 'rgba(255,224,160,0)')
+      ctx.fillStyle = floorGrad
+      ctx.fillRect(px - 4, py, T + 8, T + 4)
+      ctx.restore()
+      // Pedestal base
+      ctx.fillStyle = '#777'
+      ctx.fillRect(px + 2, py + 10, 12, 5)
+      // Pedestal top
       ctx.fillStyle = '#999'
-      ctx.fillRect(px + 3, py + 4, 10, 6)
+      ctx.fillRect(px + 3, py + 5, 10, 6)
+      // Pedestal highlight
+      ctx.fillStyle = '#aaa'
+      ctx.fillRect(px + 3, py + 5, 10, 1)
       // Glowing book/scroll
       ctx.fillStyle = IC.altarGlow
       ctx.fillRect(px + 4, py + 2, 8, 5)
       ctx.fillStyle = IC.altar
       ctx.fillRect(px + 5, py + 3, 6, 3)
-      // Sparkle
-      if (Math.sin(tick * 0.1) > 0.3) {
-        ctx.fillStyle = '#fff'
-        ctx.fillRect(px + 7, py + 1, 2, 2)
-      }
+      // Page lines
+      ctx.strokeStyle = '#BBA866'
+      ctx.lineWidth = 0.3
+      ctx.beginPath()
+      ctx.moveTo(px + 6, py + 4); ctx.lineTo(px + 10, py + 4)
+      ctx.moveTo(px + 6, py + 5); ctx.lineTo(px + 10, py + 5)
+      ctx.stroke()
+      // Animated sparkles
+      const spark1 = Math.sin(tick * 0.12) > 0.3
+      const spark2 = Math.sin(tick * 0.12 + 2) > 0.3
+      const spark3 = Math.sin(tick * 0.12 + 4) > 0.3
+      ctx.fillStyle = '#fff'
+      if (spark1) ctx.fillRect(px + 3, py + 1, 1, 1)
+      if (spark2) ctx.fillRect(px + 11, py + 2, 1, 1)
+      if (spark3) ctx.fillRect(px + 7, py, 1, 1)
       break
+    }
 
-    case 57: // BARREL
+    case 57: { // BARREL — rounded with better bands and shadow
       ctx.fillStyle = IC.floor
       ctx.fillRect(px, py, T, T)
+      ctx.strokeStyle = IC.floorDark; ctx.lineWidth = 0.3
+      ctx.beginPath(); ctx.moveTo(px, py + 4); ctx.lineTo(px + T, py + 4); ctx.stroke()
+      // Shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.12)'
+      ctx.beginPath()
+      ctx.ellipse(px + 8, py + 14, 5, 2, 0, 0, Math.PI * 2)
+      ctx.fill()
+      // Barrel body
       ctx.fillStyle = IC.barrel
-      ctx.fillRect(px + 3, py + 2, 10, 12)
+      ctx.fillRect(px + 4, py + 2, 8, 12)
+      // Wider middle (barrel shape)
+      ctx.fillRect(px + 3, py + 5, 10, 6)
+      // Highlight
+      ctx.fillStyle = IC.barrelHighlight
+      ctx.fillRect(px + 4, py + 2, 3, 12)
+      // Metal bands
       ctx.fillStyle = IC.barrelBand
-      ctx.fillRect(px + 3, py + 5, 10, 1)
-      ctx.fillRect(px + 3, py + 10, 10, 1)
+      ctx.fillRect(px + 3, py + 4, 10, 1)
+      ctx.fillRect(px + 3, py + 8, 10, 1)
+      ctx.fillRect(px + 3, py + 12, 10, 1)
+      // Top rim
+      ctx.fillStyle = '#6A5838'
+      ctx.fillRect(px + 4, py + 2, 8, 1)
       break
+    }
 
-    case 58: // BED
+    case 58: { // BED — with shadow, pillow detail, blanket folds
       ctx.fillStyle = IC.floor
       ctx.fillRect(px, py, T, T)
+      ctx.strokeStyle = IC.floorDark; ctx.lineWidth = 0.3
+      ctx.beginPath(); ctx.moveTo(px, py + 4); ctx.lineTo(px + T, py + 4); ctx.stroke()
+      // Shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.1)'
+      ctx.fillRect(px + 2, py + 14, 12, 1)
       // Frame
       ctx.fillStyle = IC.table
       ctx.fillRect(px + 1, py + 1, 14, 14)
+      // Frame highlight
+      ctx.fillStyle = IC.tableHighlight
+      ctx.fillRect(px + 1, py + 1, 14, 1)
       // Pillow
       ctx.fillStyle = IC.bed
-      ctx.fillRect(px + 2, py + 2, 12, 4)
+      ctx.fillRect(px + 3, py + 2, 10, 4)
+      // Pillow highlight
+      ctx.fillStyle = '#D8C8B0'
+      ctx.fillRect(px + 4, py + 3, 4, 2)
       // Blanket
       ctx.fillStyle = IC.bedBlanket
       ctx.fillRect(px + 2, py + 6, 12, 8)
+      // Blanket highlight
+      ctx.fillStyle = IC.bedBlanketHighlight
+      ctx.fillRect(px + 2, py + 6, 12, 2)
+      // Blanket fold lines
+      ctx.strokeStyle = '#1B5A9A'
+      ctx.lineWidth = 0.4
+      ctx.beginPath()
+      ctx.moveTo(px + 4, py + 10); ctx.lineTo(px + 12, py + 10)
+      ctx.stroke()
       break
+    }
 
-    case 59: // DOOR_MAT (exit point)
+    case 59: { // DOOR_MAT — with welcome pattern and arrow
       ctx.fillStyle = IC.floor
       ctx.fillRect(px, py, T, T)
+      ctx.strokeStyle = IC.floorDark; ctx.lineWidth = 0.3
+      ctx.beginPath(); ctx.moveTo(px, py + 4); ctx.lineTo(px + T, py + 4); ctx.stroke()
+      // Mat border
+      ctx.fillStyle = IC.rugBorder
+      ctx.fillRect(px + 1, py + 3, 14, 10)
+      // Mat inner
       ctx.fillStyle = IC.rug
       ctx.fillRect(px + 2, py + 4, 12, 8)
+      // Inner pattern
       ctx.fillStyle = '#AA4444'
-      ctx.fillRect(px + 4, py + 6, 8, 4)
+      ctx.fillRect(px + 3, py + 5, 10, 6)
+      // Exit arrow
+      ctx.fillStyle = IC.rugBorder
+      ctx.fillRect(px + 7, py + 6, 2, 4)
+      ctx.fillRect(px + 5, py + 8, 6, 2)
       break
+    }
 
-    case 60: // TORCH_WALL
+    case 60: { // TORCH_WALL — with warm light pool
       ctx.fillStyle = IC.wall
       ctx.fillRect(px, py, T, T)
       ctx.fillStyle = IC.wallTop
       ctx.fillRect(px, py, T, 6)
+      // Highlight
+      ctx.fillStyle = IC.wallHighlight
+      ctx.fillRect(px, py, T, 1)
+      // Warm light pool on wall
+      ctx.save()
+      const lightPulse = 0.3 + Math.sin(tick * 0.1 + px) * 0.1
+      ctx.globalAlpha = lightPulse
+      const lightGrad = ctx.createRadialGradient(px + 8, py + 5, 0, px + 8, py + 5, 10)
+      lightGrad.addColorStop(0, '#FF882244')
+      lightGrad.addColorStop(1, 'rgba(255,136,34,0)')
+      ctx.fillStyle = lightGrad
+      ctx.fillRect(px - 4, py - 4, T + 8, T + 8)
+      ctx.restore()
       // Torch bracket
       ctx.fillStyle = IC.torchBase
       ctx.fillRect(px + 6, py + 7, 4, 6)
-      // Flame
-      const flicker = Math.sin(tick * 0.15 + px) * 0.5
-      ctx.fillStyle = IC.torch
+      ctx.fillStyle = '#666'
+      ctx.fillRect(px + 6, py + 7, 4, 1)
+      // Flame — animated with multiple colors
+      const flicker = Math.sin(tick * 0.15 + px) * 0.8
+      const flicker2 = Math.cos(tick * 0.2 + px) * 0.5
+      // Outer flame
+      ctx.fillStyle = '#FF4400'
       ctx.fillRect(px + 5 + flicker, py + 3, 6, 5)
-      ctx.fillStyle = '#FFCC00'
-      ctx.fillRect(px + 6, py + 4, 4, 3)
+      // Inner flame
+      ctx.fillStyle = IC.torch
+      ctx.fillRect(px + 6 + flicker2, py + 3, 4, 4)
+      // Core
+      ctx.fillStyle = '#FFDD44'
+      ctx.fillRect(px + 7, py + 4, 2, 2)
+      // Tip
+      ctx.fillStyle = '#FFEE88'
+      ctx.fillRect(px + 7 + flicker2 * 0.5, py + 2, 2, 2)
       break
+    }
 
-    case 61: // POT/VASE
+    case 61: { // POT/VASE — with shadow and highlight
       ctx.fillStyle = IC.floor
       ctx.fillRect(px, py, T, T)
+      ctx.strokeStyle = IC.floorDark; ctx.lineWidth = 0.3
+      ctx.beginPath(); ctx.moveTo(px, py + 4); ctx.lineTo(px + T, py + 4); ctx.stroke()
+      // Shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.12)'
+      ctx.beginPath()
+      ctx.ellipse(px + 8, py + 14, 4, 1.5, 0, 0, Math.PI * 2)
+      ctx.fill()
+      // Pot body
       ctx.fillStyle = IC.pot
       ctx.fillRect(px + 4, py + 6, 8, 8)
+      // Pot neck
       ctx.fillRect(px + 5, py + 4, 6, 3)
-      ctx.fillStyle = '#996633'
+      // Pot rim
+      ctx.fillStyle = '#BB8855'
+      ctx.fillRect(px + 4, py + 4, 8, 1)
+      // Highlight
+      ctx.fillStyle = IC.potHighlight
+      ctx.fillRect(px + 5, py + 6, 2, 6)
+      // Band
+      ctx.fillStyle = '#886633'
       ctx.fillRect(px + 4, py + 9, 8, 1)
       break
+    }
 
-    case 62: // CHEST
+    case 62: { // CHEST — with shadow, shine, and keyhole detail
       ctx.fillStyle = IC.floor
       ctx.fillRect(px, py, T, T)
+      ctx.strokeStyle = IC.floorDark; ctx.lineWidth = 0.3
+      ctx.beginPath(); ctx.moveTo(px, py + 4); ctx.lineTo(px + T, py + 4); ctx.stroke()
+      // Shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.15)'
+      ctx.fillRect(px + 3, py + 14, 11, 1)
+      // Chest body
       ctx.fillStyle = IC.chest
       ctx.fillRect(px + 2, py + 5, 12, 9)
+      // Highlight (top surface)
+      ctx.fillStyle = IC.chestHighlight
+      ctx.fillRect(px + 2, py + 5, 12, 2)
+      // Metal bands
       ctx.fillStyle = IC.chestBand
-      ctx.fillRect(px + 2, py + 8, 12, 2)
-      ctx.fillRect(px + 6, py + 5, 4, 9)
-      // Lock
+      ctx.fillRect(px + 2, py + 8, 12, 1)
+      ctx.fillRect(px + 2, py + 12, 12, 1)
+      ctx.fillRect(px + 7, py + 5, 2, 9)
+      // Corner studs
+      ctx.fillStyle = '#998800'
+      ctx.fillRect(px + 2, py + 5, 1, 1)
+      ctx.fillRect(px + 13, py + 5, 1, 1)
+      ctx.fillRect(px + 2, py + 13, 1, 1)
+      ctx.fillRect(px + 13, py + 13, 1, 1)
+      // Lock/keyhole
       ctx.fillStyle = '#FFD700'
-      ctx.fillRect(px + 7, py + 7, 2, 3)
+      ctx.fillRect(px + 7, py + 9, 2, 2)
+      ctx.fillStyle = '#CC9900'
+      ctx.fillRect(px + 7, py + 10, 2, 1)
       break
+    }
 
     default:
       ctx.fillStyle = IC.floor
