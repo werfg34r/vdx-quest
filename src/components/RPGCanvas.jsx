@@ -80,9 +80,9 @@ export default function RPGCanvas({ onOpenZone }) {
     // ==================== THREE.JS SETUP ====================
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false })
     renderer.setSize(mount.clientWidth, mount.clientHeight)
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5))
     renderer.shadowMap.enabled = true
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap
+    renderer.shadowMap.type = THREE.PCFShadowMap
     renderer.toneMapping = THREE.ACESFilmicToneMapping
     renderer.toneMappingExposure = 1.2
     mount.appendChild(renderer.domElement)
@@ -159,11 +159,11 @@ export default function RPGCanvas({ onOpenZone }) {
     const sun = new THREE.DirectionalLight(0xFFEECC, 1.0)
     sun.position.set(20, 30, 15)
     sun.castShadow = true
-    sun.shadow.mapSize.set(2048, 2048)
-    sun.shadow.camera.left = -20
-    sun.shadow.camera.right = 20
-    sun.shadow.camera.top = 20
-    sun.shadow.camera.bottom = -20
+    sun.shadow.mapSize.set(1024, 1024)
+    sun.shadow.camera.left = -15
+    sun.shadow.camera.right = 15
+    sun.shadow.camera.top = 15
+    sun.shadow.camera.bottom = -15
     sun.shadow.camera.near = 0.5
     sun.shadow.camera.far = 80
     sun.shadow.bias = -0.001
@@ -396,17 +396,6 @@ export default function RPGCanvas({ onOpenZone }) {
         excl.position.y = 2.0 + Math.sin(game.tick * 0.05 + i) * 0.08
       })
 
-      // Water animation
-      if (worldObjects.water) {
-        const posArr = worldObjects.water.geometry.attributes.position.array
-        for (let i = 1; i < posArr.length; i += 3) {
-          const x = posArr[i - 1]
-          const z = posArr[i + 1]
-          posArr[i] = -0.25 + Math.sin(game.tick * 0.03 + x * 0.5 + z * 0.3) * 0.04
-        }
-        worldObjects.water.geometry.attributes.position.needsUpdate = true
-      }
-
       // Camera follow
       camTarget.set(game.px, 0, game.pz)
       desiredPos.copy(camTarget).add(CAM_OFFSET)
@@ -417,15 +406,6 @@ export default function RPGCanvas({ onOpenZone }) {
       // Sun follows player for proper shadows
       sun.position.set(game.px + 15, 30, game.pz + 10)
       sun.target.position.set(game.px, 0, game.pz)
-
-      // Animate clouds (slow drift)
-      if (worldObjects.clouds) {
-        worldObjects.clouds.forEach((cloud, i) => {
-          cloud.position.x += 0.003 * (1 + i * 0.1)
-          if (cloud.position.x > 55) cloud.position.x = -5
-          cloud.position.y += Math.sin(game.tick * 0.005 + i) * 0.002
-        })
-      }
 
       // Animate particles
       if (worldObjects.particles) {
