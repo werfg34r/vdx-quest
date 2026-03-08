@@ -84,16 +84,25 @@ function drawWater(ctx, x, y, col, row, frame) {
 
 // ── WATER EDGE ──
 function drawWaterEdge(ctx, x, y, col, row, frame) {
-  drawWater(ctx, x, y, col, row, frame);
-  // Draw a shore/grass overlay on the left edge
-  ctx.fillStyle = 'rgba(90, 160, 60, 0.5)';
-  ctx.fillRect(x, y, 6, RS);
+  // Draw grass base then water with shore blend
+  drawGrass(ctx, x, y, col, row);
+  // Semi-transparent water overlay on right side
+  ctx.fillStyle = 'rgba(60, 140, 200, 0.6)';
+  ctx.fillRect(x + RS * 0.3, y, RS * 0.7, RS);
+  ctx.fillStyle = 'rgba(60, 140, 200, 0.3)';
+  ctx.fillRect(x + RS * 0.15, y, RS * 0.15, RS);
 }
 
 // ── PATH / DIRT ──
 function drawPath(ctx, x, y, col, row) {
-  // Dirt/path tiles in Serene Village - row 1-2 area
-  vTile(ctx, 3, 1, x, y);
+  // Draw a simple dirt path
+  ctx.fillStyle = '#c4a96e';
+  ctx.fillRect(x, y, RS, RS);
+  // Subtle texture
+  ctx.fillStyle = 'rgba(0,0,0,0.04)';
+  const seed = (col * 31 + row * 17) % 5;
+  ctx.fillRect(x + seed * 6, y + 4, 8, 4);
+  ctx.fillRect(x + 12 + seed * 3, y + RS - 8, 6, 3);
 }
 
 // ── TREE ──
@@ -101,38 +110,64 @@ function drawTree(ctx, x, y) {
   // Draw grass underneath
   vTile(ctx, 0, 0, x, y);
 
-  // Use the pre-rendered tree image
+  // Use the pre-rendered tree image scaled to fill the tile
   const tree = getImg('tree1');
   if (tree) {
-    // tree1.png is a single tree sprite, center it on the tile
-    const tw = tree.width * SCALE * 0.8;
-    const th = tree.height * SCALE * 0.8;
-    ctx.drawImage(tree, x + (RS - tw) / 2, y + (RS - th), tw, th);
+    ctx.drawImage(tree, x, y - RS * 0.3, RS, RS * 1.3);
   } else {
-    // Fallback: use tileset trees (around col 10-18, row 13-14)
-    vTile(ctx, 10, 13, x, y, 2, 2);
+    ctx.fillStyle = '#2d7a2d';
+    ctx.beginPath(); ctx.arc(x + RS / 2, y + RS * 0.35, RS * 0.4, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#5a3018';
+    ctx.fillRect(x + RS * 0.4, y + RS * 0.6, RS * 0.2, RS * 0.4);
   }
 }
 
 // ── ROCK ──
 function drawRock(ctx, x, y, col, row) {
   drawGrass(ctx, x, y, col, row);
-  // Rocks in tileset around row 11, col 0-3
-  vTile(ctx, 0, 11, x, y);
+  // Draw a small rock on grass
+  ctx.fillStyle = '#8a8a7a';
+  ctx.beginPath();
+  ctx.ellipse(x + RS / 2, y + RS * 0.6, RS * 0.3, RS * 0.2, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#9a9a8a';
+  ctx.beginPath();
+  ctx.ellipse(x + RS / 2, y + RS * 0.55, RS * 0.25, RS * 0.15, 0, 0, Math.PI * 2);
+  ctx.fill();
 }
 
 // ── FLOWER ──
 function drawFlower(ctx, x, y, col, row) {
   drawGrass(ctx, x, y, col, row);
-  // Flowers in tileset around row 9-10 area
-  const v = (col + row) % 3;
-  vTile(ctx, 5 + v, 9, x, y);
+  // Small pixel flowers on grass
+  const colors = ['#e74c3c', '#f1c40f', '#e8e0ff', '#ff69b4'];
+  const seed = (col * 7 + row * 11) % 4;
+  ctx.fillStyle = colors[seed];
+  ctx.fillRect(x + RS * 0.2, y + RS * 0.3, 4, 4);
+  ctx.fillRect(x + RS * 0.6, y + RS * 0.5, 4, 4);
+  ctx.fillRect(x + RS * 0.4, y + RS * 0.7, 3, 3);
+  ctx.fillStyle = '#2d8a2d';
+  ctx.fillRect(x + RS * 0.2 + 1, y + RS * 0.3 + 4, 2, 4);
+  ctx.fillRect(x + RS * 0.6 + 1, y + RS * 0.5 + 4, 2, 4);
 }
 
 // ── BRIDGE ──
 function drawBridge(ctx, x, y) {
-  // Bridge tiles in tileset around row 4-5 area
-  vTile(ctx, 5, 4, x, y);
+  // Water underneath
+  ctx.fillStyle = '#3c8cc8';
+  ctx.fillRect(x, y, RS, RS);
+  // Wooden planks
+  ctx.fillStyle = '#a0784c';
+  ctx.fillRect(x + 2, y, RS - 4, RS);
+  ctx.fillStyle = '#8a6838';
+  ctx.fillRect(x + 2, y, 2, RS);
+  ctx.fillRect(x + RS - 4, y, 2, RS);
+  // Plank lines
+  ctx.strokeStyle = 'rgba(0,0,0,0.1)';
+  ctx.lineWidth = 1;
+  for (let py = 4; py < RS; py += 12) {
+    ctx.beginPath(); ctx.moveTo(x + 4, y + py); ctx.lineTo(x + RS - 4, y + py); ctx.stroke();
+  }
 }
 
 // ── HOUSE (using pre-rendered house images) ──
@@ -185,25 +220,21 @@ function drawHouse(ctx, house, camX, camY) {
 
 // ════════════════════════════════════════════════════════
 // PLAYER SPRITE
-// ash.png is 424x350, organized as:
-// Top rows: walk down (4 frames), walk left, walk right, walk up
-// Each frame is roughly 32x32 in the sprite grid
-// Row 0 (y~0):   Walk DOWN  - 4 frames at 32px intervals
-// Row 1 (y~35):  Walk LEFT
-// Row 2 (y~70):  Walk UP
-// Row 3 (y~105): Walk RIGHT
-// More rows for running, etc
+// player_char.png (Bea) is 256x256
+// Clean 4x4 grid: 4 columns x 4 rows of 64x64 each
+// Row 0: Walk DOWN  (4 frames)
+// Row 1: Walk LEFT  (4 frames)
+// Row 2: Walk RIGHT (4 frames)
+// Row 3: Walk UP    (4 frames)
 // ════════════════════════════════════════════════════════
 
-const PLAYER_FRAME_W = 32;
-const PLAYER_FRAME_H = 32;
+const PF = 64; // frame size in spritesheet
 
-// Sprite positions in ash.png (approximate, based on the spritesheet layout)
-const PLAYER_ANIMS = {
-  down:  { y: 0,   frames: 4 },
-  left:  { y: 35,  frames: 4 },
-  up:    { y: 70,  frames: 4 },
-  right: { y: 105, frames: 4 },
+const PLAYER_ROW = {
+  down:  0,
+  left:  1,
+  right: 2,
+  up:    3,
 };
 
 export function renderPlayer(ctx, player, camX, camY, mode, intOffset, frame) {
@@ -219,53 +250,21 @@ export function renderPlayer(ctx, player, camX, camY, mode, intOffset, frame) {
     sy = player.y * SCALE - camY;
   }
 
-  const anim = PLAYER_ANIMS[player.direction] || PLAYER_ANIMS.down;
-  const animFrame = player.moving ? Math.floor(frame / 8) % anim.frames : 0;
+  const row = PLAYER_ROW[player.direction] ?? 0;
+  // Frame 0 = idle, frames 1-3 = walk cycle
+  const animFrame = player.moving ? (Math.floor(frame / 8) % 3) + 1 : 0;
 
   // Draw shadow
   ctx.fillStyle = 'rgba(0,0,0,0.2)';
   ctx.beginPath();
-  ctx.ellipse(sx + RS / 2, sy + RS - 4, RS * 0.25, RS * 0.07, 0, 0, Math.PI * 2);
+  ctx.ellipse(sx + RS / 2, sy + RS - 2, RS * 0.3, RS * 0.08, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Draw player sprite from the spritesheet
+  // Draw player sprite - slightly taller than one tile for Pokemon feel
+  const drawH = RS * 1.25;
   ctx.drawImage(img,
-    animFrame * PLAYER_FRAME_W, anim.y,
-    PLAYER_FRAME_W, PLAYER_FRAME_H,
-    sx + 2, sy - RS * 0.15,
-    RS - 4, RS * 1.1
-  );
-}
-
-// ════════════════════════════════════════════════════════
-// NPC RENDERING
-// npc1.png is a 4-direction x 4-frame spritesheet
-// ════════════════════════════════════════════════════════
-
-const NPC_FW = 32;
-const NPC_FH = 36;
-
-export function renderNPC(ctx, npcImg, nx, ny, camX, camY, frame) {
-  const img = getImg(npcImg);
-  if (!img) return;
-
-  const dx = nx * RS - camX;
-  const dy = ny * RS - camY;
-  const animFrame = Math.floor(frame / 20) % 4;
-
-  // Shadow
-  ctx.fillStyle = 'rgba(0,0,0,0.15)';
-  ctx.beginPath();
-  ctx.ellipse(dx + RS / 2, dy + RS - 4, RS * 0.2, RS * 0.06, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // NPC sprite (facing down = row 0)
-  const cols = Math.floor(img.width / NPC_FW);
-  ctx.drawImage(img,
-    (animFrame % cols) * NPC_FW, 0,
-    NPC_FW, NPC_FH,
-    dx + 4, dy - 6,
-    RS - 8, RS + 4
+    animFrame * PF, row * PF, PF, PF,
+    sx, sy - drawH + RS, RS, drawH
   );
 }
 
@@ -320,10 +319,6 @@ export function renderVillage(ctx, canvas, player, frame) {
   for (const h of houses) {
     drawHouse(ctx, h, camX, camY);
   }
-
-  // NPCs (static villagers near houses)
-  renderNPC(ctx, 'npc1', 10, 9, camX, camY, frame);
-  renderNPC(ctx, 'npc2', 13, 15, camX, camY, frame);
 
   // Enter prompts
   for (const h of houses) {

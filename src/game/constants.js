@@ -1,7 +1,7 @@
 // Tile size in the tileset
 export const TILE = 16;
 // Scale factor for crisp pixel art
-export const SCALE = 3;
+export const SCALE = 4;
 // Rendered tile size on screen
 export const RS = TILE * SCALE; // 48px
 
