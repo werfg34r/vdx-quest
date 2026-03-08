@@ -1,11 +1,32 @@
-// VDX Quest Sprite System — Procedural + Tileset hybrid
-// Procedural: grass, trees, water, flowers, paths, sand, mountains, fences, bridges
-// Tileset: houses (from overworld.png cols 7-9, rows 0-3)
-// Characters: from character.png with corrected frame indices
+// VDX Quest Sprite System — Tileset-based rendering
+// Uses generated tileset.png for environment tiles
+// Uses characters.png for player & NPC sprites
+// Uses overworld.png for house tiles (they look good)
 
 const S = 16 // tile size
 
-// House tile coordinates from overworld.png tileset (these look good)
+// ==================== TILESET COORDINATES ====================
+// tileset.png layout (16x4 grid of 16x16 tiles):
+// Row 0: grass(0-3), darkGrass(4-5), tallGrass(6-7), path(8-10), sand(11-12)
+// Row 1: tree(0-2), water(3-6)
+// Row 2: flower(0-2), fence(3), bridge(4), sign(5), mountain(6)
+
+const TILE_COORDS = {
+  grass:     [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 2, y: 0 }, { x: 3, y: 0 }],
+  darkGrass: [{ x: 4, y: 0 }, { x: 5, y: 0 }],
+  tallGrass: [{ x: 6, y: 0 }, { x: 7, y: 0 }],
+  path:      [{ x: 8, y: 0 }, { x: 9, y: 0 }, { x: 10, y: 0 }],
+  sand:      [{ x: 11, y: 0 }, { x: 12, y: 0 }],
+  tree:      [{ x: 0, y: 1 }, { x: 1, y: 1 }, { x: 2, y: 1 }],
+  water:     [{ x: 3, y: 1 }, { x: 4, y: 1 }, { x: 5, y: 1 }, { x: 6, y: 1 }],
+  flower:    [{ x: 0, y: 2 }, { x: 1, y: 2 }, { x: 2, y: 2 }],
+  fence:     [{ x: 3, y: 2 }],
+  bridge:    [{ x: 4, y: 2 }],
+  sign:      [{ x: 5, y: 2 }],
+  mountain:  [{ x: 6, y: 2 }],
+}
+
+// House tile coordinates from overworld.png (these look good, keep them)
 const HOUSE_TILES = {
   houseRoofTL:  { x: 7, y: 0 },
   houseRoofTC:  { x: 8, y: 0 },
@@ -19,12 +40,10 @@ const HOUSE_TILES = {
   houseWallDL:  { x: 7, y: 3 },
   houseDoor:    { x: 8, y: 3 },
   houseWallDR:  { x: 9, y: 3 },
-  sign:         { x: 30, y: 0 },
 }
 
-// character.png layout — VERIFIED via pixel analysis:
-// Col 4 and col 8 are EMPTY in rows 0-3. Use frame 0 (first frame) for NPCs.
-// Group 0 (rows 0-3): player=cols0-2, mentor=cols3-5(gap@4), char3=cols6-8(gap@8), warrior=cols9-11, sage=cols12-14
+// character.png / characters.png layout:
+// Group 0 (rows 0-3): player=cols0-2, mentor=cols3-5, char3=cols6-8, warrior=cols9-11, sage=cols12-14
 // Group 2 (rows 8-11): villager=cols0-2, trader=cols3-5, old=cols6-7
 const NPC_CHARS = {
   mentor:   { startCol: 3,  baseRow: 0 },
@@ -47,355 +66,77 @@ function loadImage(src) {
 }
 
 export async function loadSpriteAtlas() {
-  const [overworld, character, npc, objects] = await Promise.all([
+  const [overworld, character, tileset] = await Promise.all([
     loadImage('/assets/overworld.png'),
-    loadImage('/assets/character.png'),
-    loadImage('/assets/npc.png'),
-    loadImage('/assets/objects.png'),
+    loadImage('/assets/characters.png'),
+    loadImage('/assets/tileset.png'),
   ])
-  return { overworld, character, npc, objects, S }
+  return { overworld, character, tileset, S }
 }
 
 function tileHash(px, py) {
   return ((Math.floor(px) * 374761 + Math.floor(py) * 668265) % 997 + 997) % 997
 }
 
-function blitTile(ctx, img, coord, px, py) {
+// Blit a tile from the tileset spritesheet
+function blitTileset(ctx, tileset, coord, px, py) {
+  ctx.drawImage(tileset, coord.x * S, coord.y * S, S, S, Math.floor(px), Math.floor(py), S, S)
+}
+
+// Blit a tile from the overworld spritesheet
+function blitOverworld(ctx, img, coord, px, py) {
   ctx.drawImage(img, coord.x * S, coord.y * S, S, S, Math.floor(px), Math.floor(py), S, S)
 }
 
-// ==================== PROCEDURAL TILE COLORS ====================
-const GRASS_COLORS = ['#5ABF3E', '#52B536', '#4DAD32', '#58C23C']
-const GRASS_DARK = ['#3E8A2A', '#3C8528', '#3A8026']
-const GRASS_LIGHT = ['#6ECD4E', '#72D152', '#7DD85A']
+// ==================== TILE DRAWING (tileset-based) ====================
 
-// ==================== PROCEDURAL TILE DRAWING ====================
-function drawGrass(ctx, px, py) {
-  const x = Math.floor(px), y = Math.floor(py)
+function drawVariant(ctx, tileset, variants, px, py) {
   const h = tileHash(px, py)
-  // Base
-  ctx.fillStyle = GRASS_COLORS[h % GRASS_COLORS.length]
-  ctx.fillRect(x, y, S, S)
-  // Subtle variation patches
-  ctx.fillStyle = GRASS_LIGHT[h % GRASS_LIGHT.length]
-  ctx.globalAlpha = 0.25
-  if (h % 3 === 0) ctx.fillRect(x + 2, y + 1, 5, 4)
-  if (h % 5 === 0) ctx.fillRect(x + 8, y + 9, 6, 5)
-  if (h % 7 === 0) ctx.fillRect(x + 1, y + 10, 4, 4)
-  ctx.globalAlpha = 1
-  // Small blade marks (darker)
-  ctx.fillStyle = GRASS_DARK[h % GRASS_DARK.length]
-  ctx.globalAlpha = 0.35
-  if (h % 4 === 0) { ctx.fillRect(x + 3, y + 5, 1, 2); ctx.fillRect(x + 11, y + 2, 1, 2) }
-  if (h % 6 === 0) { ctx.fillRect(x + 7, y + 11, 1, 2); ctx.fillRect(x + 14, y + 7, 1, 2) }
-  ctx.globalAlpha = 1
+  const coord = variants[h % variants.length]
+  blitTileset(ctx, tileset, coord, px, py)
 }
 
-function drawDarkGrass(ctx, px, py) {
-  const x = Math.floor(px), y = Math.floor(py)
-  const h = tileHash(px, py)
-  ctx.fillStyle = GRASS_DARK[h % GRASS_DARK.length]
-  ctx.fillRect(x, y, S, S)
-  // Darker patches
-  ctx.fillStyle = '#2D6F1E'
-  ctx.globalAlpha = 0.3
-  if (h % 3 === 0) ctx.fillRect(x + 1, y + 2, 6, 5)
-  if (h % 5 === 0) ctx.fillRect(x + 7, y + 8, 5, 6)
-  ctx.globalAlpha = 1
-  // Light accent
-  ctx.fillStyle = '#4DA832'
-  ctx.globalAlpha = 0.2
-  if (h % 4 === 0) ctx.fillRect(x + 4, y + 1, 3, 2)
-  ctx.globalAlpha = 1
-}
-
-function drawTallGrass(ctx, px, py) {
-  const x = Math.floor(px), y = Math.floor(py)
-  const h = tileHash(px, py)
-  // Base grass
-  drawGrass(ctx, px, py)
-  // Tall grass tufts on top
-  ctx.fillStyle = '#3E8A2A'
-  ctx.fillRect(x + 2, y, 2, 6)
-  ctx.fillRect(x + 6, y + 1, 2, 7)
-  ctx.fillRect(x + 10, y, 2, 5)
-  ctx.fillRect(x + 13, y + 2, 2, 6)
-  // Tips (lighter)
-  ctx.fillStyle = '#5DBF40'
-  ctx.fillRect(x + 2, y, 2, 2)
-  ctx.fillRect(x + 6, y + 1, 2, 2)
-  ctx.fillRect(x + 10, y, 2, 2)
-  ctx.fillRect(x + 13, y + 2, 2, 2)
-  // Variation
-  if (h % 3 === 0) {
-    ctx.fillStyle = '#357A22'
-    ctx.fillRect(x + 4, y + 3, 2, 5)
-    ctx.fillStyle = '#4DA832'
-    ctx.fillRect(x + 4, y + 3, 2, 2)
-  }
-}
-
-function drawPath(ctx, px, py) {
-  const x = Math.floor(px), y = Math.floor(py)
-  const h = tileHash(px, py)
-  // Base dirt
-  ctx.fillStyle = '#C4A46C'
-  ctx.fillRect(x, y, S, S)
-  // Variation
-  const pathColors = ['#CAAA72', '#BDA066', '#C8A86E']
-  ctx.fillStyle = pathColors[h % pathColors.length]
-  ctx.fillRect(x, y, S, S)
-  // Small stones/pebbles
-  ctx.fillStyle = '#B89858'
-  ctx.globalAlpha = 0.4
-  if (h % 3 === 0) ctx.fillRect(x + 3, y + 4, 2, 2)
-  if (h % 5 === 0) ctx.fillRect(x + 9, y + 10, 2, 1)
-  if (h % 7 === 0) ctx.fillRect(x + 12, y + 3, 1, 2)
-  if (h % 4 === 0) ctx.fillRect(x + 6, y + 12, 2, 1)
-  ctx.globalAlpha = 1
-  // Slight lighter edge
-  ctx.fillStyle = '#D4B47C'
-  ctx.globalAlpha = 0.15
-  ctx.fillRect(x, y, S, 1)
-  ctx.globalAlpha = 1
-}
-
-function drawWater(ctx, px, py, tick) {
-  const x = Math.floor(px), y = Math.floor(py)
-  // Base water
-  ctx.fillStyle = '#3A8DD4'
-  ctx.fillRect(x, y, S, S)
-  // Deeper center
-  ctx.fillStyle = '#2E7BC0'
-  ctx.fillRect(x + 2, y + 2, S - 4, S - 4)
-  // Animated wave lines
-  const wave = Math.sin(tick * 0.08 + px * 0.3) * 2
-  const wave2 = Math.sin(tick * 0.06 + py * 0.4 + 1) * 2
-  ctx.fillStyle = '#5CA8E8'
-  ctx.globalAlpha = 0.5
-  ctx.fillRect(x + 1 + wave, y + 4, 8, 1)
-  ctx.fillRect(x + 5 + wave2, y + 10, 7, 1)
-  ctx.globalAlpha = 1
-  // Highlight sparkle
-  ctx.fillStyle = '#9AD4FF'
-  ctx.globalAlpha = 0.3 + Math.sin(tick * 0.12 + px + py) * 0.2
-  ctx.fillRect(x + 4 + Math.floor(wave * 0.5), y + 2, 2, 1)
-  ctx.fillRect(x + 10, y + 7 + Math.floor(wave2 * 0.3), 2, 1)
-  ctx.globalAlpha = 1
-}
-
-function drawTree(ctx, px, py) {
-  const x = Math.floor(px), y = Math.floor(py)
-  const h = tileHash(px, py)
-  // Grass base under tree
-  drawGrass(ctx, px, py)
-  // Trunk (brown, centered)
-  ctx.fillStyle = '#6B4423'
-  ctx.fillRect(x + 6, y + 11, 4, 5)
-  // Trunk highlight
-  ctx.fillStyle = '#7D5533'
-  ctx.fillRect(x + 6, y + 11, 2, 5)
-  // Canopy — outer shadow/outline (dark green circle)
-  ctx.fillStyle = '#2B5A1B'
-  ctx.beginPath()
-  ctx.arc(x + 8, y + 7, 7.5, 0, Math.PI * 2)
-  ctx.fill()
-  // Canopy — main body (medium green)
-  ctx.fillStyle = '#3D8B2B'
-  ctx.beginPath()
-  ctx.arc(x + 8, y + 7, 6.5, 0, Math.PI * 2)
-  ctx.fill()
-  // Canopy — highlight area (lighter, offset top-left)
-  ctx.fillStyle = '#55B83E'
-  ctx.beginPath()
-  ctx.arc(x + 6, y + 5, 4, 0, Math.PI * 2)
-  ctx.fill()
-  // Canopy — bright spot (very light, small)
-  ctx.fillStyle = '#72D054'
-  ctx.beginPath()
-  ctx.arc(x + 5, y + 4, 2, 0, Math.PI * 2)
-  ctx.fill()
-  // Subtle variation based on hash
-  if (h % 3 === 0) {
-    ctx.fillStyle = '#4AA535'
-    ctx.beginPath()
-    ctx.arc(x + 10, y + 9, 2.5, 0, Math.PI * 2)
-    ctx.fill()
-  }
-}
-
-function drawMountain(ctx, px, py) {
-  const x = Math.floor(px), y = Math.floor(py)
-  // Base
-  ctx.fillStyle = '#8A8A8A'
-  ctx.fillRect(x, y, S, S)
-  // Mountain shape (triangular)
-  ctx.fillStyle = '#9A9A9A'
-  ctx.beginPath()
-  ctx.moveTo(x + 8, y + 1)
-  ctx.lineTo(x + 15, y + 15)
-  ctx.lineTo(x + 1, y + 15)
-  ctx.closePath()
-  ctx.fill()
-  // Darker side
-  ctx.fillStyle = '#707070'
-  ctx.beginPath()
-  ctx.moveTo(x + 8, y + 1)
-  ctx.lineTo(x + 15, y + 15)
-  ctx.lineTo(x + 8, y + 15)
-  ctx.closePath()
-  ctx.fill()
-  // Snow cap
-  ctx.fillStyle = '#E8E8F0'
-  ctx.beginPath()
-  ctx.moveTo(x + 8, y + 1)
-  ctx.lineTo(x + 11, y + 5)
-  ctx.lineTo(x + 5, y + 5)
-  ctx.closePath()
-  ctx.fill()
-}
-
-function drawFlower(ctx, px, py) {
-  const x = Math.floor(px), y = Math.floor(py)
-  const h = tileHash(px, py)
-  drawGrass(ctx, px, py)
-  // Flower clusters (colorful dots)
-  const flowerColors = ['#E84040', '#E8D040', '#D040D0', '#4080E8', '#E87040', '#E840A0']
-  const c1 = flowerColors[h % flowerColors.length]
-  const c2 = flowerColors[(h + 2) % flowerColors.length]
-  const c3 = flowerColors[(h + 4) % flowerColors.length]
-  // Flower petals (larger, visible)
-  ctx.fillStyle = c1
-  ctx.fillRect(x + 3, y + 3, 3, 3)
-  ctx.fillStyle = '#FFE855'
-  ctx.fillRect(x + 4, y + 4, 1, 1) // center
-  ctx.fillStyle = c2
-  ctx.fillRect(x + 10, y + 7, 3, 3)
-  ctx.fillStyle = '#FFE855'
-  ctx.fillRect(x + 11, y + 8, 1, 1)
-  ctx.fillStyle = c3
-  ctx.fillRect(x + 5, y + 11, 3, 3)
-  ctx.fillStyle = '#FFE855'
-  ctx.fillRect(x + 6, y + 12, 1, 1)
-  // Extra smaller flower if hash permits
-  if (h % 3 === 0) {
-    ctx.fillStyle = c1
-    ctx.fillRect(x + 12, y + 2, 2, 2)
-  }
-}
-
-function drawSand(ctx, px, py) {
-  const x = Math.floor(px), y = Math.floor(py)
-  const h = tileHash(px, py)
-  const sandColors = ['#E8D8A8', '#E0D0A0', '#DCC898']
-  ctx.fillStyle = sandColors[h % sandColors.length]
-  ctx.fillRect(x, y, S, S)
-  // Subtle dots
-  ctx.fillStyle = '#D4C490'
-  ctx.globalAlpha = 0.3
-  if (h % 4 === 0) ctx.fillRect(x + 5, y + 3, 1, 1)
-  if (h % 6 === 0) ctx.fillRect(x + 11, y + 10, 1, 1)
-  ctx.globalAlpha = 1
-}
-
-function drawFence(ctx, px, py) {
-  const x = Math.floor(px), y = Math.floor(py)
-  drawGrass(ctx, px, py)
-  // Fence posts
-  ctx.fillStyle = '#7A5C32'
-  ctx.fillRect(x + 1, y + 4, 3, 10)
-  ctx.fillRect(x + 12, y + 4, 3, 10)
-  // Horizontal rails
-  ctx.fillStyle = '#8B6E42'
-  ctx.fillRect(x, y + 5, S, 2)
-  ctx.fillRect(x, y + 10, S, 2)
-  // Rail highlights
-  ctx.fillStyle = '#9B7E52'
-  ctx.fillRect(x, y + 5, S, 1)
-  ctx.fillRect(x, y + 10, S, 1)
-  // Post caps
-  ctx.fillStyle = '#9B7E52'
-  ctx.fillRect(x + 1, y + 3, 3, 2)
-  ctx.fillRect(x + 12, y + 3, 3, 2)
-}
-
-function drawBridge(ctx, px, py, tick) {
-  const x = Math.floor(px), y = Math.floor(py)
-  drawWater(ctx, px, py, tick)
-  // Wooden planks
-  ctx.fillStyle = '#8B6E4E'
-  ctx.fillRect(x + 1, y, 14, S)
-  // Individual planks
-  ctx.fillStyle = '#A0825E'
-  ctx.fillRect(x + 2, y + 1, 12, 3)
-  ctx.fillRect(x + 2, y + 5, 12, 3)
-  ctx.fillRect(x + 2, y + 9, 12, 3)
-  ctx.fillRect(x + 2, y + 13, 12, 3)
-  // Plank gaps
-  ctx.fillStyle = '#6B5030'
-  ctx.fillRect(x + 1, y + 4, 14, 1)
-  ctx.fillRect(x + 1, y + 8, 14, 1)
-  ctx.fillRect(x + 1, y + 12, 14, 1)
-  // Side rails
-  ctx.fillStyle = '#5B3E1E'
-  ctx.fillRect(x, y, 2, S)
-  ctx.fillRect(x + 14, y, 2, S)
-}
-
-function drawSign(ctx, px, py) {
-  const x = Math.floor(px), y = Math.floor(py)
-  drawPath(ctx, px, py)
-  // Post
-  ctx.fillStyle = '#6B4423'
-  ctx.fillRect(x + 7, y + 7, 2, 9)
-  // Sign board
-  ctx.fillStyle = '#8B6E42'
-  ctx.fillRect(x + 3, y + 2, 10, 6)
-  // Board outline
-  ctx.fillStyle = '#6B4E22'
-  ctx.fillRect(x + 3, y + 2, 10, 1)
-  ctx.fillRect(x + 3, y + 7, 10, 1)
-  ctx.fillRect(x + 3, y + 2, 1, 6)
-  ctx.fillRect(x + 12, y + 2, 1, 6)
-  // Text lines
-  ctx.fillStyle = '#4A3A1A'
-  ctx.fillRect(x + 5, y + 4, 6, 1)
-  ctx.fillRect(x + 5, y + 6, 4, 1)
+function drawWater(ctx, tileset, px, py, tick) {
+  // Animated water — cycle through 4 frames
+  const frame = Math.floor(tick / 20) % 4
+  const coord = TILE_COORDS.water[frame]
+  blitTileset(ctx, tileset, coord, px, py)
 }
 
 // ==================== MAIN TILE DRAW ====================
 export function drawSpriteTile(ctx, atlas, tileType, px, py, tick) {
-  const img = atlas.overworld
+  const ts = atlas.tileset
+  const ow = atlas.overworld
 
   switch (tileType) {
-    case 0: drawGrass(ctx, px, py); break
-    case 9: drawDarkGrass(ctx, px, py); break
-    case 17: drawTallGrass(ctx, px, py); break
-    case 1: drawPath(ctx, px, py); break
-    case 2: drawWater(ctx, px, py, tick); break
-    case 3: drawTree(ctx, px, py); break
-    case 5: drawMountain(ctx, px, py); break
-    case 6: drawFlower(ctx, px, py); break
-    case 7: drawBridge(ctx, px, py, tick); break
-    case 8: drawFence(ctx, px, py); break
-    case 10: drawSand(ctx, px, py); break
-    case 14: drawSign(ctx, px, py); break
+    case 0:  drawVariant(ctx, ts, TILE_COORDS.grass, px, py); break
+    case 9:  drawVariant(ctx, ts, TILE_COORDS.darkGrass, px, py); break
+    case 17: drawVariant(ctx, ts, TILE_COORDS.tallGrass, px, py); break
+    case 1:  drawVariant(ctx, ts, TILE_COORDS.path, px, py); break
+    case 2:  drawWater(ctx, ts, px, py, tick); break
+    case 3:  drawVariant(ctx, ts, TILE_COORDS.tree, px, py); break
+    case 5:  blitTileset(ctx, ts, TILE_COORDS.mountain[0], px, py); break
+    case 6:  drawVariant(ctx, ts, TILE_COORDS.flower, px, py); break
+    case 7:  blitTileset(ctx, ts, TILE_COORDS.bridge[0], px, py); break
+    case 8:  blitTileset(ctx, ts, TILE_COORDS.fence[0], px, py); break
+    case 10: drawVariant(ctx, ts, TILE_COORDS.sand, px, py); break
+    case 14: blitTileset(ctx, ts, TILE_COORDS.sign[0], px, py); break
 
-    // House tiles — keep from tileset (they look good)
-    case 30: drawGrass(ctx, px, py); blitTile(ctx, img, HOUSE_TILES.houseRoofTL, px, py); break
-    case 31: drawGrass(ctx, px, py); blitTile(ctx, img, HOUSE_TILES.houseRoofTC, px, py); break
-    case 32: drawGrass(ctx, px, py); blitTile(ctx, img, HOUSE_TILES.houseRoofTR, px, py); break
-    case 33: blitTile(ctx, img, HOUSE_TILES.houseRoofML, px, py); break
-    case 34: blitTile(ctx, img, HOUSE_TILES.houseRoofMC, px, py); break
-    case 35: blitTile(ctx, img, HOUSE_TILES.houseRoofMR, px, py); break
-    case 36: blitTile(ctx, img, HOUSE_TILES.houseWallL, px, py); break
-    case 37: blitTile(ctx, img, HOUSE_TILES.houseWallWin, px, py); break
-    case 38: blitTile(ctx, img, HOUSE_TILES.houseWallR, px, py); break
-    case 39: blitTile(ctx, img, HOUSE_TILES.houseWallDL, px, py); break
-    case 40: blitTile(ctx, img, HOUSE_TILES.houseDoor, px, py); break
-    case 41: blitTile(ctx, img, HOUSE_TILES.houseWallDR, px, py); break
+    // House tiles — keep from overworld.png tileset
+    case 30: drawVariant(ctx, ts, TILE_COORDS.grass, px, py); blitOverworld(ctx, ow, HOUSE_TILES.houseRoofTL, px, py); break
+    case 31: drawVariant(ctx, ts, TILE_COORDS.grass, px, py); blitOverworld(ctx, ow, HOUSE_TILES.houseRoofTC, px, py); break
+    case 32: drawVariant(ctx, ts, TILE_COORDS.grass, px, py); blitOverworld(ctx, ow, HOUSE_TILES.houseRoofTR, px, py); break
+    case 33: blitOverworld(ctx, ow, HOUSE_TILES.houseRoofML, px, py); break
+    case 34: blitOverworld(ctx, ow, HOUSE_TILES.houseRoofMC, px, py); break
+    case 35: blitOverworld(ctx, ow, HOUSE_TILES.houseRoofMR, px, py); break
+    case 36: blitOverworld(ctx, ow, HOUSE_TILES.houseWallL, px, py); break
+    case 37: blitOverworld(ctx, ow, HOUSE_TILES.houseWallWin, px, py); break
+    case 38: blitOverworld(ctx, ow, HOUSE_TILES.houseWallR, px, py); break
+    case 39: blitOverworld(ctx, ow, HOUSE_TILES.houseWallDL, px, py); break
+    case 40: blitOverworld(ctx, ow, HOUSE_TILES.houseDoor, px, py); break
+    case 41: blitOverworld(ctx, ow, HOUSE_TILES.houseWallDR, px, py); break
 
-    default: drawGrass(ctx, px, py)
+    default: drawVariant(ctx, ts, TILE_COORDS.grass, px, py)
   }
 }
 
@@ -457,7 +198,7 @@ export function drawWindowGlow(ctx, px, py, intensity) {
   ctx.restore()
 }
 
-// Draw player (cols 0-2 of character.png)
+// Draw player (cols 0-2 of characters.png)
 export function drawPlayerSprite(ctx, atlas, direction, frame, px, py) {
   const img = atlas.character
   const frameIdx = frame % 3
@@ -469,7 +210,7 @@ export function drawPlayerSprite(ctx, atlas, direction, frame, px, py) {
     CHAR_DRAW, CHAR_DRAW)
 }
 
-// Draw NPC using character.png — FIXED: use frame 0 (frame 1 is empty for some chars!)
+// Draw NPC using characters.png
 export function drawNPCSprite(ctx, atlas, spriteType, px, py, tick, direction) {
   const charDef = NPC_CHARS[spriteType]
   if (!charDef) {
@@ -478,9 +219,7 @@ export function drawNPCSprite(ctx, atlas, spriteType, px, py, tick, direction) {
   }
 
   const img = atlas.character
-  // CRITICAL FIX: Use frame 0 instead of frame 1.
-  // Pixel analysis showed col 4 (mentor frame 1) and col 8 are EMPTY in rows 0-3.
-  // Frame 0 always has the best pixel content (100+ pixels vs 0-54 for frame 1).
+  // Use frame 0 (standing) for static NPCs
   const frameIdx = 0
 
   const sx = (charDef.startCol + frameIdx) * S
