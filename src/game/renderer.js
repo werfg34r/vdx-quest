@@ -113,21 +113,14 @@ export function renderPlayer(ctx, player, camX, camY, frame, mode) {
   const cx = sx + RS / 2;
   const cy = sy + RS;
 
-  // Bright selection circle (always visible)
-  ctx.strokeStyle = '#FFD700';
-  ctx.lineWidth = 2;
+  // Shadow under player
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
   ctx.beginPath();
-  ctx.ellipse(cx, cy - 2, 16, 6, 0, 0, Math.PI * 2);
-  ctx.stroke();
-
-  // Shadow
-  ctx.fillStyle = 'rgba(0,0,0,0.35)';
-  ctx.beginPath();
-  ctx.ellipse(cx, cy - 2, 14, 5, 0, 0, Math.PI * 2);
+  ctx.ellipse(cx, cy - 1, 12, 4, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Try to draw sprite
-  const spriteName = player.moving ? 'base_walk_strip8' : 'base_idle_strip9';
+  // Use the REAL Sunnyside World character sprites (spr_idle / spr_walking)
+  const spriteName = player.moving ? 'spr_walking' : 'spr_idle';
   const img = getImg(spriteName);
 
   if (img && img.complete && img.naturalWidth > 0) {
@@ -139,7 +132,6 @@ export function renderPlayer(ctx, player, camX, camY, frame, mode) {
       ? Math.floor(frame / 8) % nFrames
       : Math.floor(frame / 12) % nFrames;
 
-    // Draw bigger: 0.5 scale instead of 0.35
     const drawW = fw * SCALE * 0.5;
     const drawH = fh * SCALE * 0.5;
 
@@ -149,51 +141,7 @@ export function renderPlayer(ctx, player, camX, camY, frame, mode) {
     const srcX = animFrame * fw;
     ctx.drawImage(img, srcX, 0, fw, fh, -drawW / 2, -drawH, drawW, drawH);
     ctx.restore();
-  } else {
-    // FALLBACK: draw a colored character if sprite fails to load
-    ctx.save();
-    ctx.translate(cx, cy);
-
-    // Body
-    ctx.fillStyle = '#4a90d9';
-    ctx.fillRect(-8, -28, 16, 20);
-
-    // Head
-    ctx.fillStyle = '#f5d6a8';
-    ctx.beginPath();
-    ctx.arc(0, -34, 8, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Hair
-    ctx.fillStyle = '#5a3825';
-    ctx.beginPath();
-    ctx.arc(0, -37, 7, Math.PI, Math.PI * 2);
-    ctx.fill();
-
-    // Eyes
-    ctx.fillStyle = '#222';
-    ctx.fillRect(-4, -36, 2, 2);
-    ctx.fillRect(2, -36, 2, 2);
-
-    // Direction indicator
-    ctx.fillStyle = '#FFD700';
-    const dirs = { up: [0, -44], down: [0, -2], left: [-14, -20], right: [14, -20] };
-    const [dx, dy] = dirs[player.direction] || [0, -2];
-    ctx.beginPath();
-    ctx.arc(dx, dy, 3, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.restore();
   }
-
-  // Name tag above player
-  ctx.fillStyle = 'rgba(0,0,0,0.7)';
-  ctx.fillRect(cx - 30, cy - 52, 60, 16);
-  ctx.fillStyle = '#FFD700';
-  ctx.font = 'bold 10px monospace';
-  ctx.textAlign = 'center';
-  ctx.fillText('Joueur', cx, cy - 40);
-  ctx.textAlign = 'left';
 }
 
 // ════════════════════════════════════════════════════════
