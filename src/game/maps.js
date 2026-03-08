@@ -1,156 +1,114 @@
-import { MAP_COLS, MAP_ROWS } from './constants.js';
+import { MAP_W, MAP_H } from './constants.js';
 
-// Tile types for the village map
-const G = 0;  // Grass
-const W = 1;  // Water
-const P = 2;  // Path (dirt)
-const T = 3;  // Tree (collision)
-const H1 = 10; // House 1 (blue) - position marker
-const H2 = 11; // House 2 (green) - position marker
-const H3 = 12; // House 3 (orange) - position marker
-const F = 4;  // Fence
-const FL = 5; // Flower
-const B = 6;  // Bridge
+// ── Tile types ──
+export const _ = 0;   // Grass (plain)
+export const G2 = 1;  // Grass variant 2
+export const W = 2;   // Water
+export const P = 3;   // Path/dirt
+export const T = 4;   // Tree (collidable)
+export const F = 5;   // Fence
+export const FL = 6;  // Flower
+export const B = 7;   // Bridge
+export const R = 8;   // Rock
+export const H = 9;   // House footprint (collidable, rendered separately)
+export const WE = 10; // Water edge
 
-// Village map - 30 columns x 22 rows
-// The village has 3 houses, a river on the right, trees around edges, paths between houses
+// ── Village Layout (32 x 24) ──
+// A cozy Pokemon-style village: grass everywhere, 3 houses, a river, trees around borders
 export const villageMap = [
-  // Row 0 - top edge trees
-  [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
-  // Row 1
-  [T,G,G,G,G,G,G,G,G,G,G,G,G,G,G,G,G,G,G,G,G,G,G,G,T,W,W,W,W,T],
-  // Row 2
-  [T,G,G,G,FL,G,G,G,G,G,G,G,G,FL,G,G,G,G,G,G,FL,G,G,G,T,W,W,W,W,T],
-  // Row 3 - House 1 top
-  [T,G,G,G,G,H1,H1,H1,H1,H1,G,G,G,G,G,G,G,G,G,G,G,G,G,G,T,W,W,W,W,T],
-  // Row 4 - House 1 middle
-  [T,G,G,G,G,H1,H1,H1,H1,H1,G,G,G,G,G,G,G,H2,H2,H2,H2,H2,G,G,T,W,W,W,W,T],
-  // Row 5 - House 1 bottom
-  [T,G,G,G,G,H1,H1,H1,H1,H1,G,G,G,G,G,G,G,H2,H2,H2,H2,H2,G,G,G,B,B,G,G,T],
-  // Row 6 - path
-  [T,G,FL,G,G,G,G,P,G,G,G,G,G,G,G,G,G,H2,H2,H2,H2,H2,G,G,G,B,B,G,G,T],
-  // Row 7
-  [T,G,G,G,G,G,G,P,G,G,G,G,G,G,G,G,G,G,G,P,G,G,G,G,T,W,W,W,W,T],
-  // Row 8
-  [T,G,G,G,G,G,G,P,G,G,G,G,FL,G,G,G,G,G,G,P,G,G,G,G,T,W,W,W,W,T],
-  // Row 9 - horizontal path
-  [T,G,G,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,G,G,T,W,W,W,W,T],
-  // Row 10
-  [T,G,G,G,G,G,G,G,G,G,G,P,G,G,G,G,G,G,G,G,G,G,G,G,T,W,W,W,W,T],
-  // Row 11
-  [T,G,G,G,G,G,G,G,G,G,G,P,G,G,G,G,G,G,G,G,FL,G,G,G,T,W,W,W,W,T],
-  // Row 12 - House 3 area
-  [T,G,G,G,G,G,G,G,G,G,G,P,G,G,H3,H3,H3,H3,H3,G,G,G,G,G,T,W,W,W,W,T],
-  // Row 13
-  [T,G,FL,G,G,G,G,G,G,G,G,P,G,G,H3,H3,H3,H3,H3,G,G,G,G,G,G,B,B,G,G,T],
-  // Row 14
-  [T,G,G,G,G,G,G,G,G,G,G,P,P,P,H3,H3,H3,H3,H3,G,G,G,G,G,G,B,B,G,G,T],
-  // Row 15
-  [T,G,G,G,G,G,G,G,G,G,G,G,G,G,G,G,G,P,G,G,G,G,G,G,T,W,W,W,W,T],
-  // Row 16
-  [T,G,G,G,G,T,G,G,G,G,FL,G,G,G,G,G,G,G,G,G,G,G,FL,G,T,W,W,W,W,T],
-  // Row 17
-  [T,G,G,G,G,G,G,G,G,G,G,G,G,G,G,G,G,G,G,G,G,G,G,G,T,W,W,W,W,T],
-  // Row 18
-  [T,G,G,G,G,G,G,G,FL,G,G,G,G,G,G,G,T,G,G,G,G,G,G,G,T,W,W,W,W,T],
-  // Row 19
-  [T,G,G,G,G,G,G,G,G,G,G,G,G,G,G,G,G,G,G,G,G,G,G,G,T,W,W,W,W,T],
-  // Row 20
-  [T,G,G,G,G,G,G,G,G,G,G,G,G,G,G,G,G,G,G,G,G,G,G,G,T,W,W,W,W,T],
-  // Row 21 - bottom edge
-  [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+// 0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
+  [T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T], // 0
+  [T, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, T, WE,W, W, W, W, WE,T, T], // 1
+  [T, _, FL,_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, FL,_, T, WE,W, W, W, W, WE,T, T], // 2
+  [T, _, _, _, _, H, H, H, H, H, _, _, _, _, _, _, _, _, _, _, _, _, _, T, WE,W, W, W, W, WE,T, T], // 3
+  [T, _, _, _, _, H, H, H, H, H, _, _, _, _, _, _, H, H, H, H, H, _, _, T, WE,W, W, W, W, WE,T, T], // 4
+  [T, _, _, _, _, H, H, H, H, H, _, _, _, _, _, _, H, H, H, H, H, _, _, T, WE,W, W, W, W, WE,T, T], // 5
+  [T, _, FL,_, _, _, _, P, _, _, _, _, _, _, _, _, H, H, H, H, H, _, _, _, B, B, W, W, B, B, T, T], // 6
+  [T, _, _, _, _, _, _, P, _, _, _, FL,_, _, _, _, _, _, P, _, _, _, _, T, WE,W, W, W, W, WE,T, T], // 7
+  [T, _, _, _, _, _, _, P, _, _, _, _, _, _, _, _, _, _, P, _, _, _, _, T, WE,W, W, W, W, WE,T, T], // 8
+  [T, _, _, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, _, _, T, WE,W, W, W, W, WE,T, T], // 9
+  [T, _, _, _, _, _, _, _, _, _, _, P, _, _, _, _, _, _, _, _, _, _, _, T, WE,W, W, W, W, WE,T, T], // 10
+  [T, _, _, _, _, _, _, _, _, _, _, P, _, _, _, _, _, _, _, FL,_, _, _, T, WE,W, W, W, W, WE,T, T], // 11
+  [T, _, _, _, _, R, _, _, _, _, _, P, _, _, H, H, H, H, H, _, _, _, _, T, WE,W, W, W, W, WE,T, T], // 12
+  [T, _, FL,_, _, _, _, _, _, _, _, P, _, _, H, H, H, H, H, _, _, _, _, _, B, B, W, W, B, B, T, T], // 13
+  [T, _, _, _, _, _, _, _, _, _, _, P, P, P, H, H, H, H, H, _, _, _, _, T, WE,W, W, W, W, WE,T, T], // 14
+  [T, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, P, _, _, _, _, _, _, T, WE,W, W, W, W, WE,T, T], // 15
+  [T, _, _, _, _, T, _, _, _, FL,_, _, _, _, _, _, _, _, _, _, _, FL,_, T, WE,W, W, W, W, WE,T, T], // 16
+  [T, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, T, WE,W, W, W, W, WE,T, T], // 17
+  [T, _, FL,_, _, _, _, _, _, _, _, _, FL,_, _, _, _, T, _, _, _, _, _, T, WE,W, W, W, W, WE,T, T], // 18
+  [T, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, FL,_, _, T, WE,W, W, W, W, WE,T, T], // 19
+  [T, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, T, WE,W, W, W, W, WE,T, T], // 20
+  [T, _, _, _, _, _, _, R, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, T, WE,W, W, W, W, WE,T, T], // 21
+  [T, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, T, WE,W, W, W, W, WE,T, T], // 22
+  [T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T], // 23
 ];
 
-// House definitions with door positions and interior references
+// ── House definitions ──
 export const houses = [
   {
     id: 'house1',
-    name: 'Maison de la Clarté',
-    color: 'blue',
-    // Top-left tile position of the house on the map
-    mapX: 5,
-    mapY: 3,
-    width: 5,
-    height: 3,
-    // Door position (relative to map, where player stands to enter)
-    doorX: 7,
-    doorY: 6,
+    name: 'Maison du Savoir',
+    style: 'red',    // Red roof from Serene Village tileset
+    mapX: 5, mapY: 3,
+    w: 5, h: 3,
+    doorX: 7, doorY: 6,  // Where player stands to enter
   },
   {
     id: 'house2',
     name: 'Maison du Courage',
-    color: 'green',
-    mapX: 17,
-    mapY: 4,
-    width: 5,
-    height: 3,
-    doorX: 19,
-    doorY: 7,
+    style: 'green',
+    mapX: 16, mapY: 4,
+    w: 5, h: 3,
+    doorX: 18, doorY: 7,
   },
   {
     id: 'house3',
-    name: 'Maison du Terrain',
-    color: 'orange',
-    mapX: 14,
-    mapY: 12,
-    width: 5,
-    height: 3,
-    doorX: 17,
-    doorY: 15,
+    name: 'Maison de l\'Esprit',
+    style: 'blue',
+    mapX: 14, mapY: 12,
+    w: 5, h: 3,
+    doorX: 16, doorY: 15,
   },
 ];
 
-// Interior map for houses (10x8 tiles)
-export const INTERIOR_COLS = 10;
-export const INTERIOR_ROWS = 8;
+// ── Interior (10 x 8) ──
+export const INT_W = 10;
+export const INT_H = 8;
 
 // Interior tile types
-const FL_WOOD = 0;  // Wood floor
-const WALL = 1;     // Wall
-const TBL = 2;      // Table
-const CHR = 3;      // Chair
-const BED = 4;      // Bed
-const BKSH = 5;     // Bookshelf
-const CHST = 6;     // Chest
-const DR = 7;       // Door (exit)
-const RG = 8;       // Rug
-const FP = 9;       // Fireplace
-const BRL = 11;     // Barrel
-const PT = 12;      // Pot
+export const IW = 0; // Wall
+export const IF = 1; // Wood floor
+export const IT = 2; // Table
+export const IC = 3; // Chair
+export const IB = 4; // Bed
+export const IK = 5; // Bookshelf
+export const IX = 6; // Chest
+export const ID = 7; // Door (exit)
+export const IR = 8; // Rug
+export const IP = 9; // Fireplace
+export const IL = 10; // Barrel
+export const IQ = 11; // Potted plant
 
-// Generic interior layout
 export const interiorMap = [
-  [WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL],
-  [WALL, BKSH, FL_WOOD, FL_WOOD, FP, FL_WOOD, FL_WOOD, FL_WOOD, BKSH, WALL],
-  [WALL, FL_WOOD, FL_WOOD, FL_WOOD, FL_WOOD, FL_WOOD, FL_WOOD, FL_WOOD, FL_WOOD, WALL],
-  [WALL, FL_WOOD, TBL, TBL, FL_WOOD, FL_WOOD, BED, BED, FL_WOOD, WALL],
-  [WALL, FL_WOOD, CHR, CHR, FL_WOOD, FL_WOOD, FL_WOOD, FL_WOOD, FL_WOOD, WALL],
-  [WALL, FL_WOOD, FL_WOOD, FL_WOOD, RG, RG, FL_WOOD, BRL, PT, WALL],
-  [WALL, CHST, FL_WOOD, FL_WOOD, RG, RG, FL_WOOD, FL_WOOD, FL_WOOD, WALL],
-  [WALL, WALL, WALL, WALL, DR, DR, WALL, WALL, WALL, WALL],
+  [IW, IW, IW, IW, IW, IW, IW, IW, IW, IW],
+  [IW, IK, IF, IF, IP, IF, IF, IF, IK, IW],
+  [IW, IF, IF, IF, IF, IF, IF, IF, IF, IW],
+  [IW, IF, IT, IT, IF, IF, IB, IB, IF, IW],
+  [IW, IF, IC, IC, IF, IF, IF, IF, IF, IW],
+  [IW, IF, IF, IF, IR, IR, IF, IL, IQ, IW],
+  [IW, IX, IF, IF, IR, IR, IF, IF, IF, IW],
+  [IW, IW, IW, IW, ID, ID, IW, IW, IW, IW],
 ];
 
-// Collision map for village (true = blocked)
-export function isBlocked(tileType) {
-  return tileType === T || tileType === W || tileType === F;
+// ── Collision helpers ──
+export function isBlocked(tile) {
+  return tile === T || tile === W || tile === WE || tile === H || tile === R || tile === F;
 }
 
-// Check if a tile is a house tile
-export function isHouseTile(tileType) {
-  return tileType === H1 || tileType === H2 || tileType === H3;
+export function isInteriorBlocked(tile) {
+  return tile === IW || tile === IT || tile === IB || tile === IK || tile === IX || tile === IP || tile === IL || tile === IQ;
 }
 
-// Collision map for interior
-export function isInteriorBlocked(tileType) {
-  return tileType === WALL || tileType === TBL || tileType === BED ||
-         tileType === BKSH || tileType === CHST || tileType === FP ||
-         tileType === BRL || tileType === PT;
+export function isInteriorDoor(tile) {
+  return tile === ID;
 }
-
-// Check if standing on a door
-export function isInteriorDoor(tileType) {
-  return tileType === DR;
-}
-
-export { G, W, P, T, H1, H2, H3, F, FL, B };
-export { FL_WOOD, WALL, TBL, CHR, BED, BKSH, CHST, DR, RG, FP, BRL, PT };

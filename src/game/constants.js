@@ -1,22 +1,20 @@
-// Tile size in the tileset PNG
-export const TILE_SIZE = 16;
-// Scale factor for rendering
+// Tile size in the tileset
+export const TILE = 16;
+// Scale factor for crisp pixel art
 export const SCALE = 3;
-// Rendered tile size
-export const RENDER_SIZE = TILE_SIZE * SCALE;
+// Rendered tile size on screen
+export const RS = TILE * SCALE; // 48px
 
-// Map dimensions in tiles
-export const MAP_COLS = 30;
-export const MAP_ROWS = 22;
+// Village map dimensions in tiles
+export const MAP_W = 32;
+export const MAP_H = 24;
 
-// Player speed in pixels per frame
-export const PLAYER_SPEED = 2.5;
+// Player
+export const PLAYER_SPEED = 1.8;
+export const PLAYER_FRAME_MS = 180;
 
-// Animation
-export const ANIM_FRAME_DURATION = 150; // ms per frame
-
-// Game states
-export const GAME_STATE = {
-  VILLAGE: 'village',
-  INTERIOR: 'interior',
+// Game modes
+export const MODE = {
+  VILLAGE: 0,
+  INTERIOR: 1,
 };

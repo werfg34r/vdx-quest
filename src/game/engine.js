@@ -1,22 +1,20 @@
-import { GAME_STATE, TILE_SIZE } from './constants.js';
-import { loadTileset, renderVillage, renderInterior, renderPlayer } from './renderer.js';
-import { createPlayer, updatePlayer, getNearbyHouse, isAtInteriorDoor } from './player.js';
+import { MODE, TILE } from './constants.js';
+import { loadAssets } from './assets.js';
+import { renderVillage, renderInterior, renderPlayer } from './renderer.js';
+import { createPlayer, updatePlayer, getNearbyHouse, isAtDoor } from './player.js';
 
 export function startGame(canvas) {
   const ctx = canvas.getContext('2d');
-
-  // Disable image smoothing for pixel art
   ctx.imageSmoothingEnabled = false;
 
-  let gameState = GAME_STATE.VILLAGE;
+  let mode = MODE.VILLAGE;
   let player = createPlayer();
-  let currentHouse = null;
+  let house = null;
   let frame = 0;
   let keys = {};
-  let animFrameId = null;
+  let raf = null;
   let transitioning = false;
 
-  // Resize canvas to fill window
   function resize() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
@@ -25,71 +23,56 @@ export function startGame(canvas) {
   resize();
   window.addEventListener('resize', resize);
 
-  // Keyboard input
-  function onKeyDown(e) {
+  // ── Keyboard ──
+  function onDown(e) {
     keys[e.code] = true;
-
-    // Space to enter/exit houses
     if (e.code === 'Space' && !transitioning) {
       e.preventDefault();
-
-      if (gameState === GAME_STATE.VILLAGE) {
-        const house = getNearbyHouse(player);
-        if (house) {
-          transitioning = true;
-          currentHouse = house;
-          gameState = GAME_STATE.INTERIOR;
-          // Place player near interior door
-          player.interiorX = 4 * TILE_SIZE;
-          player.interiorY = 5 * TILE_SIZE;
-          player.direction = 'up';
-          setTimeout(() => { transitioning = false; }, 300);
-        }
-      } else if (gameState === GAME_STATE.INTERIOR) {
-        if (isAtInteriorDoor(player)) {
-          transitioning = true;
-          gameState = GAME_STATE.VILLAGE;
-          // Place player in front of the house door
-          if (currentHouse) {
-            player.x = currentHouse.doorX * TILE_SIZE;
-            player.y = (currentHouse.doorY + 1) * TILE_SIZE;
-          }
-          player.direction = 'down';
-          currentHouse = null;
-          setTimeout(() => { transitioning = false; }, 300);
-        }
+      if (mode === MODE.VILLAGE) {
+        const h = getNearbyHouse(player);
+        if (h) enterHouse(h);
+      } else if (mode === MODE.INTERIOR && isAtDoor(player)) {
+        exitHouse();
       }
     }
   }
+  function onUp(e) { keys[e.code] = false; }
+  window.addEventListener('keydown', onDown);
+  window.addEventListener('keyup', onUp);
 
-  function onKeyUp(e) {
-    keys[e.code] = false;
+  function enterHouse(h) {
+    transitioning = true;
+    house = h;
+    mode = MODE.INTERIOR;
+    player.interiorX = 4 * TILE;
+    player.interiorY = 5 * TILE;
+    player.direction = 'up';
+    setTimeout(() => { transitioning = false; }, 250);
   }
 
-  window.addEventListener('keydown', onKeyDown);
-  window.addEventListener('keyup', onKeyUp);
+  function exitHouse() {
+    transitioning = true;
+    mode = MODE.VILLAGE;
+    if (house) {
+      player.x = house.doorX * TILE;
+      player.y = (house.doorY + 1) * TILE;
+    }
+    player.direction = 'down';
+    house = null;
+    setTimeout(() => { transitioning = false; }, 250);
+  }
 
-  // Mobile touch controls
-  let touchStartX = 0;
-  let touchStartY = 0;
-
+  // ── Touch ──
+  let touchX = 0, touchY = 0;
   canvas.addEventListener('touchstart', (e) => {
-    const touch = e.touches[0];
-    touchStartX = touch.clientX;
-    touchStartY = touch.clientY;
+    const t = e.touches[0];
+    touchX = t.clientX; touchY = t.clientY;
   });
-
   canvas.addEventListener('touchmove', (e) => {
     e.preventDefault();
-    const touch = e.touches[0];
-    const dx = touch.clientX - touchStartX;
-    const dy = touch.clientY - touchStartY;
-
-    keys.ArrowLeft = false;
-    keys.ArrowRight = false;
-    keys.ArrowUp = false;
-    keys.ArrowDown = false;
-
+    const t = e.touches[0];
+    const dx = t.clientX - touchX, dy = t.clientY - touchY;
+    keys.ArrowLeft = keys.ArrowRight = keys.ArrowUp = keys.ArrowDown = false;
     if (Math.abs(dx) > Math.abs(dy)) {
       if (dx > 20) keys.ArrowRight = true;
       if (dx < -20) keys.ArrowLeft = true;
@@ -98,98 +81,60 @@ export function startGame(canvas) {
       if (dy < -20) keys.ArrowUp = true;
     }
   }, { passive: false });
-
   canvas.addEventListener('touchend', () => {
-    keys.ArrowLeft = false;
-    keys.ArrowRight = false;
-    keys.ArrowUp = false;
-    keys.ArrowDown = false;
-
-    // Tap to interact (like space)
-    if (gameState === GAME_STATE.VILLAGE) {
-      const house = getNearbyHouse(player);
-      if (house && !transitioning) {
-        transitioning = true;
-        currentHouse = house;
-        gameState = GAME_STATE.INTERIOR;
-        player.interiorX = 4 * TILE_SIZE;
-        player.interiorY = 5 * TILE_SIZE;
-        player.direction = 'up';
-        setTimeout(() => { transitioning = false; }, 300);
-      }
-    } else if (gameState === GAME_STATE.INTERIOR && isAtInteriorDoor(player)) {
-      if (!transitioning) {
-        transitioning = true;
-        gameState = GAME_STATE.VILLAGE;
-        if (currentHouse) {
-          player.x = currentHouse.doorX * TILE_SIZE;
-          player.y = (currentHouse.doorY + 1) * TILE_SIZE;
-        }
-        player.direction = 'down';
-        currentHouse = null;
-        setTimeout(() => { transitioning = false; }, 300);
-      }
-    }
+    keys.ArrowLeft = keys.ArrowRight = keys.ArrowUp = keys.ArrowDown = false;
   });
 
-  // Game loop
-  function gameLoop() {
+  // ── Game Loop ──
+  function loop() {
     frame++;
-    updatePlayer(player, keys, gameState);
+    updatePlayer(player, keys, mode);
 
-    let camera = { cameraX: 0, cameraY: 0 };
-    let interiorOffset = { offsetX: 0, offsetY: 0 };
+    let cam = { cameraX: 0, cameraY: 0 };
+    let intOff = { offsetX: 0, offsetY: 0 };
 
-    if (gameState === GAME_STATE.VILLAGE) {
-      camera = renderVillage(ctx, canvas, player, frame);
-      renderPlayer(ctx, player, camera.cameraX, camera.cameraY, gameState, interiorOffset);
+    if (mode === MODE.VILLAGE) {
+      cam = renderVillage(ctx, canvas, player, frame);
+      renderPlayer(ctx, player, cam.cameraX, cam.cameraY, mode, intOff, frame);
     } else {
-      interiorOffset = renderInterior(ctx, canvas, player, currentHouse, frame);
-      renderPlayer(ctx, player, 0, 0, gameState, interiorOffset);
+      intOff = renderInterior(ctx, canvas, player, house, frame);
+      renderPlayer(ctx, player, 0, 0, mode, intOff, frame);
     }
 
-    // HUD
-    drawHUD(ctx, canvas, gameState, currentHouse);
-
-    animFrameId = requestAnimationFrame(gameLoop);
+    drawHUD(ctx, canvas, mode, house);
+    raf = requestAnimationFrame(loop);
   }
 
-  // Load assets then start
-  loadTileset().then(() => {
-    gameLoop();
-  });
+  // ── HUD ──
+  function drawHUD(ctx, canvas, mode, house) {
+    // Top bar
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.fillRect(0, 0, canvas.width, 40);
+    ctx.fillStyle = '#c7b777';
+    ctx.font = 'bold 16px monospace';
+    ctx.fillText('VDX QUEST', 14, 26);
+    ctx.fillStyle = '#999';
+    ctx.font = '12px monospace';
+    ctx.fillText(
+      mode === MODE.VILLAGE ? 'Village de Départ — Semaine 1' : (house?.name || 'Intérieur'),
+      150, 26
+    );
 
-  // Return cleanup function
+    // Bottom bar
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.fillRect(0, canvas.height - 32, canvas.width, 32);
+    ctx.fillStyle = '#777';
+    ctx.font = '11px monospace';
+    ctx.fillText('Flèches / ZQSD pour se déplacer  │  ESPACE pour interagir', 14, canvas.height - 12);
+  }
+
+  // Load then start
+  loadAssets().then(() => { loop(); });
+
   return () => {
     window.removeEventListener('resize', resize);
-    window.removeEventListener('keydown', onKeyDown);
-    window.removeEventListener('keyup', onKeyUp);
-    if (animFrameId) cancelAnimationFrame(animFrameId);
+    window.removeEventListener('keydown', onDown);
+    window.removeEventListener('keyup', onUp);
+    if (raf) cancelAnimationFrame(raf);
   };
-}
-
-function drawHUD(ctx, canvas, gameState, currentHouse) {
-  // Title bar
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-  ctx.fillRect(0, 0, canvas.width, 44);
-
-  ctx.fillStyle = '#c7b777';
-  ctx.font = 'bold 18px monospace';
-  ctx.fillText('VDX QUEST', 16, 28);
-
-  ctx.fillStyle = '#888';
-  ctx.font = '12px monospace';
-
-  if (gameState === GAME_STATE.VILLAGE) {
-    ctx.fillText('Village de Départ — Semaine 1', 160, 28);
-  } else {
-    ctx.fillText(currentHouse?.name || 'Intérieur', 160, 28);
-  }
-
-  // Controls hint
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-  ctx.fillRect(0, canvas.height - 36, canvas.width, 36);
-  ctx.fillStyle = '#666';
-  ctx.font = '11px monospace';
-  ctx.fillText('Flèches / ZQSD pour se déplacer   |   ESPACE pour interagir', 16, canvas.height - 14);
 }
