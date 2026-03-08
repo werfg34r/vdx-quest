@@ -1,17 +1,17 @@
-// VDX Quest Sprite System — Sunnyside World Edition
-// Uses sunnyside_tiles.png for all environment rendering
-// Uses characters.png for player & NPC sprites (Sunnyside character art)
+// VDX Quest Sprite System — Tuxemon + KelvinShadewing Edition
+// Terrain: procedural tileset (sunnyside_tiles.png)
+// Buildings: KelvinShadewing building sprites (house_*.png)
+// Characters: Tuxemon NPC sprites (npc_*.png, 16x32 per frame)
 
-const S = 16 // tile size
+const S = 16 // tile size in tileset
+const CHAR_W = 16 // character frame width
+const CHAR_H = 32 // character frame height (Tuxemon format)
 
 // ==================== TILESET COORDINATES ====================
 // sunnyside_tiles.png layout (16 cols x 8 rows):
 // Row 0: grass(0-5), darkGrass(6-7), tallGrass(8-9), path(10-12), sand(13-14), bridge(15)
 // Row 1: tree(0-2), water(3-6), fence(7), sign(8), mountain(9-10), flower(11-15)
-// Row 2: house blue (roofTL,TC,TR=0-2, midL,MC,MR=3-5, wallL,Win,R=6-8, botL,Door,BR=9-11)
-// Row 3: house orange (same layout)
-// Row 4: interior (floor=0-2, wall=3-5, table=6-7, chair=8, bookshelf=9-10, barrel=11, chest=12, bed=13, pot=14, carpet=15)
-// Row 5: torch=0, doormat=1, altar=2
+// Row 4-5: interior tiles
 
 const TC = {
   grass:     [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 2, y: 0 }, { x: 3, y: 0 }, { x: 4, y: 0 }, { x: 5, y: 0 }],
@@ -26,54 +26,61 @@ const TC = {
   sign:      { x: 8, y: 1 },
   mountain:  [{ x: 9, y: 1 }, { x: 10, y: 1 }],
   flower:    [{ x: 11, y: 1 }, { x: 12, y: 1 }, { x: 13, y: 1 }, { x: 14, y: 1 }, { x: 15, y: 1 }],
-  // House tiles (blue) - 3 wide x 4 tall
-  houseRoofTL:  { x: 0, y: 2 }, houseRoofTC:  { x: 1, y: 2 }, houseRoofTR:  { x: 2, y: 2 },
-  houseRoofML:  { x: 3, y: 2 }, houseRoofMC:  { x: 4, y: 2 }, houseRoofMR:  { x: 5, y: 2 },
-  houseWallL:   { x: 6, y: 2 }, houseWallWin: { x: 7, y: 2 }, houseWallR:   { x: 8, y: 2 },
-  houseWallDL:  { x: 9, y: 2 }, houseDoor:    { x: 10, y: 2 }, houseWallDR:  { x: 11, y: 2 },
-  // Interior
-  floor:     [{ x: 0, y: 4 }, { x: 1, y: 4 }, { x: 2, y: 4 }],
-  wall:      [{ x: 3, y: 4 }, { x: 4, y: 4 }, { x: 5, y: 4 }],
-  table:     { x: 6, y: 4 },
-  chair:     { x: 8, y: 4 },
-  bookshelf: { x: 9, y: 4 },
-  barrel:    { x: 11, y: 4 },
-  chest:     { x: 12, y: 4 },
-  bed:       { x: 13, y: 4 },
-  pot:       { x: 14, y: 4 },
-  carpet:    { x: 15, y: 4 },
-  torch:     { x: 0, y: 5 },
-  doormat:   { x: 1, y: 5 },
-  altar:     { x: 2, y: 5 },
 }
 
-// Character layout in characters.png (matches original character.png format)
-const NPC_CHARS = {
-  mentor:   { startCol: 3,  baseRow: 0 },
-  villager: { startCol: 0,  baseRow: 8 },
-  warrior:  { startCol: 9,  baseRow: 0 },
-  sage:     { startCol: 12, baseRow: 0 },
-  old:      { startCol: 6,  baseRow: 8 },
-  trader:   { startCol: 3,  baseRow: 8 },
+// Tuxemon sprite direction rows (48x128 sheet: 3 cols x 4 rows of 16x32)
+// Row 0 = back (up), Row 1 = front (down), Row 2 = left, Row 3 = right
+const TUXEMON_DIR = { up: 0, down: 1, left: 2, right: 3 }
+
+// NPC sprite file mapping
+const NPC_SPRITES = {
+  mentor:   'npc_boss',
+  villager: 'npc_girl',
+  warrior:  'npc_knight',
+  sage:     'npc_sage',
+  old:      'npc_bob',
+  trader:   'npc_shopkeeper',
 }
 
-const DIR_ROWS = { down: 0, left: 1, right: 2, up: 3 }
+// House sprite mapping (zone id → house image key)
+const HOUSE_SPRITES = {
+  1: 'house_red',
+  2: 'house_blue',
+  3: 'house_brown',
+}
 
 function loadImage(src) {
   return new Promise((resolve, reject) => {
     const img = new Image()
     img.onload = () => resolve(img)
-    img.onerror = reject
+    img.onerror = () => {
+      console.warn(`Failed to load: ${src}`)
+      resolve(null)
+    }
     img.src = src
   })
 }
 
 export async function loadSpriteAtlas() {
-  const [tileset, character] = await Promise.all([
-    loadImage('/assets/sunnyside_tiles.png'),
-    loadImage('/assets/characters.png'),
-  ])
-  return { tileset, character, S }
+  // Load tileset
+  const tileset = await loadImage('/assets/sunnyside_tiles.png')
+
+  // Load house sprites
+  const houses = {}
+  for (const [key, name] of Object.entries(HOUSE_SPRITES)) {
+    houses[key] = await loadImage(`/assets/${name}.png`)
+  }
+
+  // Load NPC sprites (Tuxemon format: 48x128)
+  const npcSprites = {}
+  for (const [type, filename] of Object.entries(NPC_SPRITES)) {
+    npcSprites[type] = await loadImage(`/assets/${filename}.png`)
+  }
+
+  // Load player sprite
+  const player = await loadImage('/assets/npc_adventurer.png')
+
+  return { tileset, houses, npcSprites, player, S }
 }
 
 function tileHash(px, py) {
@@ -94,12 +101,11 @@ export function drawSpriteTile(ctx, atlas, tileType, px, py, tick) {
   const ts = atlas.tileset
 
   switch (tileType) {
-    // Terrain
     case 0:  blitVariant(ctx, ts, TC.grass, px, py); break
     case 9:  blitVariant(ctx, ts, TC.darkGrass, px, py); break
     case 17: blitVariant(ctx, ts, TC.tallGrass, px, py); break
     case 1:  blitVariant(ctx, ts, TC.path, px, py); break
-    case 2: { // Water — animate through 4 frames
+    case 2: {
       const frame = Math.floor(tick / 20) % 4
       blit(ctx, ts, TC.water[frame], px, py)
       break
@@ -112,27 +118,62 @@ export function drawSpriteTile(ctx, atlas, tileType, px, py, tick) {
     case 10: blitVariant(ctx, ts, TC.sand, px, py); break
     case 14: blit(ctx, ts, TC.sign, px, py); break
 
-    // House tiles — now from sunnyside tileset
-    case 30: blitVariant(ctx, ts, TC.grass, px, py); blit(ctx, ts, TC.houseRoofTL, px, py); break
-    case 31: blitVariant(ctx, ts, TC.grass, px, py); blit(ctx, ts, TC.houseRoofTC, px, py); break
-    case 32: blitVariant(ctx, ts, TC.grass, px, py); blit(ctx, ts, TC.houseRoofTR, px, py); break
-    case 33: blit(ctx, ts, TC.houseRoofML, px, py); break
-    case 34: blit(ctx, ts, TC.houseRoofMC, px, py); break
-    case 35: blit(ctx, ts, TC.houseRoofMR, px, py); break
-    case 36: blit(ctx, ts, TC.houseWallL, px, py); break
-    case 37: blit(ctx, ts, TC.houseWallWin, px, py); break
-    case 38: blit(ctx, ts, TC.houseWallR, px, py); break
-    case 39: blit(ctx, ts, TC.houseWallDL, px, py); break
-    case 40: blit(ctx, ts, TC.houseDoor, px, py); break
-    case 41: blit(ctx, ts, TC.houseWallDR, px, py); break
+    // House tiles — render grass underneath (house sprite drawn separately)
+    case 30: case 31: case 32:
+    case 33: case 34: case 35:
+    case 36: case 37: case 38:
+    case 39: case 40: case 41:
+      blitVariant(ctx, ts, TC.grass, px, py)
+      break
 
     default: blitVariant(ctx, ts, TC.grass, px, py)
   }
 }
 
+// ==================== HOUSE RENDERING ====================
+// Houses are rendered as complete sprites (5 tiles wide × 4 tiles tall = 80×64px)
+export function drawHouseSprite(ctx, atlas, zoneId, houseX, houseY) {
+  const houseImg = atlas.houses[zoneId]
+  if (!houseImg) return
+
+  // House sprite is 80x64 (5×4 tiles), but our map grid is 3×4 tiles
+  // Center the 5-tile-wide sprite on the 3-tile-wide footprint
+  const offsetX = -S // shift 1 tile left to center 5 on 3
+  const drawX = Math.floor(houseX * S + offsetX)
+  const drawY = Math.floor(houseY * S)
+
+  ctx.drawImage(houseImg, drawX, drawY, 80, 64)
+}
+
+export function drawHouseShadow(ctx, houseX, houseY) {
+  const px = houseX * S
+  const py = houseY * S
+  ctx.save()
+  ctx.globalAlpha = 0.15
+  ctx.fillStyle = '#000'
+  // Shadow extends to the right and below
+  ctx.fillRect(px + S * 3 + 2, py + S, 6, S * 3)
+  ctx.fillRect(px - 4, py + S * 4, S * 3 + 12, 4)
+  ctx.restore()
+}
+
 // ==================== CHARACTER RENDERING ====================
-const CHAR_DRAW = 22
-const CHAR_OFF = (CHAR_DRAW - S) / 2
+// Tuxemon sprites: 48×128 = 3 frames × 4 directions at 16×32 each
+
+function drawTuxemonSprite(ctx, spriteImg, direction, frame, px, py) {
+  if (!spriteImg) return
+  const frameIdx = frame % 3
+  const dirRow = TUXEMON_DIR[direction] ?? TUXEMON_DIR.down
+
+  const sx = frameIdx * CHAR_W
+  const sy = dirRow * CHAR_H
+
+  // Draw at tile position, offset up by 16px so feet align with tile
+  const drawX = Math.floor(px)
+  const drawY = Math.floor(py) - CHAR_H + S // feet at bottom of tile
+
+  ctx.drawImage(spriteImg, sx, sy, CHAR_W, CHAR_H, drawX, drawY, CHAR_W, CHAR_H)
+}
 
 export function drawCharacterShadow(ctx, px, py, width, alpha) {
   const w = width || 12
@@ -158,17 +199,6 @@ export function drawTreeShadow(ctx, px, py) {
   ctx.restore()
 }
 
-export function drawHouseShadow(ctx, houseX, houseY) {
-  const px = houseX * S
-  const py = houseY * S
-  ctx.save()
-  ctx.globalAlpha = 0.12
-  ctx.fillStyle = '#000'
-  ctx.fillRect(px + S * 3, py + S, 4, S * 3)
-  ctx.fillRect(px + 2, py + S * 4, S * 3 + 2, 3)
-  ctx.restore()
-}
-
 export function drawWindowGlow(ctx, px, py, intensity) {
   if (intensity <= 0) return
   ctx.save()
@@ -185,39 +215,20 @@ export function drawWindowGlow(ctx, px, py, intensity) {
 }
 
 export function drawPlayerSprite(ctx, atlas, direction, frame, px, py) {
-  const img = atlas.character
-  const frameIdx = frame % 3
-  const dirOffset = DIR_ROWS[direction] || 0
-  const sx = frameIdx * S
-  const sy = dirOffset * S
-  ctx.drawImage(img, sx, sy, S, S,
-    Math.floor(px - CHAR_OFF), Math.floor(py - CHAR_OFF - 2),
-    CHAR_DRAW, CHAR_DRAW)
+  drawTuxemonSprite(ctx, atlas.player, direction, frame, px, py)
 }
 
 export function drawNPCSprite(ctx, atlas, spriteType, px, py, tick, direction) {
-  const charDef = NPC_CHARS[spriteType]
-  if (!charDef) {
-    drawPlayerSprite(ctx, atlas, direction || 'down', 0, px, py)
-    return
+  const spriteImg = atlas.npcSprites[spriteType]
+  if (spriteImg) {
+    drawTuxemonSprite(ctx, spriteImg, direction || 'down', 0, px, py)
+  } else {
+    // Fallback to player sprite
+    drawTuxemonSprite(ctx, atlas.player, direction || 'down', 0, px, py)
   }
-
-  const img = atlas.character
-  const frameIdx = 0 // standing frame
-
-  const sx = (charDef.startCol + frameIdx) * S
-  const dirOffset = DIR_ROWS[direction || 'down'] || 0
-  const sy = (charDef.baseRow + dirOffset) * S
-
-  ctx.drawImage(img, sx, sy, S, S,
-    Math.floor(px - CHAR_OFF), Math.floor(py - CHAR_OFF - 2),
-    CHAR_DRAW, CHAR_DRAW)
 }
 
 // ==================== INTERIOR TILES ====================
-// Uses Sunnyside tileset for interior rendering with animated overlays
-
-// Interior tile coordinates in tileset (row 4-5)
 const ITC = {
   floor:     [{ x: 0, y: 4 }, { x: 1, y: 4 }, { x: 2, y: 4 }],
   wall:      [{ x: 3, y: 4 }, { x: 4, y: 4 }, { x: 5, y: 4 }],
@@ -240,7 +251,6 @@ export function drawInteriorTile(ctx, atlas, tileType, px, py, tick) {
   const ts = atlas && atlas.tileset
   const T = S
 
-  // Helper: draw floor background + tileset overlay
   function floorBg() {
     if (ts) {
       blitVariant(ctx, ts, ITC.floor, px, py)
@@ -252,45 +262,26 @@ export function drawInteriorTile(ctx, atlas, tileType, px, py, tick) {
   }
 
   switch (tileType) {
-    case 50: // FLOOR
-      floorBg()
+    case 50: floorBg(); break
+
+    case 51:
+      if (ts) { blitVariant(ctx, ts, ITC.wall, px, py) }
+      else { ctx.fillStyle = '#786A5E'; ctx.fillRect(px, py, T, T) }
       break
 
-    case 51: // WALL
-      if (ts) {
-        blitVariant(ctx, ts, ITC.wall, px, py)
-      } else {
-        ctx.fillStyle = '#786A5E'
-        ctx.fillRect(px, py, T, T)
-      }
-      break
+    case 52: floorBg(); if (ts) { blit(ctx, ts, ITC.table, px, py) }; break
+    case 53: floorBg(); if (ts) { blit(ctx, ts, ITC.chair, px, py) }; break
 
-    case 52: // TABLE
-      floorBg()
-      if (ts) { blit(ctx, ts, ITC.table, px, py) }
-      break
-
-    case 53: // CHAIR
-      floorBg()
-      if (ts) { blit(ctx, ts, ITC.chair, px, py) }
-      break
-
-    case 54: // BOOKSHELF
+    case 54:
       if (ts) {
         blitVariant(ctx, ts, ITC.wall, px, py)
         blit(ctx, ts, tileHash(px, py) % 2 === 0 ? ITC.bookshelf : ITC.bookshelf2, px, py)
-      } else {
-        ctx.fillStyle = '#786A5E'
-        ctx.fillRect(px, py, T, T)
-      }
+      } else { ctx.fillStyle = '#786A5E'; ctx.fillRect(px, py, T, T) }
       break
 
-    case 55: // CARPET
-      floorBg()
-      if (ts) { blit(ctx, ts, ITC.carpet, px, py) }
-      break
+    case 55: floorBg(); if (ts) { blit(ctx, ts, ITC.carpet, px, py) }; break
 
-    case 56: { // QUEST ALTAR — animated glow
+    case 56: {
       floorBg()
       if (ts) { blit(ctx, ts, ITC.altar, px, py) }
       const glow = 0.5 + Math.sin(tick * 0.08) * 0.3
@@ -301,8 +292,7 @@ export function drawInteriorTile(ctx, atlas, tileType, px, py, tick) {
       ctx.arc(px + T / 2, py + T / 2, T * 0.7, 0, Math.PI * 2)
       ctx.fill()
       ctx.restore()
-      const spark = Math.sin(tick * 0.12) > 0.3
-      if (spark) {
+      if (Math.sin(tick * 0.12) > 0.3) {
         ctx.fillStyle = '#fff'
         ctx.fillRect(px + 3, py + 1, 1, 1)
         ctx.fillRect(px + 11, py + 2, 1, 1)
@@ -310,30 +300,15 @@ export function drawInteriorTile(ctx, atlas, tileType, px, py, tick) {
       break
     }
 
-    case 57: // BARREL
-      floorBg()
-      if (ts) { blit(ctx, ts, ITC.barrel, px, py) }
-      break
+    case 57: floorBg(); if (ts) { blit(ctx, ts, ITC.barrel, px, py) }; break
+    case 58: floorBg(); if (ts) { blit(ctx, ts, ITC.bed, px, py) }; break
+    case 59: floorBg(); if (ts) { blit(ctx, ts, ITC.doormat, px, py) }; break
 
-    case 58: // BED
-      floorBg()
-      if (ts) { blit(ctx, ts, ITC.bed, px, py) }
-      break
-
-    case 59: // DOOR MAT
-      floorBg()
-      if (ts) { blit(ctx, ts, ITC.doormat, px, py) }
-      break
-
-    case 60: { // TORCH — animated flame overlay
+    case 60: {
       if (ts) {
         blitVariant(ctx, ts, ITC.wall, px, py)
         blit(ctx, ts, ITC.torch, px, py)
-      } else {
-        ctx.fillStyle = '#786A5E'
-        ctx.fillRect(px, py, T, T)
-      }
-      // Animated flame glow
+      } else { ctx.fillStyle = '#786A5E'; ctx.fillRect(px, py, T, T) }
       ctx.save()
       const pulse = 0.3 + Math.sin(tick * 0.1 + px) * 0.1
       ctx.globalAlpha = pulse
@@ -343,7 +318,6 @@ export function drawInteriorTile(ctx, atlas, tileType, px, py, tick) {
       ctx.fillStyle = g
       ctx.fillRect(px - 4, py - 4, T + 8, T + 8)
       ctx.restore()
-      // Flame tip
       const fl = Math.sin(tick * 0.15 + px) * 0.8
       ctx.fillStyle = '#FF4400'
       ctx.fillRect(px + 5 + fl, py + 3, 6, 5)
@@ -354,22 +328,12 @@ export function drawInteriorTile(ctx, atlas, tileType, px, py, tick) {
       break
     }
 
-    case 61: // POT
-      floorBg()
-      if (ts) { blit(ctx, ts, ITC.pot, px, py) }
-      break
-
-    case 62: // CHEST
-      floorBg()
-      if (ts) { blit(ctx, ts, ITC.chest, px, py) }
-      break
-
-    default:
-      floorBg()
+    case 61: floorBg(); if (ts) { blit(ctx, ts, ITC.pot, px, py) }; break
+    case 62: floorBg(); if (ts) { blit(ctx, ts, ITC.chest, px, py) }; break
+    default: floorBg()
   }
 }
 
-// Interior tile constants
 export const IT = {
   FLOOR: 50, WALL: 51, TABLE: 52, CHAIR: 53, BOOKSHELF: 54,
   CARPET: 55, ALTAR: 56, BARREL: 57, BED: 58, DOOR_MAT: 59,

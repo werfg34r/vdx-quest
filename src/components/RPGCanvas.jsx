@@ -7,7 +7,7 @@ import {
 import {
   loadSpriteAtlas, drawSpriteTile, drawPlayerSprite, drawNPCSprite,
   drawInteriorTile, generateInterior, canMoveInterior, IT,
-  drawCharacterShadow, drawTreeShadow, drawHouseShadow, drawWindowGlow,
+  drawCharacterShadow, drawTreeShadow, drawHouseShadow, drawHouseSprite, drawWindowGlow,
 } from '../game/sprites'
 import {
   ParticleSystem, DayNightCycle, Minimap, MINIMAP_TILE_COLORS, renderVignette,
@@ -650,11 +650,12 @@ export default function RPGCanvas({ onOpenZone }) {
         }
       }
 
-      // Draw house shadows
+      // Draw house shadows + house sprites
       for (const zone of ZONES) {
         if (zone.houseX >= startCol - 3 && zone.houseX <= endCol + 3 &&
             zone.houseY >= startRow - 3 && zone.houseY <= endRow + 3) {
           drawHouseShadow(ctx, zone.houseX, zone.houseY)
+          drawHouseSprite(ctx, atlas, zone.id, zone.houseX, zone.houseY)
         }
       }
 
