@@ -29,8 +29,8 @@ const TC = {
 }
 
 // Tuxemon sprite direction rows (48x128 sheet: 3 cols x 4 rows of 16x32)
-// Row 0 = back (up), Row 1 = front (down), Row 2 = left, Row 3 = right
-const TUXEMON_DIR = { up: 0, down: 1, left: 2, right: 3 }
+// Row 0 = front (down), Row 1 = back (up), Row 2 = left, Row 3 = right
+const TUXEMON_DIR = { down: 0, up: 1, left: 2, right: 3 }
 
 // NPC sprite file mapping
 const NPC_SPRITES = {
@@ -218,13 +218,13 @@ export function drawPlayerSprite(ctx, atlas, direction, frame, px, py) {
   drawTuxemonSprite(ctx, atlas.player, direction, frame, px, py)
 }
 
-export function drawNPCSprite(ctx, atlas, spriteType, px, py, tick, direction) {
+export function drawNPCSprite(ctx, atlas, spriteType, px, py, tick, direction, walkFrame) {
   const spriteImg = atlas.npcSprites[spriteType]
+  const frame = walkFrame ?? 0
   if (spriteImg) {
-    drawTuxemonSprite(ctx, spriteImg, direction || 'down', 0, px, py)
+    drawTuxemonSprite(ctx, spriteImg, direction || 'down', frame, px, py)
   } else {
-    // Fallback to player sprite
-    drawTuxemonSprite(ctx, atlas.player, direction || 'down', 0, px, py)
+    drawTuxemonSprite(ctx, atlas.player, direction || 'down', frame, px, py)
   }
 }
 

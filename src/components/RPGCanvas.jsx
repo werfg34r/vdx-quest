@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import {
   TILE, COLS, ROWS, ZONES, NPCS,
   generateMap, drawZoneLabel, drawNPCLabel,
-  getAdjacentZone, getAdjacentNPC, getAdjacentInteriorNPC, canMove,
+  getAdjacentZone, getAdjacentNPC, getAdjacentInteriorNPC, canMove, updateNPCs,
 } from '../game/engine'
 import {
   loadSpriteAtlas, drawSpriteTile, drawPlayerSprite, drawNPCSprite,
@@ -482,6 +482,10 @@ export default function RPGCanvas({ onOpenZone }) {
       }
 
       // ==================== UPDATE SYSTEMS ====================
+      // Update NPC wandering (overworld only)
+      if (game.scene === 'overworld' && !game.dialog && !game.intro) {
+        updateNPCs(map, game.px, game.py)
+      }
       particles.update()
       dayNight.update()
 
@@ -673,20 +677,23 @@ export default function RPGCanvas({ onOpenZone }) {
         }
       }
 
-      // Draw NPC shadows + NPCs (standing still, facing player direction when close)
+      // Draw NPC shadows + NPCs (wandering with animation)
       for (const npc of NPCS) {
-        if (npc.x >= startCol - 1 && npc.x <= endCol + 1 && npc.y >= startRow - 1 && npc.y <= endRow + 1) {
-          // Shadow under NPC
-          drawCharacterShadow(ctx, npc.x * TILE, npc.y * TILE, 10, 0.2)
-          // Face toward player if nearby
-          let dir = 'down'
-          const dx = game.px - npc.x
-          const dy = game.py - npc.y
-          if (Math.abs(dx) + Math.abs(dy) <= 3) {
-            if (Math.abs(dx) > Math.abs(dy)) dir = dx > 0 ? 'right' : 'left'
-            else dir = dy > 0 ? 'down' : 'up'
+        if (npc.x >= startCol - 2 && npc.x <= endCol + 2 && npc.y >= startRow - 2 && npc.y <= endRow + 2) {
+          const npcDrawX = npc.x * TILE + (npc.ox || 0)
+          const npcDrawY = npc.y * TILE + (npc.oy || 0)
+          drawCharacterShadow(ctx, npcDrawX, npcDrawY, 10, 0.2)
+          // Use NPC's own direction if moving, else face toward nearby player
+          let dir = npc.direction || 'down'
+          if (!npc.moving) {
+            const dx = game.px - npc.x
+            const dy = game.py - npc.y
+            if (Math.abs(dx) + Math.abs(dy) <= 3) {
+              if (Math.abs(dx) > Math.abs(dy)) dir = dx > 0 ? 'right' : 'left'
+              else dir = dy > 0 ? 'down' : 'up'
+            }
           }
-          drawNPCSprite(ctx, atlas, npc.sprite, npc.x * TILE, npc.y * TILE, game.tick, dir)
+          drawNPCSprite(ctx, atlas, npc.sprite, npcDrawX, npcDrawY, game.tick, dir, npc.walkFrame || 0)
         }
       }
 
@@ -717,7 +724,9 @@ export default function RPGCanvas({ onOpenZone }) {
       }
       for (const npc of NPCS) {
         if (npc.x >= startCol - 1 && npc.x <= endCol + 1 && npc.y >= startRow - 1 && npc.y <= endRow + 1) {
-          drawNPCLabel(ctx, npc, npc.x * TILE * SCALE, npc.y * TILE * SCALE, game.tick)
+          const nlx = (npc.x * TILE + (npc.ox || 0)) * SCALE
+          const nly = (npc.y * TILE + (npc.oy || 0)) * SCALE
+          drawNPCLabel(ctx, npc, nlx, nly, game.tick)
         }
       }
 

@@ -150,10 +150,10 @@ ZONES.forEach(z => {
   z.doorY = z.houseY + 3
 })
 
-// NPCs on the overworld
+// NPCs on the overworld — with wander support
 const NPCS = [
   {
-    id: 'mentor', x: 19, y: 26, sprite: 'mentor', name: 'Laurent',
+    id: 'mentor', x: 19, y: 26, sprite: 'mentor', name: 'Laurent', wander: 2,
     dialog: [
       'Bienvenue, aventurier. Je suis Laurent, ton guide pour les 90 prochains jours.',
       'L\'objectif du Niveau 0 : passer de quelqu\'un qui pense a entreprendre... a quelqu\'un qui agit.',
@@ -169,7 +169,7 @@ const NPCS = [
     ]
   },
   {
-    id: 'guide1', x: 15, y: 13, sprite: 'villager', name: 'Elise',
+    id: 'guide1', x: 15, y: 13, sprite: 'villager', name: 'Elise', wander: 3,
     dialog: [
       'Salut ! Bienvenue dans le Village de la Clarte.',
       'Les 3 maisons sont les 3 epreuves de la Semaine 1.',
@@ -178,7 +178,7 @@ const NPCS = [
     ]
   },
   {
-    id: 'old1', x: 27, y: 14, sprite: 'old', name: 'Ancien',
+    id: 'old1', x: 27, y: 14, sprite: 'old', name: 'Ancien', wander: 1,
     dialog: [
       'Beaucoup passent par ici... peu vont jusqu\'au bout.',
       'Le secret ? La constance bat le talent.',
@@ -188,7 +188,7 @@ const NPCS = [
     ]
   },
   {
-    id: 'trader1', x: 22, y: 12, sprite: 'trader', name: 'Marc',
+    id: 'trader1', x: 22, y: 12, sprite: 'trader', name: 'Marc', wander: 2,
     dialog: [
       'Je suis Marc, ancien entrepreneur.',
       'Mon premier business a echoue. Le deuxieme aussi.',
@@ -197,7 +197,7 @@ const NPCS = [
     ]
   },
   {
-    id: 'villager2', x: 8, y: 24, sprite: 'villager', name: 'Sophie',
+    id: 'villager2', x: 8, y: 24, sprite: 'villager', name: 'Sophie', wander: 3,
     dialog: [
       'Tu vois ce jardin ? Je l\'ai plante graine par graine.',
       'L\'entrepreneuriat, c\'est pareil. Une action a la fois.',
@@ -205,7 +205,7 @@ const NPCS = [
     ]
   },
   {
-    id: 'warrior1', x: 17, y: 16, sprite: 'warrior', name: 'Karim',
+    id: 'warrior1', x: 17, y: 16, sprite: 'warrior', name: 'Karim', wander: 2,
     dialog: [
       'J\'etais paralyse par la peur de me tromper.',
       'Puis j\'ai compris : ne rien faire, c\'est deja se tromper.',
@@ -214,7 +214,7 @@ const NPCS = [
     ]
   },
   {
-    id: 'sage1', x: 32, y: 13, sprite: 'sage', name: 'Aiko',
+    id: 'sage1', x: 32, y: 13, sprite: 'sage', name: 'Aiko', wander: 2,
     dialog: [
       'L\'eau de ce lac est calme... comme ton esprit devrait l\'etre.',
       'La clarte ne vient pas en cherchant plus.',
@@ -223,6 +223,81 @@ const NPCS = [
     ]
   },
 ]
+
+// Initialize NPC wandering state
+NPCS.forEach(npc => {
+  npc.homeX = npc.x
+  npc.homeY = npc.y
+  npc.direction = 'down'
+  npc.walkFrame = 0
+  npc.walkTick = 0
+  npc.moving = false
+  npc.tx = npc.x
+  npc.ty = npc.y
+  npc.moveFrame = 0
+  npc.ox = 0
+  npc.oy = 0
+  npc.wanderTimer = Math.floor(Math.random() * 120) + 60
+})
+
+const NPC_MOVE_FRAMES = 12
+const DIRS = [
+  { dx: 0, dy: -1, dir: 'up' },
+  { dx: 0, dy: 1, dir: 'down' },
+  { dx: -1, dy: 0, dir: 'left' },
+  { dx: 1, dy: 0, dir: 'right' },
+]
+
+function updateNPCs(map, playerX, playerY) {
+  for (const npc of NPCS) {
+    if (npc.moving) {
+      npc.moveFrame++
+      const progress = npc.moveFrame / NPC_MOVE_FRAMES
+      npc.ox = (npc.tx - npc.x) * TILE * progress
+      npc.oy = (npc.ty - npc.y) * TILE * progress
+      npc.walkTick++
+      if (npc.walkTick % 6 === 0) npc.walkFrame = (npc.walkFrame + 1) % 3
+      if (npc.moveFrame >= NPC_MOVE_FRAMES) {
+        npc.x = npc.tx
+        npc.y = npc.ty
+        npc.ox = 0
+        npc.oy = 0
+        npc.moving = false
+        npc.moveFrame = 0
+        npc.wanderTimer = 40 + Math.floor(Math.random() * 100)
+      }
+    } else {
+      npc.walkFrame = 0
+      npc.wanderTimer--
+      if (npc.wanderTimer <= 0 && npc.wander) {
+        // Pick a random direction
+        const d = DIRS[Math.floor(Math.random() * DIRS.length)]
+        const nx = npc.x + d.dx
+        const ny = npc.y + d.dy
+        // Stay within wander radius of home
+        const dist = Math.abs(nx - npc.homeX) + Math.abs(ny - npc.homeY)
+        if (dist <= npc.wander && canMove(map, nx, ny)) {
+          // Don't walk into player
+          if (nx !== playerX || ny !== playerY) {
+            // Don't walk into other NPCs
+            let blocked = false
+            for (const other of NPCS) {
+              if (other !== npc && other.x === nx && other.y === ny) { blocked = true; break }
+            }
+            if (!blocked) {
+              npc.direction = d.dir
+              npc.tx = nx
+              npc.ty = ny
+              npc.moving = true
+              npc.moveFrame = 0
+            }
+          }
+        }
+        npc.wanderTimer = 60 + Math.floor(Math.random() * 120)
+      }
+    }
+  }
+}
 
 function seededRandom(seed) {
   let s = seed
@@ -580,5 +655,5 @@ function getAdjacentInteriorNPC(tileX, tileY, interiorNpcs) {
 export {
   TILE, COLS, ROWS, T, ZONES, NPCS,
   generateMap, drawZoneLabel, drawNPCLabel,
-  getAdjacentZone, getAdjacentNPC, getAdjacentInteriorNPC, canMove,
+  getAdjacentZone, getAdjacentNPC, getAdjacentInteriorNPC, canMove, updateNPCs,
 }
