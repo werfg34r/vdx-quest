@@ -36,17 +36,18 @@ export const ITEM_TYPES = {
   rock: { name: 'Pierre', icon: 'rock', stackable: true },
 };
 
-// ── House building stages ──
+// ── House building stages (5 stages, ~5 min total) ──
 export const HOUSE_STAGES = [
-  { name: 'Terrain vide',     woodCost: 0,  rockCost: 0 },
-  { name: 'Fondations',       woodCost: 5,  rockCost: 0 },
-  { name: 'Murs',             woodCost: 10, rockCost: 0 },
-  { name: 'Toit',             woodCost: 5,  rockCost: 3 },
-  { name: 'Maison terminee!', woodCost: 0,  rockCost: 0 },
+  { name: 'Terrain vide',     woodCost: 0,  rockCost: 0 },  // 0 - empty
+  { name: 'Piliers',          woodCost: 7,  rockCost: 0 },  // 1 - 7 pillars
+  { name: 'Sol',              woodCost: 5,  rockCost: 3 },  // 2 - floor
+  { name: 'Murs',             woodCost: 10, rockCost: 5 },  // 3 - walls
+  { name: 'Toit',             woodCost: 8,  rockCost: 4 },  // 4 - roof
+  { name: 'Maison terminee!', woodCost: 3,  rockCost: 2 },  // 5 - finitions
 ];
 
-// ── Building plot position (open grassy area on the map) ──
-export const BUILD_PLOT = { x: 42, y: 30, w: 4, h: 4 };
+// ── Building plot position ──
+export const BUILD_PLOT = { x: 42, y: 30, w: 5, h: 5 };
 
 // ── World Objects ──
 export const WORLD_TREES = [

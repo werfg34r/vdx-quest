@@ -2,80 +2,125 @@
 // VDX QUEST - Story & Quest System
 // ═══════════════════════════════════════════════════════
 
-// Quest definitions for Village 1
+// Quest definitions for Village 1 - Build your house
 export const QUEST_DEFS = [
   {
     id: 'welcome',
     title: 'Bienvenue dans VDX',
     dialogueStart: [
       "Salut ! Je suis Laurent, bienvenue dans VDX !",
-      "Aujourd'hui, on va apprendre a construire ton VD business.",
-      "Pour commencer, il te faut une maison.",
-      "Tu vois la foret au nord ? Va couper du bois avec ta hache !",
-      "Approche-toi d'un arbre et appuie sur ESPACE.",
+      "Ici, tu vas construire ta maison de zero.",
+      "Pour commencer, il te faut du bois pour les piliers.",
+      "Tu vois les arbres ? Selectionne ta hache (touche 1).",
+      "Approche-toi d'un arbre et appuie sur ESPACE pour couper !",
+      "Ramene-moi 7 bois pour poser les 7 piliers.",
     ],
-    objective: { type: 'collect', item: 'wood', count: 5 },
-    objectiveText: 'Couper du bois dans la foret (0/5)',
+    objective: { type: 'collect', item: 'wood', count: 7 },
+    objectiveText: 'Couper du bois pour les piliers (0/7)',
   },
   {
-    id: 'build_foundation',
-    title: 'Les fondations',
+    id: 'build_pillars',
+    title: 'Les piliers',
     dialogueStart: [
-      "Bien joue ! Tu as assez de bois pour les fondations !",
+      "Parfait ! Tu as assez de bois pour les piliers !",
       "Va au terrain de construction a l'est (le carre marque).",
-      "Appuie sur ESPACE devant le terrain pour construire.",
+      "Appuie sur ESPACE devant le terrain pour poser les piliers.",
     ],
     objective: { type: 'build', stage: 1 },
-    objectiveText: 'Construire les fondations (5 bois)',
+    objectiveText: 'Poser les 7 piliers (7 bois)',
   },
   {
-    id: 'gather_walls',
-    title: 'Les murs',
+    id: 'gather_floor',
+    title: 'Le sol',
     dialogueStart: [
-      "Excellent ! Les fondations sont posees !",
-      "Maintenant il faut beaucoup plus de bois pour les murs.",
-      "Retourne dans la foret et coupe 10 arbres de plus !",
-    ],
-    objective: { type: 'collect', item: 'wood', count: 10 },
-    objectiveText: 'Couper encore du bois (0/10)',
-  },
-  {
-    id: 'build_walls',
-    title: 'Monter les murs',
-    dialogueStart: [
-      "Parfait ! Tu as tout le bois qu'il faut.",
-      "Retourne au chantier et construis les murs !",
-    ],
-    objective: { type: 'build', stage: 2 },
-    objectiveText: 'Construire les murs (10 bois)',
-  },
-  {
-    id: 'gather_roof',
-    title: 'Le toit',
-    dialogueStart: [
-      "Les murs sont montes ! La maison prend forme.",
-      "Pour le toit, il faut du bois ET de la pierre.",
-      "Tu trouveras des rochers sur la carte. Selectionne ta pioche (touche 2) !",
-      "Ramasse 5 bois et 3 pierres.",
+      "Les piliers sont plantes ! Beau travail.",
+      "Maintenant il faut le sol. Tu vas avoir besoin de bois ET de pierre.",
+      "Les rochers sont eparpilles sur la carte.",
+      "Selectionne ta pioche (touche 2) pour les miner !",
+      "Il me faut 5 bois et 3 pierres.",
     ],
     objective: { type: 'collect_multi', items: { wood: 5, rock: 3 } },
     objectiveText: 'Bois (0/5) + Pierre (0/3)',
   },
   {
-    id: 'build_roof',
-    title: 'Finir la maison',
+    id: 'build_floor',
+    title: 'Poser le sol',
     dialogueStart: [
-      "Tu as tout ce qu'il faut ! Va finir ta maison !",
+      "Tu as tout pour le sol !",
+      "Retourne au chantier et pose le plancher.",
+    ],
+    objective: { type: 'build', stage: 2 },
+    objectiveText: 'Construire le sol (5 bois + 3 pierre)',
+  },
+  {
+    id: 'gather_walls',
+    title: 'Les murs',
+    dialogueStart: [
+      "Le sol est pose ! La maison prend forme.",
+      "Pour les murs, il faut beaucoup de materiaux.",
+      "Va chercher 10 bois et 5 pierres.",
+      "Les arbres repoussent, t'inquiete pas !",
+    ],
+    objective: { type: 'collect_multi', items: { wood: 10, rock: 5 } },
+    objectiveText: 'Bois (0/10) + Pierre (0/5)',
+  },
+  {
+    id: 'build_walls',
+    title: 'Monter les murs',
+    dialogueStart: [
+      "Tu as tout ce qu'il faut pour les murs !",
+      "Va au chantier et monte les murs.",
     ],
     objective: { type: 'build', stage: 3 },
-    objectiveText: 'Construire le toit (5 bois + 3 pierre)',
+    objectiveText: 'Construire les murs (10 bois + 5 pierre)',
+  },
+  {
+    id: 'gather_roof',
+    title: 'Le toit',
+    dialogueStart: [
+      "Les murs sont montes ! On approche de la fin.",
+      "Le toit, c'est la partie la plus importante.",
+      "Il me faut 8 bois et 4 pierres.",
+    ],
+    objective: { type: 'collect_multi', items: { wood: 8, rock: 4 } },
+    objectiveText: 'Bois (0/8) + Pierre (0/4)',
+  },
+  {
+    id: 'build_roof',
+    title: 'Poser le toit',
+    dialogueStart: [
+      "Excellent ! On va poser le toit !",
+      "Va au chantier, la maison est presque finie !",
+    ],
+    objective: { type: 'build', stage: 4 },
+    objectiveText: 'Construire le toit (8 bois + 4 pierre)',
+  },
+  {
+    id: 'gather_finish',
+    title: 'Les finitions',
+    dialogueStart: [
+      "Le toit est pose ! Plus que les finitions.",
+      "Une cheminee, une porte, des fenetres...",
+      "Il faut juste 3 bois et 2 pierres de plus.",
+    ],
+    objective: { type: 'collect_multi', items: { wood: 3, rock: 2 } },
+    objectiveText: 'Bois (0/3) + Pierre (0/2)',
+  },
+  {
+    id: 'build_finish',
+    title: 'Finir la maison',
+    dialogueStart: [
+      "C'est le moment ! Va finir ta maison !",
+    ],
+    objective: { type: 'build', stage: 5 },
+    objectiveText: 'Terminer la maison (3 bois + 2 pierre)',
   },
   {
     id: 'complete',
     title: 'Maison terminee !',
     dialogueStart: [
       "FELICITATIONS ! Ta maison est construite !",
-      "C'est le debut de ton VD business !",
+      "C'est le debut de ton aventure VDX !",
       "Dans la prochaine etape, on va apprendre a cultiver...",
       "Mais ca, c'est pour le Village 2 ! A bientot !",
     ],
@@ -86,8 +131,8 @@ export const QUEST_DEFS = [
 
 export function createQuestState() {
   return {
-    currentQuest: 0,     // index into QUEST_DEFS
-    needsTalk: true,     // must talk to Laurent to get next quest
+    currentQuest: 0,
+    needsTalk: true,
     objectiveMet: false,
     dialogueLines: [],
     dialogueIdx: 0,
@@ -114,7 +159,6 @@ export function startQuestDialogue(state) {
 export function advanceQuestDialogue(state) {
   if (!state.showingDialogue) return false;
 
-  // If typewriter not done, skip to full text
   const fullLine = state.dialogueLines[state.dialogueIdx] || '';
   if (state.charIdx < fullLine.length) {
     state.displayText = fullLine;
@@ -122,12 +166,11 @@ export function advanceQuestDialogue(state) {
     return true;
   }
 
-  // Next line
   state.dialogueIdx++;
   if (state.dialogueIdx >= state.dialogueLines.length) {
     state.showingDialogue = false;
     state.needsTalk = false;
-    return false; // dialogue ended
+    return false;
   }
 
   state.charIdx = 0;
@@ -145,7 +188,6 @@ export function updateQuestDialogue(state) {
   }
 }
 
-// Check if objective is met based on inventory / build state
 export function checkObjective(state, inventory, houseStage) {
   const quest = getCurrentQuest(state);
   if (!quest || state.needsTalk) return false;
@@ -163,15 +205,14 @@ export function checkObjective(state, inventory, houseStage) {
     return true;
   }
   if (obj.type === 'build') {
-    return houseStage >= obj.stage + 1; // stage was advanced
+    return houseStage >= obj.stage;
   }
   if (obj.type === 'none') {
-    return false; // final quest, no more objectives
+    return false;
   }
   return false;
 }
 
-// Advance to next quest
 export function advanceQuest(state) {
   if (state.currentQuest < QUEST_DEFS.length - 1) {
     state.currentQuest++;
@@ -182,7 +223,6 @@ export function advanceQuest(state) {
   return false;
 }
 
-// Get objective progress text
 export function getObjectiveProgress(state, inventory, houseStage) {
   const quest = getCurrentQuest(state);
   if (!quest) return '';
